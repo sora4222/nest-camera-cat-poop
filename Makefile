@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config
+.PHONY: help setup dev check format test config import-history
 
 # Commands that need secrets run through $(RUN). With the 1Password CLI (`op`)
 # installed, `op://` references in .env are filled in; otherwise .env is read as is.
@@ -19,6 +19,7 @@ help:
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
 	@echo "make config  load the private config and say if it is valid"
+	@echo "make import-history ARGS=\"takeout|portability|folder [paths]\"  copy past clips to the NAS"
 
 # Copy the example files only if the private ones do not exist yet.
 setup: dev
@@ -42,3 +43,6 @@ test:
 
 config:
 	$(RUN) catpoop check-config
+
+import-history:
+	$(RUN) catpoop import-history $(ARGS)
