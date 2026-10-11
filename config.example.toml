@@ -54,6 +54,19 @@ poop_reminder_max_minutes = 60
 poop_reminder_max_count = 6
 login_expired_reminder_at = "18:00"
 
+# Detector "onnx": a TF detector exported to ONNX (`make export-detector`).
+[detector]
+# The .onnx file; a relative path is inside paths.private_data_store.
+model = "models/pets.onnx"
+# auto (any GPU or macOS Core ML that is installed, else CPU), cpu, amd or nvidia.
+runtime = "auto"
+min_score = 0.5
+# Model class id -> label. These are the TF model zoo COCO ids.
+[detector.labels]
+1 = "person"
+17 = "cat"
+18 = "dog"
+
 # Options for the chosen implementation of each part, one table per part, e.g.:
 # [camera]
 # device = "Litter box"

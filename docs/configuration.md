@@ -6,6 +6,7 @@ All settings live in `config.toml` (git-ignored); `config.example.toml` lists ev
 |---|---|
 | Which camera, detector, event rules, event log, Presence check or communications handler is used | `[parts]`, by registered name |
 | Options for one of those | its own table, e.g. `[camera]` |
+| Detector model file, GPU or CPU, minimum score, class labels | `[detector]` |
 | Where clips and labels are kept | `paths.private_data_store` |
 | The one-watcher lock file | `paths.lock_file` |
 | Cat and Dog names used in messages | `[household]` |

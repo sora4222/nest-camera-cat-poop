@@ -12,6 +12,8 @@ src/catpoop/
   interfaces.py     small Protocols for every swappable part
   registry.py       slots, the registry, and build_parts (config names -> parts)
   watcher_lock.py   one live watcher per machine
+  onnx_session.py   open an ONNX model on the CPU or a GPU (cpu/amd/nvidia extras)
+  export_detector.py  TF detector SavedModel -> ONNX (`make export-detector`, train extra)
   history/          import past clips into the Private Data Store (docs/history-import.md)
     importer.py         HistoryClip and the HistoryImporter interface
     command.py          `catpoop import-history`
@@ -29,8 +31,11 @@ src/catpoop/
   parts/            built-in implementations, one per file
     memory_event_log.py   event_log "memory"
     presence_off.py       presence "off" (always Unknown)
+    onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
 tests/              one test file per module; fakes only
+notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
+  export_toy_model_to_onnx.ipynb  a toy Keras model -> ONNX, step by step
 docs/               setup, configuration, ADRs
 ```
 
