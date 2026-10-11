@@ -83,6 +83,7 @@ def _watcher(config: Config, registry: Registry, clock: Clock) -> Watcher:
         offline_after=timedelta(minutes=config.timers.camera_offline_minutes),
         check_seconds=config.watcher.check_seconds,
         outcome_model=_outcome_model(config),
+        surface_check_seconds=config.watcher.surface_check_seconds,
     )
 
 

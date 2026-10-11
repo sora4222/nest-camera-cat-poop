@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from catpoop import observations as obs
 from catpoop.clock import Clock
 from catpoop.config import VisitSettings
-from catpoop.domain import Frame
+from catpoop.domain import Detection, Frame, OutcomeScores
 from catpoop.interfaces import (
     CameraLoginExpired,
     CameraSource,
@@ -22,7 +22,13 @@ from catpoop.interfaces import (
     EventRules,
     OutcomeModel,
 )
-from catpoop.visits.finder import VisitEnded, VisitStarted, VisitTracker, cat_in_litter_box
+from catpoop.visits.finder import (
+    VisitEnded,
+    VisitStarted,
+    VisitTracker,
+    cat_in_litter_box,
+    labels_in_litter_box,
+)
 from catpoop.visits.video import VideoError
 from catpoop.watcher.recorder import LiveVisitRecorder
 
@@ -45,8 +51,13 @@ class Watcher:
         offline_after: timedelta,
         check_seconds: float,
         outcome_model: OutcomeModel | None = None,
+        surface_check_seconds: float = 10.0,
     ) -> None:
-        """`offline_after` with no picture is Camera Offline. No `outcome_model`, no scores."""
+        """`offline_after` with no picture is Camera Offline. No `outcome_model`, no scores.
+
+        Every `surface_check_seconds` an empty Litter Box is scored by the Outcome model, so
+        the event rules can tell whether Poop is still there.
+        """
         self._camera = camera
         self._detector = detector
         self._rules = rules
@@ -57,6 +68,7 @@ class Watcher:
         self._offline_after = offline_after
         self._check_seconds = check_seconds
         self._outcome_model = outcome_model
+        self._surface_every = timedelta(seconds=surface_check_seconds)
         self._started = clock.now()
         self._tracker = VisitTracker(visits)
         self._recent: deque[Frame] = deque()
@@ -65,6 +77,7 @@ class Watcher:
         )
         self._visit_started_at: datetime | None = None
         self._last_picture = self._started
+        self._last_surface = self._started
         self._offline_said = False
         self._login_said = False
 
@@ -114,7 +127,7 @@ class Watcher:
             log.exception("the detector failed; skipping this picture")
             self._tell(obs.NoPicture(now))
             return
-        self._tell(obs.Seen(now, frame, detections))
+        self._tell(obs.Seen(now, frame, detections, self._surface(now, frame, detections)))
         self._recent.append(frame)
         while self._recent and frame.taken_at - self._recent[0].taken_at > self._keep:
             self._recent.popleft()
@@ -127,6 +140,24 @@ class Watcher:
                 case VisitEnded(span=span):
                     last_seen = span.end - self._visits.padding_seconds
                     self._end_visit(now, self._frames_since(last_seen, after=True))
+
+    def _surface(
+        self, now: datetime, frame: Frame, detections: tuple[Detection, ...]
+    ) -> OutcomeScores | None:
+        """Outcome scores of the litter surface, when due and nothing is in the box."""
+        if (
+            self._outcome_model is None
+            or now - self._last_surface < self._surface_every
+            or self._tracker.in_visit
+            or labels_in_litter_box(detections, self._visits)
+        ):
+            return None
+        self._last_surface = now
+        try:
+            return self._outcome_model.outcome(frame)
+        except Exception:
+            log.exception("the Outcome model failed on the litter surface")
+            return None
 
     def _start_visit(self, now: datetime, first_seen: float) -> None:
         self._visit_started_at = now

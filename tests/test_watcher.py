@@ -87,7 +87,14 @@ class BrokenRecorder(LiveVisitRecorder):
 
 class Run:
     def __init__(
-        self, tmp_path, script, model=None, recorder=None, detect_seconds=0.0, detector=None
+        self,
+        tmp_path,
+        script,
+        model=None,
+        recorder=None,
+        detect_seconds=0.0,
+        detector=None,
+        surface_seconds=1000.0,
     ) -> None:
         self.clock = FakeClock(START)
         self.rules = RecordingRules()
@@ -104,6 +111,7 @@ class Run:
             offline_after=timedelta(seconds=10),
             check_seconds=1,
             outcome_model=model,
+            surface_check_seconds=surface_seconds,
         )
 
     def step_through(self, steps: int) -> "Run":
@@ -260,3 +268,30 @@ def test_ctrl_c_during_a_visit_discards_the_recording(tmp_path):
     with pytest.raises(KeyboardInterrupt):
         run.watcher.run(stop=stop)
     assert list((tmp_path / "temp").iterdir()) == []
+
+
+def test_the_litter_surface_is_checked_now_and_then_while_the_box_is_empty(tmp_path):
+    model = FakeOutcomeModel()
+    run = Run(tmp_path, "...C......", model, surface_seconds=3).step_through(10)
+    surfaces = {
+        (o.at - START).total_seconds(): o.surface for o in run.rules.seen if isinstance(o, obs.Seen)
+    }
+    assert [s for s, surface in surfaces.items() if surface] == [4, 7]
+    assert surfaces[4] == scores(Outcome.PEE)
+    assert len(model.decided) == 2
+
+
+def test_no_outcome_model_means_no_surface_checks(tmp_path):
+    run = Run(tmp_path, "......", surface_seconds=1).step_through(6)
+    assert all(o.surface is None for o in run.rules.seen if isinstance(o, obs.Seen))
+
+
+class BrokenOutcomeModel(FakeOutcomeModel):
+    def outcome(self, surface: Frame) -> OutcomeScores:
+        raise RuntimeError("model blew up")
+
+
+def test_a_failed_surface_check_is_logged_and_skipped(tmp_path, caplog):
+    run = Run(tmp_path, "....", BrokenOutcomeModel(), surface_seconds=1).step_through(4)
+    assert "model blew up" in caplog.text
+    assert len([o for o in run.rules.seen if isinstance(o, obs.Seen)]) == 4

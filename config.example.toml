@@ -98,6 +98,7 @@ retry_seconds = 30      # wait before reconnecting after the stream fails
 # The live watcher (`make dev`, see docs/watcher.md).
 [watcher]
 check_seconds = 0.25    # time between detector runs on the newest picture
+surface_check_seconds = 10  # time between Outcome model checks of the empty box (is Poop still there?)
 
 # Options for the chosen implementation of each other part, one table per part.
 

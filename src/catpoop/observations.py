@@ -13,6 +13,9 @@ class Seen:
     at: datetime
     frame: Frame
     detections: tuple[Detection, ...]
+    surface: OutcomeScores | None = None
+    """The Outcome model's scores for this picture of an empty Litter Box, given every
+    `watcher.surface_check_seconds`; None other times or with no Outcome model."""
 
 
 @dataclass(frozen=True)
