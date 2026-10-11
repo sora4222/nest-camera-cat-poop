@@ -5,7 +5,7 @@
 Needs [uv](https://docs.astral.sh/uv/) and Linux or macOS.
 
 ```sh
-make setup      # installs the package and dev tools, creates config.toml and .env
+make setup      # installs dependencies, creates config.toml and .env
 ```
 
 Optional extras: `uv sync --extra amd` or `--extra nvidia` for GPU detection, `--extra train` on the machine that trains models (see [ADR 0002](adr/0002-train-in-tensorflow-run-with-onnx-runtime.md)).
@@ -17,7 +17,7 @@ Neither file is ever committed. Both are listed in `.worktreeinclude`, so Claude
 - `config.toml`: names, Listeners, Speakers, Message templates, Quiet Hours, timers and the Private Data Store path. Copied from `config.example.toml`. Another file can be used with `CATPOOP_CONFIG=/path/to/config.toml`. See [configuration.md](configuration.md).
 - `.env`: secrets. Copied from `.env.example`. Use 1Password references (`op://vault/item/field`) where possible; with the 1Password CLI (`op`) installed, Make targets run through `op run` to fill them in.
 
-Check the config with `make config`.
+Check the config with `make config`. Run the application locally with `make dev`.
 
 ## Camera login
 
@@ -25,4 +25,4 @@ The camera package is [googlenestcam](https://github.com/sora4222/nest-camera-ac
 
 ## One watcher per machine
 
-The live watcher takes a lock at `paths.lock_file` (default `/tmp/catpoop-watcher.lock`). Every worktree on a machine uses the same path, so a second watcher refuses to start. The lock is dropped when the process ends.
+The live watcher takes a lock at `paths.lock_file` (default `$XDG_RUNTIME_DIR/catpoop-watcher.lock`, else `/tmp/catpoop-<uid>/watcher.lock`). Every worktree of the same user uses the same path, so a second watcher refuses to start. The lock is dropped when the process ends. The lock's folder must be owned by you and not writable by others, and the lock file is never opened through a symlink.

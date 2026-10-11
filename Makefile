@@ -13,8 +13,8 @@ else
 endif
 
 help:
-	@echo "make setup   first-time setup: private config, .env and dev tools"
-	@echo "make dev     install the package and dev tools"
+	@echo "make setup   install dependencies, create config.toml and .env if missing"
+	@echo "make dev     run the application locally"
 	@echo "make check   format check, lint and type check"
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
@@ -22,12 +22,13 @@ help:
 	@echo "make import-history ARGS=\"takeout|portability|folder [paths]\"  copy past clips to the NAS"
 
 # Copy the example files only if the private ones do not exist yet.
-setup: dev
+setup:
+	uv sync
 	@test -f config.toml || { cp config.example.toml config.toml && echo "Created config.toml; edit it."; }
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 
 dev:
-	uv sync
+	$(RUN) catpoop check-config
 
 check:
 	uv run ruff format --check .

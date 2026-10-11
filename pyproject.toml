@@ -36,8 +36,8 @@ googlenestcam = { git = "https://github.com/sora4222/nest-camera-access-python",
 [dependency-groups]
 dev = [
     "pytest>=9.1",
-    "ruff>=0.17",
-    "ty>=0.0.86",
+    "ruff==0.17.0",
+    "ty==0.0.86",
 ]
 
 [tool.pytest.ini_options]

@@ -47,7 +47,7 @@ class Paths(_Strict):
     """Where things live outside the repo."""
 
     private_data_store: Path
-    lock_file: Path = Path("/tmp/catpoop-watcher.lock")
+    lock_file: Path | None = None  # None: `watcher_lock.default_lock_path()`
 
 
 class Household(_Strict):
