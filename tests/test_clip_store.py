@@ -2,6 +2,7 @@ import io
 import json
 from datetime import UTC, datetime
 
+import pytest
 from fake_mp4 import fake_mp4
 
 from catpoop.history.clip_store import HistoryClipStore
@@ -87,3 +88,16 @@ def test_unknown_recording_time_is_filled_in_by_a_later_source(tmp_path):
     )
     record = json.loads(again.path.with_suffix(".json").read_text())
     assert record["recorded_at"] == "2026-03-04T05:06:07+00:00"
+
+
+class BrokenStream(io.BytesIO):
+    def read(self, size=-1):
+        raise OSError("connection lost")
+
+
+def test_a_failed_copy_leaves_no_part_file(tmp_path):
+    store = HistoryClipStore(tmp_path)
+    broken = HistoryClip("folder", "a/clip.mp4", "clip.mp4", BrokenStream)
+    with pytest.raises(OSError):
+        store.save(broken, NOW)
+    assert list(store.folder.iterdir()) == []

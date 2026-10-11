@@ -50,10 +50,14 @@ class HistoryClipStore:
     def _copy_in(self, clip: HistoryClip) -> tuple[Path, str]:
         digest = hashlib.sha256()
         handle, name = tempfile.mkstemp(dir=self.folder, prefix=".importing-", suffix=".part")
-        with os.fdopen(handle, "wb") as out, clip.open() as source:
-            while chunk := source.read(1 << 20):
-                digest.update(chunk)
-                out.write(chunk)
+        try:
+            with os.fdopen(handle, "wb") as out, clip.open() as source:
+                while chunk := source.read(1 << 20):
+                    digest.update(chunk)
+                    out.write(chunk)
+        except BaseException:
+            Path(name).unlink(missing_ok=True)
+            raise
         return Path(name), digest.hexdigest()
 
     def _record(self, record_path: Path, clip_path: Path, clip: HistoryClip, now: datetime) -> None:
