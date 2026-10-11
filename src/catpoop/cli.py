@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from catpoop.config import ConfigError, load_config
+from catpoop.history import command as history_command
 from catpoop.registry import (
     CAMERA,
     COMMUNICATIONS,
@@ -47,9 +48,12 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check-config", help="load the private config and check it")
     check.add_argument("--config", type=Path, help="config file (default: $CATPOOP_CONFIG)")
+    history_command.add_command(commands)
     args = parser.parse_args(argv)
     if args.command == "check-config":
         return _check_config(args.config)
+    if args.command == "import-history":
+        return history_command.run(args)
     return 2
 
 
