@@ -29,10 +29,15 @@ def prepare_image(image: np.ndarray, size: int) -> np.ndarray:
     return np.asarray(resized, np.float32)
 
 
+def read_picture(path: Path) -> np.ndarray:
+    """The picture at `path` as an RGB uint8 array, like a camera Frame's image."""
+    with Image.open(path) as picture:
+        return np.asarray(picture.convert("RGB"))
+
+
 def load_image(path: Path, size: int) -> np.ndarray:
     """The picture at `path`, as `prepare_image` gives it."""
-    with Image.open(path) as picture:
-        return prepare_image(np.asarray(picture.convert("RGB")), size)
+    return prepare_image(read_picture(path), size)
 
 
 def time_features(at: datetime | None, zone: tzinfo | None = None) -> np.ndarray:
