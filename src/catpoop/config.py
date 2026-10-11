@@ -159,7 +159,8 @@ class AlexaSkillSettings(_Strict):
     enabled: bool = False
     host: str = "127.0.0.1"
     """Where the endpoint listens; the tunnel connects to it on this machine."""
-    port: int = Field(8767, ge=1, le=65535)
+    port: int = Field(8767, ge=0, le=65535)
+    """0 picks any free port (for tests; a tunnel needs a fixed one)."""
     tunnel: Literal["cloudflare", "tailscale"] = "cloudflare"
     """What brings `/alexa` from the internet: Cloudflare Tunnel or Tailscale Funnel."""
     hostname: str | None = None
