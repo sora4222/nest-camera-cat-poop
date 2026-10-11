@@ -109,6 +109,13 @@ class VisitSettings(_Strict):
     """Above this, the oldest clips with no labeled Visit are deleted."""
 
 
+class WatcherSettings(_Strict):
+    """How often the live watcher checks the camera (`make dev`)."""
+
+    check_seconds: float = Field(0.25, gt=0)
+    """Time between detector runs on the newest picture."""
+
+
 class OutcomeSettings(_Strict):
     """Where the Outcome model lives and how `make train` trains it."""
 
@@ -154,6 +161,7 @@ class Config(_Strict):
     timers: Timers = Timers()
     visits: VisitSettings = VisitSettings()
     outcome: OutcomeSettings = OutcomeSettings()
+    watcher: WatcherSettings = WatcherSettings()
     # Options for the chosen implementation of each part.
     camera: dict[str, Any] = {}
     detector: dict[str, Any] = {}
