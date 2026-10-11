@@ -4,11 +4,10 @@ Each part is registered by name in `catpoop.registry`. Tests use fakes, never re
 cameras, speakers or the network.
 """
 
-from collections.abc import Sequence
-from datetime import datetime
 from typing import Protocol
 
 from catpoop.domain import Detection, Event, Frame, OutcomeScores, Presence
+from catpoop.observations import Observation
 
 
 class CameraSource(Protocol):
@@ -40,10 +39,10 @@ class OutcomeModel(Protocol):
 
 
 class EventRules(Protocol):
-    """Turns what the camera sees over time into Events."""
+    """Turns what the live watcher sees over time into Events."""
 
-    def update(self, now: datetime, detections: Sequence[Detection] | None) -> list[Event]:
-        """New Events at `now`. `detections` is None when there was no picture."""
+    def update(self, observation: Observation) -> list[Event]:
+        """New Events now that the watcher has seen `observation`."""
         ...
 
 
