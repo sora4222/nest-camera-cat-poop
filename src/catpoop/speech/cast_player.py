@@ -5,9 +5,24 @@ for. Finding uses mDNS, so the server must be on the same home network as the sp
 """
 
 from collections.abc import Callable, Sequence
+from contextlib import suppress
 from typing import Any
 
-type Discover = Callable[[str], Any]
+
+class FoundCast:
+    """A connected cast and the discovery that keeps it reachable, until `close`."""
+
+    def __init__(self, cast: Any, close: Callable[[], None]) -> None:
+        """`close` drops the connection and stops discovery."""
+        self.cast = cast
+        self._close = close
+
+    def close(self) -> None:
+        """Drop the connection and stop discovery."""
+        self._close()
+
+
+type Discover = Callable[[str], FoundCast | None]
 """Finds a connected cast device by its name in the Google Home app, or gives None."""
 
 
@@ -17,8 +32,12 @@ class SpeakerNotFound(LookupError):
 
 def find_cast(
     device: str, known_hosts: Sequence[str] | None = None, timeout: float = 10
-) -> Any | None:
-    """The `pychromecast.Chromecast` called `device`, connected, or None."""
+) -> FoundCast | None:
+    """The `pychromecast.Chromecast` called `device`, connected, or None.
+
+    Discovery keeps running until the result is closed: the cast resolves its address
+    through discovery's Zeroconf when it connects and when it reconnects.
+    """
     import pychromecast
 
     casts, browser = pychromecast.get_listed_chromecasts(
@@ -26,12 +45,23 @@ def find_cast(
         known_hosts=list(known_hosts) if known_hosts else None,
         discovery_timeout=timeout,
     )
-    browser.stop_discovery()
     if not casts:
+        browser.stop_discovery()
         return None
     cast = casts[0]
-    cast.wait(timeout=timeout)
-    return cast
+
+    def close() -> None:
+        try:
+            cast.disconnect(timeout=timeout)
+        finally:
+            browser.stop_discovery()
+
+    try:
+        cast.wait(timeout=timeout)
+    except BaseException:
+        close()
+        raise
+    return FoundCast(cast, close)
 
 
 class CastPlayer:
@@ -42,20 +72,28 @@ class CastPlayer:
         self._device = device
         self._discover = discover
         self._volume = volume
-        self._cast: Any = None
+        self._found: FoundCast | None = None
 
     def play(self, url: str) -> None:
         """Start playing `url`. Raises `SpeakerNotFound`, or the cast's error."""
-        if self._cast is None:
-            self._cast = self._discover(self._device)
-            if self._cast is None:
+        if self._found is None:
+            self._found = self._discover(self._device)
+            if self._found is None:
                 raise SpeakerNotFound(f"no Google speaker called {self._device!r} found")
+        cast = self._found.cast
         try:
             if self._volume is not None:
-                self._cast.set_volume(self._volume)
-            self._cast.media_controller.play_media(
+                cast.set_volume(self._volume)
+            cast.media_controller.play_media(
                 url, "audio/wav", title="Litter box", stream_type="BUFFERED"
             )
         except Exception:
-            self._cast = None
+            with suppress(Exception):
+                self.close()
             raise
+
+    def close(self) -> None:
+        """Drop the kept connection; the next `play` finds the speaker again."""
+        found, self._found = self._found, None
+        if found is not None:
+            found.close()
