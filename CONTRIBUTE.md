@@ -8,6 +8,8 @@ Dev rules are in [CLAUDE.md](CLAUDE.md). Run `make check` and `make test` before
 src/catpoop/
   cli.py            `catpoop <command>`; Make targets call it
   config.py         load and check the private config.toml
+  observations.py   what the live watcher hands the event rules
+  clock.py          the time now and waiting (SystemClock; tests use a fake)
   domain.py         glossary words as types: Urgency, Presence, Outcome, OutcomeScores, Frame, Detection, Event
   interfaces.py     small Protocols for every swappable part
   registry.py       slots, the registry, and build_parts (config names -> parts)
@@ -29,13 +31,14 @@ src/catpoop/
     portability_http.py the real Data Portability API client (httpx)
     folder.py           importer "folder" (clips saved by hand)
   visits/           cut clips into Visits, label them, keep the dataset (docs/visits.md)
-    finder.py           find Visits from where the Cat is seen
+    finder.py           find Visits from where the Cat is seen (VisitTracker, find_visits)
+    clip_writer.py      write an MP4 frame by frame (PyAV)
     video.py            read clip frames (PyAV), save JPEGs (Pillow)
     cut.py              cut new history clips into Visits with the detector
     store.py            Visit records, their frames and the dataset folders
     manifest.py         dataset/manifest.csv
     retention.py        delete the oldest unlabeled clips over the size limit
-    add_visit.py        add a clip found by hand straight to the dataset
+    add_visit.py        save a whole clip as one Visit (found by hand, or live)
     labeling_app.py     the labeling page's requests and answers
     labeling_server.py  serve it on localhost (stdlib http.server)
     labeling.html       the labeling page
@@ -53,11 +56,17 @@ src/catpoop/
     onnx_export.py      Keras -> ONNX with tf2onnx (train extra)
     train.py            train, export and measure both models (train extra)
     command.py          `catpoop train`, `evaluate`
+  watcher/          the live watcher, `make dev` (docs/watcher.md)
+    watcher.py          camera -> detector -> Visits -> event rules, Camera Offline, Login Expired
+    recorder.py         record each live Visit and save it for labeling
+    command.py          `catpoop watch`, behind the watcher lock
   parts/            built-in implementations, one per file
     memory_event_log.py   event_log "memory"
     presence_off.py       presence "off" (always Unknown)
     onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
+    log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
+    nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
 docs/               setup, configuration, ADRs
 ```

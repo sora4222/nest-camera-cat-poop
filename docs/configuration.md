@@ -18,6 +18,8 @@ All settings live in `config.toml` (git-ignored); `config.example.toml` lists ev
 | Where past clips are imported from | `[history.takeout]`, `[history.portability]`, `[history.folder]` (see [history-import.md](history-import.md)) |
 | How clips are cut into Visits, where the Litter Box is in the picture, the store size limit | `[visits]` (see [visits.md](visits.md)) |
 | Where the Outcome model is kept, how it is trained and run | `[outcome]` (see [outcome-model.md](outcome-model.md)) |
+| Which Nest camera is watched | `[camera] device` (see [watcher.md](watcher.md)) |
+| How often the live watcher checks the camera | `[watcher] check_seconds` |
 | Secrets (tokens, passwords) | `.env`, not `config.toml` |
 
 To add a new implementation of a part, see [CONTRIBUTE.md](../CONTRIBUTE.md).
