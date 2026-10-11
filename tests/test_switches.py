@@ -1,3 +1,5 @@
+import fcntl
+import threading
 from datetime import UTC, datetime, timedelta
 
 from catpoop.communications.switches import DoNotDisturb, Switches
@@ -61,3 +63,48 @@ def test_do_not_disturb_without_a_time_zone_counts_as_broken(tmp_path, caplog):
     path.write_text('{"dnd": {"until": "2026-06-01T22:00:00"}}')
     assert Switches(path).do_not_disturb(NOW) is None
     assert "broken" in caplog.text
+
+
+def test_changes_from_many_threads_at_once_are_all_kept(tmp_path):
+    path = tmp_path / "switches.json"
+    errors: list[BaseException] = []
+
+    def flip(n: int) -> None:
+        switches = Switches(path)
+        try:
+            for i in range(40):
+                if n % 2:
+                    switches.set_pee_announcements(i % 2 == 0)
+                else:
+                    switches.set_do_not_disturb(NOW + timedelta(minutes=i + 1))
+        except BaseException as error:
+            errors.append(error)
+
+    workers = [threading.Thread(target=flip, args=(n,)) for n in range(8)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join()
+    assert errors == []
+    reader = Switches(path)
+    assert reader.pee_announcements() is False
+    assert reader.do_not_disturb(NOW) == DoNotDisturb(NOW + timedelta(minutes=40), None)
+    assert [p.name for p in tmp_path.iterdir() if p.name != ".switches.json.lock"] == [
+        "switches.json"
+    ]
+
+
+def test_a_change_waits_for_another_process_holding_the_lock_file(tmp_path):
+    path = tmp_path / "switches.json"
+    done = threading.Event()
+    with (tmp_path / ".switches.json.lock").open("a") as other:
+        fcntl.flock(other, fcntl.LOCK_EX)  # as `catpoop dnd` in another process would
+        worker = threading.Thread(
+            target=lambda: (Switches(path).set_pee_announcements(False), done.set())
+        )
+        worker.start()
+        assert not done.wait(0.2)
+        fcntl.flock(other, fcntl.LOCK_UN)
+    worker.join(5)
+    assert done.is_set()
+    assert Switches(path).pee_announcements() is False
