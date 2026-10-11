@@ -67,3 +67,17 @@ def test_clips_with_labeled_visits_are_kept_and_unlabeled_visits_go(tmp_path):
     assert clips_left(tmp_path) == ["a"]
     assert store.get(dropped.id) is None
     assert store.get(kept.id) is not None
+
+
+def test_visits_are_read_once_per_prune_not_once_per_clip(tmp_path, monkeypatch):
+    frame = [np.zeros((4, 4, 3), np.uint8)]
+    store = VisitStore(tmp_path)
+    for name, month in (("a", 1), ("b", 2), ("c", 3)):
+        sha = add_clip(tmp_path, name, 1000, f"2026-0{month}-01T00:00:00+00:00")
+        store.add(Visit(visit_id(sha, 0), sha, 0, 2, None), frame)
+    reads = []
+    real_all = VisitStore.all
+    monkeypatch.setattr(VisitStore, "all", lambda self: reads.append(1) or real_all(self))
+    assert len(prune_clips(tmp_path, 0)) == 3
+    assert len(reads) == 1
+    assert store.unlabeled() == []

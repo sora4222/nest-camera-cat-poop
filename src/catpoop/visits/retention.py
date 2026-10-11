@@ -8,7 +8,7 @@ import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
-from catpoop.visits.store import VisitStore
+from catpoop.visits.store import Visit, VisitStore
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +37,12 @@ def prune_clips(private_data_store: Path, max_bytes: int) -> list[str]:
     if size <= max_bytes:
         return []
     store = VisitStore(private_data_store)
-    keep = store.labeled_clips()
+    visits = store.all()
+    keep = {v.clip for v in visits if v.outcome is not None}
+    unlabeled: dict[str, list[Visit]] = {}
+    for visit in visits:
+        if visit.outcome is None:
+            unlabeled.setdefault(visit.clip, []).append(visit)
     clips = [
         clip
         for clip in (private_data_store / "history" / "clips").glob("*.mp4")
@@ -48,7 +53,7 @@ def prune_clips(private_data_store: Path, max_bytes: int) -> list[str]:
         if size <= max_bytes:
             break
         sha = clip.stem
-        size -= store.remove_unlabeled(sha)
+        size -= store.remove_unlabeled(sha, unlabeled.get(sha, []))
         for path in (clip, clip.with_suffix(".json")):
             if path.exists():
                 size -= path.stat().st_size
