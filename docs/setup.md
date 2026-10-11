@@ -36,4 +36,4 @@ The camera package is [googlenestcam](https://github.com/sora4222/nest-camera-ac
 
 ## One watcher per machine
 
-The live watcher takes a lock at `paths.lock_file` (default `/tmp/catpoop-watcher.lock`). Every worktree on a machine uses the same path, so a second watcher refuses to start. The lock is dropped when the process ends.
+The live watcher takes a lock at `paths.lock_file` (default `$XDG_RUNTIME_DIR/catpoop-watcher.lock`, else `/tmp/catpoop-<uid>/watcher.lock`). Every worktree of the same user uses the same path, so a second watcher refuses to start. The lock is dropped when the process ends. The lock's folder must be owned by you and not writable by others, and the lock file is never opened through a symlink.
