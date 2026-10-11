@@ -10,6 +10,7 @@ src/catpoop/
   config.py         load and check the private config.toml
   observations.py   what the live watcher hands the event rules
   clock.py          the time now and waiting (SystemClock; tests use a fake)
+  state_folder.py   $XDG_STATE_HOME/catpoop, for the server's small state files
   domain.py         glossary words as types: Urgency, Presence, Outcome, OutcomeScores, Frame, Detection, Event
   interfaces.py     small Protocols for every swappable part
   registry.py       slots, the registry, and build_parts (config names -> parts)
