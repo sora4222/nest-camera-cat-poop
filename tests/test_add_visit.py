@@ -1,0 +1,38 @@
+import csv
+from datetime import UTC, datetime
+
+import pytest
+from fake_video import write_clip
+
+from catpoop.config import VisitSettings
+from catpoop.domain import Outcome
+from catpoop.visits.add_visit import add_visit
+from catpoop.visits.store import VisitStore
+from catpoop.visits.video import VideoError
+
+NOW = datetime(2026, 5, 1, 9, 0, tzinfo=UTC)
+SETTINGS = VisitSettings(frame_seconds=0.5)
+
+
+def test_whole_clip_goes_straight_into_the_dataset(tmp_path):
+    clip = write_clip(tmp_path / "poop-by-hand.mp4", [100] * 8)
+    store_path = tmp_path / "store"
+    visit = add_visit(clip, Outcome.POOP, store_path, SETTINGS, NOW)
+    assert (visit.source, visit.outcome, visit.start, visit.frames) == ("manual", "poop", 0, 4)
+    assert visit.end == pytest.approx(2.0)
+    assert (
+        store_path / "history" / "clips" / f"{visit.clip}.mp4"
+    ).read_bytes() == clip.read_bytes()
+    assert (store_path / "dataset" / "poop" / visit.id / "frame_0004.jpg").exists()
+    with (store_path / "dataset" / "manifest.csv").open() as manifest:
+        (row,) = list(csv.DictReader(manifest))
+    assert row["source"] == "manual"
+    assert VisitStore(store_path).is_scanned(visit.clip)
+
+
+def test_broken_clip_is_refused_and_not_stored(tmp_path):
+    bad = tmp_path / "bad.mp4"
+    bad.write_bytes(b"nope")
+    with pytest.raises(VideoError):
+        add_visit(bad, Outcome.PEE, tmp_path / "store", SETTINGS, NOW)
+    assert not (tmp_path / "store" / "history").exists()
