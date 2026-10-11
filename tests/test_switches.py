@@ -54,3 +54,10 @@ def test_a_broken_file_counts_as_nothing_switched(tmp_path, caplog):
 def test_default_file_is_in_the_users_state_folder(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
     assert Switches.default().path == tmp_path / "catpoop" / "switches.json"
+
+
+def test_do_not_disturb_without_a_time_zone_counts_as_broken(tmp_path, caplog):
+    path = tmp_path / "switches.json"
+    path.write_text('{"dnd": {"until": "2026-06-01T22:00:00"}}')
+    assert Switches(path).do_not_disturb(NOW) is None
+    assert "broken" in caplog.text

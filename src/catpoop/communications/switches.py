@@ -52,10 +52,11 @@ class Switches:
             until = datetime.fromisoformat(dnd["until"])
             allow = dnd.get("allow")
             allowed = None if allow is None else tuple(map(Urgency, allow))
+            over = at >= until  # TypeError if `until` has no time zone
         except (KeyError, TypeError, ValueError) as error:
             log.warning("Do Not Disturb in the switches file %s is broken: %s", self.path, error)
             return None
-        return None if at >= until else DoNotDisturb(until, allowed)
+        return None if over else DoNotDisturb(until, allowed)
 
     def set_do_not_disturb(self, until: datetime, allow: Iterable[Urgency] | None = None) -> None:
         """Turn Do Not Disturb on until `until`, letting `allow` Urgencies through."""
