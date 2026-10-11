@@ -10,11 +10,12 @@ def test_runs_systemctl_for_the_user():
     ran: list[list[str]] = []
     manager = SystemdUser(runner=lambda argv: ran.append(list(argv)))
     manager.reload()
-    manager.enable_now("catpoop.service")
+    manager.enable_and_restart("catpoop.service")
     manager.disable_now("catpoop.service")
     assert ran == [
         ["systemctl", "--user", "daemon-reload"],
-        ["systemctl", "--user", "enable", "--now", "catpoop.service"],
+        ["systemctl", "--user", "enable", "catpoop.service"],
+        ["systemctl", "--user", "restart", "catpoop.service"],
         ["systemctl", "--user", "disable", "--now", "catpoop.service"],
     ]
 

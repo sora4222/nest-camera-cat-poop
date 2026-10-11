@@ -23,9 +23,10 @@ class SystemdUser:
         """`systemctl --user daemon-reload`."""
         self._systemctl("daemon-reload")
 
-    def enable_now(self, unit: str) -> None:
-        """`systemctl --user enable --now <unit>`."""
-        self._systemctl("enable", "--now", unit)
+    def enable_and_restart(self, unit: str) -> None:
+        """`systemctl --user enable <unit>`, then `restart` so a changed unit takes effect."""
+        self._systemctl("enable", unit)
+        self._systemctl("restart", unit)
 
     def disable_now(self, unit: str) -> None:
         """`systemctl --user disable --now <unit>`."""

@@ -47,7 +47,7 @@ def test_install_writes_starts_and_says_where_logs_are(checkout, places, capsys)
     assert code == 0
     unit = (places.unit_folder / UNIT_NAME).read_text()
     assert "--extra google" in unit
-    assert ("enable_now", UNIT_NAME, "True") in manager.calls
+    assert ("enable_and_restart", UNIT_NAME, "True") in manager.calls
     out = capsys.readouterr().out
     assert "journalctl --user -u catpoop" in out
     assert "loginctl enable-linger" in out
