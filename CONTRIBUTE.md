@@ -70,6 +70,7 @@ src/catpoop/
   watcher/          the live watcher, `make dev` (docs/watcher.md)
     watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
+    background_task.py  run a slow task (pruning the store) off the watcher loop
     command.py          `catpoop watch`, behind the watcher lock
   alexa_skill/      the Alexa skill the watcher serves on /alexa (docs/alexa-skill.md)
     request_verifier.py is the request from Alexa, for our skill, just now (signature, cert chain, timestamp, skill ID)
