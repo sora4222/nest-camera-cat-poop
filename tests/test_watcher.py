@@ -427,3 +427,29 @@ def test_a_recording_that_cannot_start_is_logged_and_the_visit_goes_on(tmp_path,
     ended = run.first(obs.VisitEnded)
     assert isinstance(ended, obs.VisitEnded)
     assert ended.saved_visit is None
+
+
+class AddBlowsUp(LiveVisitRecorder):
+    """Records the frames from before the Visit, then fails on the next one."""
+
+    adding_later = False
+
+    def start(self, frames):
+        super().start(frames)
+        self.adding_later = True
+
+    def add(self, frame):
+        if self.adding_later and self.recording:
+            raise OSError("disk full")
+        super().add(frame)
+
+
+def test_a_recording_that_fails_midway_is_dropped_and_the_visit_goes_on(tmp_path, caplog):
+    recorder = AddBlowsUp(tmp_path / "store", SETTINGS, tmp_path / "temp")
+    run = Run(tmp_path, "..CCCC.....", recorder=recorder).step_through(11)
+    assert "disk full" in caplog.text
+    assert run.said() == [(4, "VisitStarted"), (9, "VisitEnded")]
+    ended = run.first(obs.VisitEnded)
+    assert isinstance(ended, obs.VisitEnded)
+    assert ended.saved_visit is None
+    assert list((tmp_path / "temp").iterdir()) == []

@@ -139,7 +139,11 @@ class Watcher:
         self._recent.append(frame)
         while self._recent and frame.taken_at - self._recent[0].taken_at > self._keep:
             self._recent.popleft()
-        self._recorder.add(frame)
+        try:
+            self._recorder.add(frame)
+        except Exception:
+            log.exception("could not record the Visit; it will not be saved")
+            self._discard_recording()
         seen = cat_in_litter_box(detections, self._visits)
         for change in self._tracker.see(self._seconds(frame.taken_at), seen):
             match change:
