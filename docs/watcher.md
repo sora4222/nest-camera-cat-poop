@@ -74,6 +74,16 @@ The Outcome Guess and Outcome come from the [Outcome model](outcome-model.md). U
 
 Each Visit is recorded to a local MP4, from `visits.padding_seconds` before the Cat was first seen until the Visit ends. It is then stored with the history clips and saved as a Visit waiting for labeling, with `source` `live`, so `make label` builds more training data. If the Private Data Store cannot be written, the Visit still ends and the error is logged.
 
+## Speaker "google"
+
+A `[[speakers]]` entry with `kind = "google"` says Announcements on a Google Home or Nest speaker. The speech is made on the server with [Piper](https://github.com/OHF-Voice/piper1-gpl), so no text leaves the house; the speaker fetches it over the home network and plays it.
+
+- Install with `make setup EXTRAS=google` (with `RUNTIME=cpu`: Piper needs the CPU ONNX Runtime, which cannot sit next to the `amd` or `nvidia` one).
+- Get a voice: `uv run python -m piper.download_voices en_US-lessac-medium --download-dir <store>/voices` puts the `.onnx` and `.onnx.json` in the Private Data Store; never in the repo. Check the voice's licence.
+- Set `device` to the speaker's name in the Google Home app (a speaker group's name works too) and `voice` to the `.onnx` file.
+- The server must be on the same network as the speakers (they are found by mDNS; in Docker use host networking). The speech is served at a random URL on `serve_host`:`serve_port` for two minutes; keep that port inside the home network. If finding by name fails, list the speakers' addresses in `known_hosts`.
+- Playing interrupts whatever the speaker was playing. A speaker that cannot be found is logged and found again next time.
+
 ## Camera "nest"
 
 Reads a Google Nest camera's live stream with [googlenestcam](https://github.com/sora4222/nest-camera-access-python). Set `[camera] device` to the camera's name in the Google Home app and the `GOOGLENESTCAM_*` secrets in `.env` ([setup](setup.md#camera-login)). When the stream fails it reconnects every `[camera] retry_seconds`. A refused or missing Token is Login Expired: log in again and the watcher picks up the new Token on its next try.

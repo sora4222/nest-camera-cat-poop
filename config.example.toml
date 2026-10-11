@@ -32,6 +32,18 @@ name = "Living room"
 kind = "log"
 # urgencies = ["normal", "urgent"]  # which Urgencies this Speaker says (default: all)
 
+# Speaker kind "google": a Google Home / Nest speaker, speech made here with Piper
+# (`make setup EXTRAS=google`, see docs/watcher.md#speaker-google).
+# [[speakers]]
+# name = "Kitchen"
+# kind = "google"
+# device = "Kitchen speaker"         # the speaker's name in the Google Home app
+# voice = "voices/en_US-lessac-medium.onnx"  # Piper voice; relative: inside paths.private_data_store
+# serve_host = "..."                 # this server's LAN address (default: found automatically)
+# serve_port = 8766                  # speakers fetch the speech from here
+# volume = 0.6                       # 0.0-1.0; default: leave the speaker's volume as it is
+# known_hosts = ["..."]              # speaker addresses, if finding them by name (mDNS) fails
+
 # Spoken text, one template per Event kind; kinds with no template are not said.
 # {cat}, {dog} and event details (e.g. {guess} on visit_started) can be used.
 [messages]

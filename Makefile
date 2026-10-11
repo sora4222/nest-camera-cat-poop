@@ -2,7 +2,10 @@
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
-UV_RUN := uv run --extra $(RUNTIME)
+# More extras, e.g. `make setup EXTRAS=google` for Google speakers (needs RUNTIME=cpu).
+EXTRAS ?=
+UV_EXTRAS := --extra $(RUNTIME) $(addprefix --extra ,$(EXTRAS))
+UV_RUN := uv run $(UV_EXTRAS)
 
 # Commands that need secrets run through $(RUN). With the 1Password CLI (`op`)
 # installed, `op://` references in .env are filled in; otherwise .env is read as is.
@@ -17,7 +20,7 @@ else
 endif
 
 help:
-	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia), create config.toml and .env if missing"
+	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia, EXTRAS=google), create config.toml and .env if missing"
 	@echo "make dev     run the live watcher (Ctrl+C stops it)"
 	@echo "make check   format check, lint and type check"
 	@echo "make format  format and auto-fix lint"
@@ -36,7 +39,7 @@ help:
 
 # Copy the example files only if the private ones do not exist yet.
 setup:
-	uv sync --extra $(RUNTIME)
+	uv sync $(UV_EXTRAS)
 	@test -f config.toml || { cp config.example.toml config.toml && echo "Created config.toml; edit it."; }
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 

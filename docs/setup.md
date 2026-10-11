@@ -8,7 +8,7 @@ Needs [uv](https://docs.astral.sh/uv/) and Linux or macOS.
 make setup      # installs dependencies, creates config.toml and .env
 ```
 
-The detector runs on ONNX Runtime from one of the `cpu` (default), `amd` or `nvidia` extras; pick one with `make setup RUNTIME=nvidia` and use the same `RUNTIME` for other Make targets. Only one can be installed at a time. Add `--extra train` on the machine that trains models (see [ADR 0002](adr/0002-train-in-tensorflow-run-with-onnx-runtime.md)).
+The detector runs on ONNX Runtime from one of the `cpu` (default), `amd` or `nvidia` extras; pick one with `make setup RUNTIME=nvidia` and use the same `RUNTIME` for other Make targets. Only one can be installed at a time. Google speakers need `make setup EXTRAS=google`, which only works with `RUNTIME=cpu` (Piper brings the CPU ONNX Runtime); use the same `EXTRAS` for other Make targets. Add `--extra train` on the machine that trains models (see [ADR 0002](adr/0002-train-in-tensorflow-run-with-onnx-runtime.md)).
 
 ## Pet detector
 
