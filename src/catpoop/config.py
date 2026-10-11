@@ -32,7 +32,7 @@ class _Open(BaseModel):
     model_config = ConfigDict(extra="allow", frozen=True)
 
 
-class Parts(_Strict):
+class PartChoices(_Strict):
     """Which implementation to use for each swappable part, by registered name."""
 
     camera: str
@@ -57,13 +57,13 @@ class Household(_Strict):
     dog: str = "the dog"
 
 
-class Listener(_Open):
+class ListenerSettings(_Open):
     """A person who may hear Announcements. Presence options are plug-in specific."""
 
     name: str
 
 
-class Speaker(_Open):
+class SpeakerSettings(_Open):
     """A device that can say a message. `kind` picks the speaker plug-in."""
 
     name: str
@@ -92,11 +92,11 @@ class Timers(_Strict):
 class Config(_Strict):
     """The whole private config."""
 
-    parts: Parts
+    parts: PartChoices
     paths: Paths
     household: Household = Household()
-    listeners: list[Listener] = []
-    speakers: list[Speaker] = []
+    listeners: list[ListenerSettings] = []
+    speakers: list[SpeakerSettings] = []
     messages: dict[str, str] = {}
     quiet_hours: list[QuietHours] = []
     timers: Timers = Timers()
