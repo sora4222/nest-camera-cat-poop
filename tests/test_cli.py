@@ -10,7 +10,7 @@ def test_check_config_accepts_example_and_lists_parts(capsys):
     out = capsys.readouterr().out
     assert "presence: off (available)" in out
     assert "camera: nest (available)" in out
-    assert "communications: standard (not available yet)" in out
+    assert "communications: standard (available)" in out
 
 
 def test_check_config_reports_bad_file(tmp_path, capsys):

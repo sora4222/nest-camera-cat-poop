@@ -4,6 +4,7 @@ Each part is registered by name in `catpoop.registry`. Tests use fakes, never re
 cameras, speakers or the network.
 """
 
+from datetime import datetime
 from typing import Protocol
 
 from catpoop.domain import Detection, Event, Frame, OutcomeScores, Presence
@@ -87,5 +88,9 @@ class CommunicationsHandler(Protocol):
     """The one gate every Announcement goes through (Quiet Hours, presence, Speakers)."""
 
     def handle(self, event: Event) -> None:
-        """Announce `event` if the rules allow it."""
+        """Log `event`; announce it if it is not log only and the rules allow it."""
+        ...
+
+    def tick(self, at: datetime) -> None:
+        """Called every watcher check, for Announcements due at a time (end of Quiet Hours)."""
         ...
