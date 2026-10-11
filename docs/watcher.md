@@ -48,7 +48,7 @@ Communications handler "standard" (the default) is the one gate every Event goes
 5. `[messages]` has no template for its kind, or
 6. the same text was said less than `[communications] repeat_seconds` ago.
 
-Otherwise each `[[speakers]]` entry whose `urgencies` (default: all) lists the Urgency says it. A Speaker that fails is logged and the others still speak. A failing handler is logged and the watcher keeps going.
+Otherwise each `[[speakers]]` entry whose `urgencies` (default: all) lists the Urgency says it. Each Speaker speaks from its own queue and thread, Urgent first, so a slow or dead Speaker holds up neither the watcher nor the other Speakers. A Speaker that fails is logged and the others still speak. A failing handler is logged and the watcher keeps going.
 
 When Quiet Hours end and Poop is still in the Litter Box (a `poop` Event and no `poop_gone` since), the `poop_after_quiet_hours` message is said once, through the same gate (so Do Not Disturb can still hold it back).
 
