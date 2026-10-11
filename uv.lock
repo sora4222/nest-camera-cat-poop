@@ -761,6 +761,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "av" },
+    { name = "certifi" },
+    { name = "cryptography" },
     { name = "googlenestcam", extra = ["images"] },
     { name = "httpx" },
     { name = "numpy" },
@@ -798,6 +800,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "av", specifier = ">=14" },
+    { name = "certifi", specifier = ">=2024.2.2" },
+    { name = "cryptography", specifier = ">=44" },
     { name = "googlenestcam", extras = ["images"], git = "https://github.com/sora4222/nest-camera-access-python?rev=9f5f0af" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "numpy", specifier = ">=2" },
