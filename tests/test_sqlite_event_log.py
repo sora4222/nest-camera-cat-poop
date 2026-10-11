@@ -1,6 +1,8 @@
 from datetime import UTC, datetime, timedelta
 
-from catpoop.config import Config
+import pytest
+
+from catpoop.config import Config, ConfigError
 from catpoop.domain import Event, Urgency
 from catpoop.parts.sqlite_event_log import SqliteEventLog, default_path
 from catpoop.registry import EVENT_LOG, default_registry
@@ -58,3 +60,18 @@ def test_sqlite_event_log_is_built_from_config(tmp_path, monkeypatch):
     absolute = tmp_path / "abs.sqlite"
     registry.create(EVENT_LOG, "sqlite", config, {"path": str(absolute)}).record(events()[0])
     assert absolute.is_file()
+
+
+def test_unknown_event_log_options_are_a_config_error(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+    config = Config.model_validate(
+        {
+            "parts": dict.fromkeys(
+                ["camera", "detector", "event_rules", "event_log", "presence", "communications"],
+                "x",
+            ),
+            "paths": {"private_data_store": str(tmp_path)},
+        }
+    )
+    with pytest.raises(ConfigError, match=r"event_log\.paths"):
+        default_registry().create(EVENT_LOG, "sqlite", config, {"paths": "mine.sqlite"})

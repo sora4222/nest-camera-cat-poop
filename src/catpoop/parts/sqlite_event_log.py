@@ -11,7 +11,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from catpoop.config import Config
+from pydantic import BaseModel, ConfigDict, ValidationError
+
+from catpoop.config import Config, ConfigError
 from catpoop.domain import Event, Urgency
 from catpoop.registry import DEFAULT, EVENT_LOG
 from catpoop.state_folder import state_folder
@@ -73,7 +75,20 @@ class SqliteEventLog:
         self._db.close()
 
 
+class LogOptions(BaseModel):
+    """The `[event_log]` options."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    path: str = "events.sqlite"
+
+
 @DEFAULT.part(EVENT_LOG, "sqlite")
 def _create(config: Config, options: Mapping[str, Any]) -> SqliteEventLog:
-    path = Path(options.get("path", "events.sqlite")).expanduser()
+    try:
+        log_options = LogOptions.model_validate(dict(options))
+    except ValidationError as error:
+        problems = "; ".join(f"event_log.{e['loc'][0]}: {e['msg']}" for e in error.errors())
+        raise ConfigError(problems) from None
+    path = Path(log_options.path).expanduser()
     return SqliteEventLog(path if path.is_absolute() else state_folder() / path)
