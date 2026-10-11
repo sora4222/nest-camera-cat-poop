@@ -1,0 +1,54 @@
+[project]
+name = "nest-camera-cat-poop"
+version = "0.1.0"
+description = "Watch a Litter Box with a Nest camera and tell people about Visits and Poop"
+readme = "README.md"
+license = "Unlicense"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+# Extras are declared here and filled in by later work (see docs/adr/0002).
+# AMD GPU (ROCm) runtime for the detector.
+amd = []
+# NVIDIA GPU (CUDA) runtime for the detector.
+nvidia = []
+# TensorFlow for training; never needed on the always-on server.
+train = []
+
+[project.scripts]
+catpoop = "catpoop.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.0,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "catpoop"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1",
+    "ruff>=0.17",
+    "ty>=0.0.86",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+# Agent worktrees hold other checkouts of this repo.
+extend-exclude = [".claude"]
+
+[tool.ruff.lint]
+select = ["D", "E", "F", "I", "UP", "RUF", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ty.src]
+exclude = [".claude"]

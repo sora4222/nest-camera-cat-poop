@@ -1,0 +1,18 @@
+# Private: never commit these (see docs/setup.md).
+.env
+config.toml
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
