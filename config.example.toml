@@ -58,7 +58,7 @@ login_expired_reminder_at = "18:00"
 [detector]
 # The .onnx file; a relative path is inside paths.private_data_store.
 model = "models/pets.onnx"
-# auto (any GPU that is installed, else CPU), cpu, amd or nvidia.
+# auto (any GPU or macOS Core ML that is installed, else CPU), cpu, amd or nvidia.
 runtime = "auto"
 min_score = 0.5
 # Model class id -> label. These are the TF model zoo COCO ids.
