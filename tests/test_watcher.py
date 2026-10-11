@@ -86,14 +86,16 @@ class BrokenRecorder(LiveVisitRecorder):
 
 
 class Run:
-    def __init__(self, tmp_path, script, model=None, recorder=None, detect_seconds=0.0) -> None:
+    def __init__(
+        self, tmp_path, script, model=None, recorder=None, detect_seconds=0.0, detector=None
+    ) -> None:
         self.clock = FakeClock(START)
         self.rules = RecordingRules()
         self.log = MemoryEventLog()
         self.store = tmp_path / "store"
         self.watcher = Watcher(
             camera=ScriptedCamera(script, self.clock),
-            detector=FakeDetector(self.clock, detect_seconds),
+            detector=detector(self.clock) if detector else FakeDetector(self.clock, detect_seconds),
             rules=self.rules,
             event_log=self.log,
             recorder=recorder or LiveVisitRecorder(self.store, SETTINGS, tmp_path / "temp"),
@@ -213,3 +215,26 @@ def test_run_checks_every_check_seconds_until_stopped(tmp_path):
 def test_login_expired_is_not_also_camera_offline(tmp_path):
     run = Run(tmp_path, "L" * 12).step_through(12)
     assert run.said() == [(0, "LoginExpired")]
+
+
+class FlakyDetector(FakeDetector):
+    """Fails on the frames in `broken` (by read number), works on the others."""
+
+    def __init__(self, clock: FakeClock, broken: set[int]) -> None:
+        super().__init__(clock)
+        self._broken = broken
+        self._calls = 0
+
+    def detect(self, frame: Frame) -> list[Detection]:
+        self._calls += 1
+        if self._calls in self._broken:
+            raise RuntimeError("detector blew up")
+        return super().detect(frame)
+
+
+def test_a_detector_failure_is_logged_and_the_watcher_keeps_going(tmp_path, caplog):
+    flaky = lambda clock: FlakyDetector(clock, {2})  # noqa: E731
+    run = Run(tmp_path, "..CCCC.....", detector=flaky).step_through(11)
+    assert "detector blew up" in caplog.text
+    assert [type(o).__name__ for o in run.rules.seen[:3]] == ["Seen", "NoPicture", "Seen"]
+    assert run.said() == [(4, "VisitStarted"), (9, "VisitEnded")]

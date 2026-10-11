@@ -105,7 +105,12 @@ class Watcher:
     def _picture(self, now: datetime, frame: Frame) -> None:
         self._last_picture = now
         self._offline_said = self._login_said = False
-        detections = tuple(self._detector.detect(frame))
+        try:
+            detections = tuple(self._detector.detect(frame))
+        except Exception:
+            log.exception("the detector failed; skipping this picture")
+            self._tell(obs.NoPicture(now))
+            return
         self._tell(obs.Seen(now, frame, detections))
         self._recent.append(frame)
         while self._recent and frame.taken_at - self._recent[0].taken_at > self._keep:
