@@ -124,6 +124,14 @@ class ServiceManager(Protocol):
         ...
 
 
+class CertificateSource(Protocol):
+    """Fetches the certificate chain Alexa signs skill requests with (from Amazon's S3)."""
+
+    def fetch(self, url: str) -> bytes:
+        """The PEM chain at `url`; raises OSError (or a subclass) if it cannot be fetched."""
+        ...
+
+
 class CommunicationsHandler(Protocol):
     """The one gate every Announcement goes through (Quiet Hours, presence, Speakers)."""
 
