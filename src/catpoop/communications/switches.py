@@ -1,7 +1,7 @@
 """Switches people flip while the watcher runs: Do Not Disturb and Pee announcements.
 
 Kept in a small JSON file in the state folder (`switches.json`), so `catpoop dnd`, the
-watcher and later the Alexa skill all read and write the same state. Every read goes to the
+watcher and the Alexa skill all read and write the same state. Every read goes to the
 file, so a change is seen at once.
 """
 

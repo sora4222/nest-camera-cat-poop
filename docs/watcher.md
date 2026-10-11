@@ -64,6 +64,8 @@ These are switched while the watcher runs and take effect at once; they are kept
 
 `[event_rules] announce_pee = false` makes Pee guesses log only for good; the switch is for a while.
 
+The [Alexa skill](alexa-skill.md) flips the same switches by voice, and the watcher serves it when `[alexa_skill] enabled = true`.
+
 ## Event log
 
 Event log "sqlite" (the default) keeps every Event in a small SQLite database on the server, at `[event_log] path`; a relative path is inside `$XDG_STATE_HOME/catpoop` (else `~/.local/state/catpoop`). Event log "memory" forgets everything on restart.

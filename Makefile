@@ -112,4 +112,4 @@ pee-off:
 
 # The Alexa skill runs inside the watcher ([alexa_skill]); this prints its tunnel setup.
 alexa-tunnel:
-	$(UV_RUN) catpoop alexa-tunnel
+	@$(UV_RUN) catpoop alexa-tunnel

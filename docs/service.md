@@ -16,6 +16,8 @@ sudo loginctl enable-linger $USER     # once: start at boot, keep running after 
 
 The service runs `uv run --frozen --extra <RUNTIME> ... catpoop watch` in the checkout, so it reads `config.toml` there and keeps state in `~/.local/state/catpoop` like `make dev`. Running `make install` again (from this or another checkout) replaces the unit and restarts the service; there is only ever one, as there is only one watcher per user.
 
+With `[alexa_skill] enabled = true` the service also serves the [Alexa skill](alexa-skill.md); its tunnel (cloudflared or tailscaled) runs as its own service.
+
 `make uninstall` stops and removes the service. It leaves your config, `.env`, state and the service secrets file alone.
 
 ## Secrets
