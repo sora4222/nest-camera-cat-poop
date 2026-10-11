@@ -10,25 +10,18 @@ import threading
 import weakref
 from collections.abc import Mapping
 from datetime import datetime, timedelta
-from typing import Any, Protocol
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from catpoop.clock import Clock, SystemClock
 from catpoop.config import Config, ConfigError
 from catpoop.domain import Presence
+from catpoop.interfaces import PhoneSeer
 from catpoop.parts.wifi_neighbours import NeighbourTable
 from catpoop.registry import DEFAULT, PRESENCE
 
 log = logging.getLogger(__name__)
-
-
-class PhoneSeer(Protocol):
-    """Looks for a phone on the home network."""
-
-    def seen(self, address: str) -> bool:
-        """Whether the phone at IP `address` answers now. Raises if it cannot look at all."""
-        ...
 
 
 class WifiPresence:

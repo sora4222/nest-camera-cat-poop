@@ -74,6 +74,14 @@ class PresenceCheck(Protocol):
         ...
 
 
+class PhoneSeer(Protocol):
+    """Looks for a Listener's phone on the home network (presence "wifi")."""
+
+    def seen(self, address: str) -> bool:
+        """Whether the phone at IP `address` answers now. Raises if it cannot look at all."""
+        ...
+
+
 class Speaker(Protocol):
     """A device that says a message out loud."""
 
