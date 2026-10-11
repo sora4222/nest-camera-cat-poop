@@ -11,13 +11,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Extras are declared here and filled in by later work (see docs/adr/0002).
-# AMD GPU (ROCm) runtime for the detector.
-amd = []
+# ONNX Runtime for the detector: pick exactly one of cpu, amd, nvidia (see docs/adr/0002).
+cpu = ["onnxruntime>=1.20"]
+# AMD GPU runtime (MIGraphX) for the detector.
+amd = ["onnxruntime-migraphx>=1.27"]
 # NVIDIA GPU (CUDA) runtime for the detector.
-nvidia = []
-# TensorFlow for training; never needed on the always-on server.
-train = []
+nvidia = ["onnxruntime-gpu[cuda,cudnn]>=1.20"]
+# TensorFlow for training and exporting to ONNX; never needed on the always-on server.
+train = ["tensorflow>=2.16", "tf2onnx>=1.16"]
 
 [project.scripts]
 catpoop = "catpoop.cli:main"
@@ -29,11 +30,16 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-name = "catpoop"
 
+[tool.uv]
+# Every onnxruntime wheel installs the same `onnxruntime` package, so only one may be used.
+conflicts = [[{ extra = "cpu" }, { extra = "amd" }, { extra = "nvidia" }]]
+
 [tool.uv.sources]
 googlenestcam = { git = "https://github.com/sora4222/nest-camera-access-python", rev = "9f5f0af" }
 
 [dependency-groups]
 dev = [
+    "onnx>=1.17",
     "pytest>=9.1",
     "ruff>=0.17",
     "ty>=0.0.86",

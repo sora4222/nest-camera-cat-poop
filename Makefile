@@ -1,20 +1,24 @@
 .PHONY: help setup dev check format test config
 
+# ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make dev RUNTIME=nvidia`.
+RUNTIME ?= cpu
+UV_RUN := uv run --extra $(RUNTIME)
+
 # Commands that need secrets run through $(RUN). With the 1Password CLI (`op`)
 # installed, `op://` references in .env are filled in; otherwise .env is read as is.
 ifneq ($(wildcard .env),)
   ifneq ($(shell command -v op 2>/dev/null),)
-    RUN := op run --env-file=.env -- uv run
+    RUN := op run --env-file=.env -- $(UV_RUN)
   else
-    RUN := uv run --env-file .env
+    RUN := $(UV_RUN) --env-file .env
   endif
 else
-  RUN := uv run
+  RUN := $(UV_RUN)
 endif
 
 help:
 	@echo "make setup   first-time setup: private config, .env and dev tools"
-	@echo "make dev     install the package and dev tools"
+	@echo "make dev     install the package and dev tools (RUNTIME=cpu|amd|nvidia)"
 	@echo "make check   format check, lint and type check"
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
@@ -26,19 +30,19 @@ setup: dev
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 
 dev:
-	uv sync
+	uv sync --extra $(RUNTIME)
 
 check:
-	uv run ruff format --check .
-	uv run ruff check .
-	uv run ty check
+	$(UV_RUN) ruff format --check .
+	$(UV_RUN) ruff check .
+	$(UV_RUN) ty check
 
 format:
 	uv run ruff format .
 	uv run ruff check --fix .
 
 test:
-	uv run pytest
+	$(UV_RUN) pytest
 
 config:
 	$(RUN) catpoop check-config
