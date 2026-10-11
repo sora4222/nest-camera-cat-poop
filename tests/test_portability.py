@@ -7,7 +7,7 @@ import pytest
 
 from catpoop.config import Config
 from catpoop.history.portability import PortabilityImporter
-from catpoop.history.portability_api import ArchiveState, PortabilityError
+from catpoop.interfaces import ArchiveState, PortabilityError
 from catpoop.registry import DEFAULT, HISTORY_IMPORTER
 
 START = datetime(2026, 1, 1, tzinfo=UTC)

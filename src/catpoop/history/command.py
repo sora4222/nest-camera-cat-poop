@@ -8,8 +8,8 @@ from typing import Any
 
 from catpoop.config import ConfigError, load_config
 from catpoop.history.clip_store import HistoryClipStore
-from catpoop.history.portability_api import PortabilityError
 from catpoop.history.run import import_history
+from catpoop.interfaces import PortabilityError
 from catpoop.registry import HISTORY_IMPORTER, Registry, default_registry
 
 IMPORTERS = ["takeout", "portability", "folder"]
