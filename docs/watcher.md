@@ -77,3 +77,7 @@ Each Visit is recorded to a local MP4, from `visits.padding_seconds` before the 
 ## Camera "nest"
 
 Reads a Google Nest camera's live stream with [googlenestcam](https://github.com/sora4222/nest-camera-access-python). Set `[camera] device` to the camera's name in the Google Home app and the `GOOGLENESTCAM_*` secrets in `.env` ([setup](setup.md#camera-login)). When the stream fails it reconnects every `[camera] retry_seconds`. A refused or missing Token is Login Expired: log in again and the watcher picks up the new Token on its next try.
+
+## Speaker "alexa"
+
+Says Announcements on an Alexa device through [Voice Monkey](https://voicemonkey.io/docs/api/announcement.html) (API v3). In Voice Monkey, add a Speaker device and use its id as `device` in a `[[speakers]]` entry with `kind = "alexa"`; `voice` (an Amazon Polly voice) and `chime` are optional. Put the Voice Monkey token in `.env` as `CATPOOP_VOICE_MONKEY_TOKEN` (a 1Password `op://` reference works); it is never logged. The text goes to Voice Monkey and Amazon, and is spoken in Amazon's voice.
