@@ -22,12 +22,12 @@ def secrets_file() -> Path:
 
 
 def install(unit_text: str, folder: Path, manager: ServiceManager) -> Path:
-    """Write the unit (replacing any old one), then start it now and with the user."""
+    """Write the unit (replacing any old one), then (re)start it now and with the user."""
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / UNIT_NAME
     path.write_text(unit_text)
     manager.reload()
-    manager.enable_now(UNIT_NAME)
+    manager.enable_and_restart(UNIT_NAME)
     return path
 
 

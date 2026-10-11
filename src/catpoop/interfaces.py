@@ -115,8 +115,8 @@ class ServiceManager(Protocol):
         """Read unit files again after one was added, changed or removed."""
         ...
 
-    def enable_now(self, unit: str) -> None:
-        """Start `unit` now and at every start of the user's systemd."""
+    def enable_and_restart(self, unit: str) -> None:
+        """Start `unit` at every start of the user's systemd, and (re)start it now."""
         ...
 
     def disable_now(self, unit: str) -> None:
