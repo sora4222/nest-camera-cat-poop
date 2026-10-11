@@ -45,6 +45,12 @@ dev = [
     "ruff==0.17.0",
     "ty==0.0.86",
 ]
+# Jupyter for notebooks/ (`make notebook`); use with the train extra.
+notebook = [
+    "ipykernel==7.4.0",
+    "jupyterlab==4.6.4",
+    "nbconvert==7.17.1",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

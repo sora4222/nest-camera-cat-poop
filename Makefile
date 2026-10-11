@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config export-detector
+.PHONY: help setup dev check format test config export-detector notebook
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -24,6 +24,7 @@ help:
 	@echo "make test    run the tests"
 	@echo "make config  load the private config and say if it is valid"
 	@echo "make export-detector OUT=x.onnx [SAVED_MODEL=dir]  TF detector to ONNX (train extra)"
+	@echo "make notebook  open JupyterLab on notebooks/ (train extra + notebook group)"
 
 # Copy the example files only if the private ones do not exist yet.
 setup:
@@ -53,3 +54,7 @@ config:
 export-detector:
 	@test -n "$(OUT)" || { echo "Set OUT, e.g. make export-detector OUT=/mnt/nas/cat-poop/models/pets.onnx"; exit 1; }
 	uv run --extra train python -m catpoop.export_detector --output "$(OUT)" $(if $(SAVED_MODEL),--saved-model "$(SAVED_MODEL)")
+
+# JupyterLab for the notebooks in notebooks/ (e.g. exporting a toy model to ONNX).
+notebook:
+	$(UV_RUN) --extra train --group notebook jupyter lab notebooks
