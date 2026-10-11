@@ -20,6 +20,8 @@ src/catpoop/
     onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
 tests/              one test file per module; fakes only
+notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
+  export_toy_model_to_onnx.ipynb  a toy Keras model -> ONNX, step by step
 docs/               setup, configuration, ADRs
 ```
 
