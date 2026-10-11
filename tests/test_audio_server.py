@@ -1,3 +1,4 @@
+import time
 from datetime import UTC, datetime
 
 import httpx
@@ -53,3 +54,36 @@ def test_clips_are_forgotten_after_keep_seconds(server, clock):
 
 def test_close_without_an_offer_is_fine(clock):
     AudioServer("127.0.0.1", port=0, clock=clock).close()
+
+
+def test_speakers_offering_at_once_start_one_server(clock, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    from catpoop.speech import audio_server as module
+
+    built = []
+
+    class SlowToBind(module.ThreadingHTTPServer):
+        def __init__(self, *args, **kwargs):
+            built.append(self)
+            time.sleep(0.05)  # widen the gap between the check and the bind
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(module, "ThreadingHTTPServer", SlowToBind)
+    server = AudioServer("127.0.0.1", port=0, clock=clock)
+    together = Barrier(4)
+
+    def offer(wav: bytes) -> str:
+        together.wait()
+        return server.offer(wav)
+
+    try:
+        with ThreadPoolExecutor(4) as pool:
+            urls = list(pool.map(offer, [b"a", b"b", b"c", b"d"]))
+        assert len(built) == 1
+        assert [get(url).content for url in urls] == [b"a", b"b", b"c", b"d"]
+    finally:
+        server.close()
+        for extra in built[1:]:
+            extra.server_close()

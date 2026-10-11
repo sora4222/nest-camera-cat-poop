@@ -34,6 +34,8 @@ class AudioServer:
         self._lock = threading.Lock()
         self._clips: dict[str, tuple[bytes, datetime]] = {}
         self._server: ThreadingHTTPServer | None = None
+        self._server_lock = threading.Lock()
+        """Held while starting or stopping, so Speakers on their own threads start one server."""
 
     def offer(self, wav: bytes) -> str:
         """Keep `wav` for `keep_seconds` and give the URL it is served at."""
@@ -48,10 +50,11 @@ class AudioServer:
 
     def close(self) -> None:
         """Stop serving."""
-        if self._server is not None:
-            self._server.shutdown()
-            self._server.server_close()
-            self._server = None
+        with self._server_lock:
+            server, self._server = self._server, None
+        if server is not None:
+            server.shutdown()
+            server.server_close()
 
     def _clip(self, name: str) -> bytes | None:
         with self._lock:
@@ -61,12 +64,13 @@ class AudioServer:
         return found[0]
 
     def _start(self) -> ThreadingHTTPServer:
-        if self._server is None:
-            self._server = ThreadingHTTPServer((self._host, self._port), self._handler())
-            threading.Thread(
-                target=self._server.serve_forever, name="audio-server", daemon=True
-            ).start()
-        return self._server
+        with self._server_lock:
+            if self._server is None:
+                self._server = ThreadingHTTPServer((self._host, self._port), self._handler())
+                threading.Thread(
+                    target=self._server.serve_forever, name="audio-server", daemon=True
+                ).start()
+            return self._server
 
     def _handler(self) -> type[BaseHTTPRequestHandler]:
         clip = self._clip
