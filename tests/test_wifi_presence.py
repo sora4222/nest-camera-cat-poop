@@ -149,6 +149,8 @@ def test_away_after_ten_minutes_by_default():
     ("listeners", "options", "problem"),
     [
         ([{"name": "P", "phone_ip": "not an address"}], {}, "listeners P: phone_ip"),
+        ([{"name": "P", "phone_ip": 1234}], {}, "listeners P: phone_ip"),
+        ([{"name": "P", "phone_ip": True}], {}, "listeners P: phone_ip"),
         ([{"name": "P", "phone_ip": PHONE}], {"away_after_minutes": 0}, "presence.away_after"),
         ([{"name": "P", "phone_ip": PHONE}], {"away_after": 5}, "presence.away_after"),
     ],

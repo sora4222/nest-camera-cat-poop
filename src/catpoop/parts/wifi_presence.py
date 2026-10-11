@@ -108,6 +108,8 @@ def _phones(config: Config) -> dict[str, str]:
         if address is None:
             continue
         try:
+            if not isinstance(address, str):
+                raise ValueError(address)
             phones[listener.name] = str(ipaddress.ip_address(address))
         except ValueError:
             raise ConfigError(
