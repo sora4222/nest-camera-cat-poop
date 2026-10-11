@@ -19,7 +19,9 @@ All settings live in `config.toml` (git-ignored); `config.example.toml` lists ev
 | How clips are cut into Visits, where the Litter Box is in the picture, the store size limit | `[visits]` (see [visits.md](visits.md)) |
 | Where the Outcome model is kept, how it is trained and run | `[outcome]` (see [outcome-model.md](outcome-model.md)) |
 | Which Nest camera is watched | `[camera] device` (see [watcher.md](watcher.md)) |
-| How often the live watcher checks the camera | `[watcher] check_seconds` |
+| How often the live watcher checks the camera, and the litter surface for Poop | `[watcher] check_seconds`, `surface_check_seconds` |
+| Pee announcements, Dog and person labels, how long the Dog must be away | `[event_rules]` (see [watcher.md](watcher.md#event-rules)) |
+| Where the event log database is kept | `[event_log] path` |
 | Secrets (tokens, passwords) | `.env`, not `config.toml` |
 
 To add a new implementation of a part, see [CONTRIBUTE.md](../CONTRIBUTE.md).
