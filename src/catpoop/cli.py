@@ -18,6 +18,7 @@ from catpoop.registry import (
     default_registry,
 )
 from catpoop.visits import command as visits_command
+from catpoop.watcher import command as watch_command
 
 
 def _check_config(path: Path | None) -> int:
@@ -53,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     history_command.add_command(commands)
     visits_command.add_commands(commands)
     outcome_command.add_commands(commands)
+    watch_command.add_command(commands)
     args = parser.parse_args(argv)
     if args.command == "check-config":
         return _check_config(args.config)
@@ -62,6 +64,8 @@ def main(argv: list[str] | None = None) -> int:
         return visits_command.run(args)
     if args.command in outcome_command.COMMANDS:
         return outcome_command.run(args)
+    if args.command == "watch":
+        return watch_command.run(args)
     return 2
 
 
