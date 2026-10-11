@@ -7,6 +7,7 @@ was last seen. If looking fails, every Listener is Unknown (counts as Away) unti
 import ipaddress
 import logging
 import threading
+import weakref
 from collections.abc import Mapping
 from datetime import datetime, timedelta
 from typing import Any, Protocol
@@ -134,8 +135,24 @@ def build_wifi_presence(
     return WifiPresence(_phones(config), seer, clock, timedelta(minutes=parsed.away_after_minutes))
 
 
+_shared: dict[int, WifiPresence] = {}
+"""The looking `WifiPresence` for each live `Config`, by `id`; dropped when the config is."""
+_shared_lock = threading.Lock()
+
+
 @DEFAULT.part(PRESENCE, "wifi")
 def _create(config: Config, options: Mapping[str, Any]) -> WifiPresence:
+    """One looking `WifiPresence` per config, shared by every part that asks for it."""
+    with _shared_lock:
+        presence = _shared.get(id(config))
+        if presence is None:
+            presence = _start(config, options)
+            _shared[id(config)] = presence
+            weakref.finalize(config, _shared.pop, id(config), None)
+        return presence
+
+
+def _start(config: Config, options: Mapping[str, Any]) -> WifiPresence:
     parsed = _options(options)
     seer = NeighbourTable(port=parsed.port, timeout_seconds=parsed.timeout_seconds)
     presence = build_wifi_presence(config, options, seer, SystemClock())

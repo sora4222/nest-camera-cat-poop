@@ -7,8 +7,10 @@ from fake_clock import FakeClock
 from catpoop.config import Config, ConfigError
 from catpoop.domain import Presence
 from catpoop.parts import wifi_presence
+from catpoop.parts.standard_communications import StandardCommunications
+from catpoop.parts.standard_event_rules import StandardEventRules
 from catpoop.parts.wifi_presence import WifiPresence, build_wifi_presence
-from catpoop.registry import PRESENCE, default_registry
+from catpoop.registry import COMMUNICATIONS, EVENT_RULES, PRESENCE, default_registry
 
 START = datetime(2026, 6, 1, 20, 0, tzinfo=UTC)
 PHONE = "192.0.2.10"
@@ -170,3 +172,34 @@ def test_registered_as_wifi_and_starts_looking(monkeypatch):
     assert isinstance(wifi, WifiPresence)
     wifi.close()
     assert network.looked
+
+
+def looking(home: Config) -> WifiPresence:
+    wifi = default_registry().create(PRESENCE, "wifi", home, home.presence)
+    assert isinstance(wifi, WifiPresence)
+    return wifi
+
+
+def test_one_looking_wifi_presence_per_config(monkeypatch):
+    monkeypatch.setattr(wifi_presence, "NeighbourTable", lambda **options: FakeNetwork())
+    home = config([{"name": "P", "phone_ip": PHONE}])
+    first = looking(home)
+    again = looking(home)
+    other = looking(config([{"name": "P", "phone_ip": PHONE}]))
+    first.close()
+    other.close()
+    assert again is first
+    assert other is not first
+
+
+def test_event_rules_and_communications_share_one_wifi_presence(monkeypatch):
+    monkeypatch.setattr(wifi_presence, "NeighbourTable", lambda **options: FakeNetwork())
+    registry, home = default_registry(), config([{"name": "P", "phone_ip": PHONE}])
+    rules = registry.create(EVENT_RULES, "standard", home, home.event_rules)
+    communications = registry.create(COMMUNICATIONS, "standard", home, home.communications)
+    shared = looking(home)
+    shared.close()
+    assert isinstance(rules, StandardEventRules)
+    assert isinstance(communications, StandardCommunications)
+    assert rules._presence is shared
+    assert communications._presence is shared
