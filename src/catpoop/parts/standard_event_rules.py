@@ -5,7 +5,7 @@
   and starts the Poop Reminders. The first reminder is always spoken; later ones only if a
   Listener is Home (Unknown counts as Away).
 - Poop is gone once a person was at the Litter Box and then the surface no longer scores Poop.
-- Dog at Poop: Urgent, once per approach.
+- Dog at Poop: Urgent, once per approach; a new Poop or Poop gone starts afresh.
 - Camera Offline and Login Expired are said; Login Expired again once at
   `timers.login_expired_reminder_at` (Litter Box time) if still broken.
 """
@@ -121,6 +121,7 @@ class StandardEventRules:
         if outcome is Outcome.POOP:
             self._poop_in_box = True
             self._person_was_there = False
+            self._dog_said_at = None
             self._reminders.start(ended.at)
             events.append(Event("poop", Urgency.NORMAL, ended.at))
         return events
@@ -138,6 +139,7 @@ class StandardEventRules:
                 self._person_was_there = False
             else:
                 self._poop_in_box = False
+                self._dog_said_at = None
                 self._reminders.stop()
                 events.append(Event("poop_gone", Urgency.INFO, seen.at, announce=False))
         return events

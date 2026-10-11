@@ -190,6 +190,24 @@ def test_dog_at_poop_is_urgent_and_said_once_per_approach():
     assert feed.kinds(feed.seen("dog")) == ["dog_at_poop"]
 
 
+def test_dog_at_poop_is_said_again_for_new_poop_after_poop_gone():
+    feed = Feed(timers=Timers(poop_reminder_max_count=0), dog_gone_seconds=600)
+    feed.visit(None, Outcome.POOP)
+    feed.seen("dog")
+    feed.seen("person")
+    assert feed.kinds(feed.seen(surface=Outcome.NOTHING)) == ["poop_gone"]
+    feed.visit(None, Outcome.POOP)
+    assert feed.kinds(feed.seen("dog")) == ["dog_at_poop"]
+
+
+def test_dog_at_poop_is_said_again_when_a_new_poop_starts():
+    feed = Feed(timers=Timers(poop_reminder_max_count=0), dog_gone_seconds=600)
+    feed.visit(None, Outcome.POOP)
+    feed.seen("dog")
+    feed.visit(None, Outcome.POOP)
+    assert feed.kinds(feed.seen("dog")) == ["dog_at_poop"]
+
+
 def test_a_dog_at_an_empty_box_is_not_dog_at_poop():
     feed = Feed()
     feed.visit(None, Outcome.PEE)
