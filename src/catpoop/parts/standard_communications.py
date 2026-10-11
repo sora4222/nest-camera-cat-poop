@@ -4,7 +4,8 @@ For each Event it logs the kind and Urgency (never spoken). Log-only Events stop
 Others are held back by, in order: the Pee announcements switch (Visit start guessing Pee),
 Quiet Hours and Do Not Disturb (each lets only its `allow` Urgencies through), every
 Listener being Away (Unknown does not hold back), no Message template, or the same text
-said less than `repeat_seconds` ago. Then each Speaker for that Urgency says it.
+said less than `repeat_seconds` ago. Then each Speaker for that Urgency says it, from its
+own queue and thread (Urgent first), so the watcher never waits for a speaker.
 
 When Quiet Hours end with Poop still in the Litter Box (a `poop` Event and no `poop_gone`
 since), `poop_after_quiet_hours` is said once, through the same gate.
@@ -21,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from catpoop.communications.messages import message_text
 from catpoop.communications.quiet_hours import active_quiet_hours
+from catpoop.communications.speaker_queue import SpeakerQueue
 from catpoop.communications.switches import Switches
 from catpoop.config import Config, ConfigError, Household, QuietHours
 from catpoop.domain import Event, Presence, Urgency
@@ -66,7 +68,7 @@ class StandardCommunications:
         options: CommunicationOptions | None = None,
     ) -> None:
         """`zone` is the Litter Box's time zone, which Quiet Hours are read in."""
-        self._speakers = list(speakers)
+        self._speakers = [(SpeakerQueue(r.speaker), r.urgencies) for r in speakers]
         self._presence = presence
         self._listeners = list(listeners)
         self._quiet_hours = list(quiet_hours)
@@ -111,10 +113,17 @@ class StandardCommunications:
             log.info("%s (%s) %s: not said, %s", event.kind, event.urgency, event.details, reason)
             return
         self._last_said[text] = event.at
-        for routed in self._speakers:
-            if event.urgency in routed.urgencies:
-                self._say(routed.speaker, text)
-        log.info("%s (%s) %s: said %r", event.kind, event.urgency, event.details, text)
+        for speaker, urgencies in self._speakers:
+            if event.urgency in urgencies:
+                speaker.put(text, event.urgency)
+        log.info("%s (%s) %s: saying %r", event.kind, event.urgency, event.details, text)
+
+    def wait_until_said(self, timeout: float | None = None) -> bool:
+        """Wait until every Speaker has said what it was given; False if `timeout` ran out.
+
+        `timeout` is for each Speaker in turn.
+        """
+        return all([speaker.wait(timeout) for speaker, _ in self._speakers])
 
     def _held_back(self, event: Event) -> str | None:
         """Why `event` must not be said now, or None."""
@@ -141,12 +150,6 @@ class StandardCommunications:
     def _said_recently(self, text: str, at: datetime) -> bool:
         last = self._last_said.get(text)
         return last is not None and at - last < timedelta(seconds=self._options.repeat_seconds)
-
-    def _say(self, speaker: Speaker, text: str) -> None:
-        try:
-            speaker.say(text)
-        except Exception:
-            log.exception("Speaker %s could not say %r", speaker.name, text)
 
 
 def _routed(config: Config) -> list[RoutedSpeaker]:

@@ -383,4 +383,5 @@ def test_poop_seen_on_the_first_check_after_quiet_hours_is_said_once(tmp_path):
     )
     rules = PoopRules(START + timedelta(seconds=1))  # Quiet Hours end at 08:00:01
     Run(tmp_path, "..", communications=communications, rules=rules).step_through(2)
+    assert communications.wait_until_said(5)
     assert speaker.said == ["Poop."]

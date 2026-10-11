@@ -1,4 +1,5 @@
 import logging
+import threading
 from datetime import UTC, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -44,6 +45,17 @@ class FakeSpeaker:
         self.said.append(text)
 
 
+class HangingSpeaker:
+    """A speaker that does not answer (a Google speaker that is off) until `answer` is set."""
+
+    def __init__(self) -> None:
+        self.name = "Hanging"
+        self.answer = threading.Event()
+
+    def say(self, text: str) -> None:
+        self.answer.wait(5)
+
+
 class FakePresence:
     def __init__(self, presence: Presence = Presence.UNKNOWN) -> None:
         self.presence = presence
@@ -74,6 +86,7 @@ class Setup:
 
     def event(self, kind, urgency=Urgency.NORMAL, announce=True, **details) -> None:
         self.handler.handle(Event(kind, urgency, self.clock.now(), details, announce))
+        assert self.handler.wait_until_said(5)
 
     def wait(self, seconds: float, every: float = 60) -> None:
         """Move the clock on, ticking the handler like the watcher does."""
@@ -81,6 +94,7 @@ class Setup:
         while self.clock.now() < end:
             self.clock.advance(every)
             self.handler.tick(self.clock.now())
+        assert self.handler.wait_until_said(5)
 
 
 def test_an_event_is_said_on_every_speaker_from_its_message_template(tmp_path):
@@ -305,3 +319,19 @@ def test_end_of_quiet_hours_is_not_retried_when_announcing_it_fails(tmp_path):
     presence.broken = False
     setup.wait(60)
     assert setup.speaker.said == []
+
+
+def test_a_hanging_speaker_holds_up_neither_the_caller_nor_the_others(tmp_path):
+    hanging, working = HangingSpeaker(), FakeSpeaker("Working")
+    setup = Setup(
+        tmp_path,
+        speakers=[
+            RoutedSpeaker(hanging, frozenset(Urgency)),
+            RoutedSpeaker(working, frozenset(Urgency)),
+        ],
+    )
+    setup.handler.handle(Event("poop", Urgency.NORMAL, setup.clock.now()))
+    assert not setup.handler.wait_until_said(0.1)
+    assert working.said == ["Cat left poop."]
+    hanging.answer.set()
+    assert setup.handler.wait_until_said(5)
