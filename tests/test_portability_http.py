@@ -24,6 +24,9 @@ class Google:
         if url == "https://oauth2.googleapis.com/token":
             self.token_calls += 1
             return httpx.Response(200, json={"access_token": "tok", "expires_in": 3600})
+        if url == "https://storage.example/expired":
+            body = json.dumps({"error": {"message": "link expired"}}).encode()
+            return httpx.Response(403, content=iter([body]))  # streamed, not pre-read
         if url.startswith("https://storage.example/"):
             assert "authorization" not in request.headers
             return httpx.Response(200, content=b"zipbytes")
@@ -73,6 +76,11 @@ def test_download_needs_no_token(api, tmp_path):
     to = tmp_path / "part.zip"
     api.download("https://storage.example/a", to)
     assert to.read_bytes() == b"zipbytes"
+
+
+def test_download_error_is_readable(api, tmp_path):
+    with pytest.raises(PortabilityError, match=r"403 .*link expired"):
+        api.download("https://storage.example/expired", tmp_path / "part.zip")
 
 
 def test_api_error_is_readable(api):
