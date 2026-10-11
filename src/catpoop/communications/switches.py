@@ -22,8 +22,10 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class DoNotDisturb:
-    """Do Not Disturb is on until `until`. `allow`: Urgencies still spoken; None for the
-    `[communications] dnd_allow` default."""
+    """Do Not Disturb is on until `until`.
+
+    `allow`: Urgencies still spoken; None for the `[communications] dnd_allow` default.
+    """
 
     until: datetime
     allow: tuple[Urgency, ...] | None

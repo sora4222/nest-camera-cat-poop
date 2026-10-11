@@ -1,5 +1,7 @@
-"""Which Quiet Hours are on at a moment. A period that ends before it starts runs overnight
-and belongs to the day it starts on."""
+"""Which Quiet Hours are on at a moment.
+
+A period that ends before it starts runs overnight and belongs to the day it starts on.
+"""
 
 from collections.abc import Sequence
 from datetime import datetime, timedelta
