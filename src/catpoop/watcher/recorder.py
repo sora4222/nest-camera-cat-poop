@@ -83,8 +83,11 @@ class LiveVisitRecorder:
             log.error("could not keep the store under its size limit: %s", error)
 
     def discard(self) -> None:
-        """Drop the clip being recorded, if any."""
-        if self._writer is not None:
-            self._writer.close()
-            shutil.rmtree(self._writer.path.parent, ignore_errors=True)
-            self._writer = None
+        """Drop the clip being recorded, if any; it is dropped even if closing it raises."""
+        writer, self._writer = self._writer, None
+        if writer is None:
+            return
+        try:
+            writer.close()
+        finally:
+            shutil.rmtree(writer.path.parent, ignore_errors=True)
