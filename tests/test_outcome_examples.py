@@ -14,9 +14,10 @@ from catpoop.outcome.examples import (
 from catpoop.visits.store import Visit, VisitStore, visit_id
 
 RECORDED = datetime(2026, 4, 1, 8, 0, tzinfo=UTC)
+RECORDED_AT = RECORDED.isoformat()
 
 
-def add(store, clip, outcome, frames=8, start=10.0, recorded_at=RECORDED.isoformat()):
+def add(store, clip, outcome, frames=8, start=10.0, recorded_at=RECORDED_AT):
     visit = Visit(visit_id(clip, start), clip, start, start + 7, recorded_at, outcome=outcome)
     pictures = (np.full((8, 8, 3), i, np.uint8) for i in range(frames))
     return store.add(visit, pictures)

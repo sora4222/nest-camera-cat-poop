@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import numpy as np
 import pytest
@@ -33,7 +33,7 @@ def test_load_image_reads_a_jpeg_like_prepare_image(tmp_path):
 def test_time_features_go_round_the_clock_in_local_time():
     midnight = time_features(datetime(2026, 1, 1, 0, 0, tzinfo=PLUS_TEN), PLUS_TEN)
     six_am = time_features(datetime(2026, 1, 1, 6, 0, tzinfo=PLUS_TEN), PLUS_TEN)
-    same_six_am_in_utc = time_features(datetime(2025, 12, 31, 20, 0, tzinfo=timezone.utc), PLUS_TEN)
+    same_six_am_in_utc = time_features(datetime(2025, 12, 31, 20, 0, tzinfo=UTC), PLUS_TEN)
     assert midnight == pytest.approx([0.0, 1.0, 1.0], abs=1e-6)
     assert six_am == pytest.approx([1.0, 0.0, 1.0], abs=1e-6)
     assert same_six_am_in_utc == pytest.approx(six_am, abs=1e-6)

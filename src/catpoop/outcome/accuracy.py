@@ -43,7 +43,9 @@ class Accuracy:
         """A few lines for people: overall, then each class."""
         lines = [f"{name}: {_line(self.overall, self.total)}"]
         for outcome in CLASSES:
-            lines.append(f"  {outcome.value}: {_line(self.per_class(outcome), self.counts[outcome])}")
+            lines.append(
+                f"  {outcome.value}: {_line(self.per_class(outcome), self.counts[outcome])}"
+            )
         return "\n".join(lines)
 
 
