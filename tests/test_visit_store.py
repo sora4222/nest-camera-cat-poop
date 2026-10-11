@@ -97,7 +97,7 @@ def test_removing_a_clip_keeps_its_labeled_visits(tmp_path):
     store.label(kept.id, Outcome.NOTHING, NOW)
     gone = store.add(visit(start=20), images(1))
     store.mark_scanned(SHA)
-    store.remove_unlabeled(SHA)
+    assert store.remove_unlabeled(SHA) > 0
     assert store.get(gone.id) is None
     assert not (tmp_path / "visits" / "frames" / gone.id).exists()
     assert store.get(kept.id) is not None

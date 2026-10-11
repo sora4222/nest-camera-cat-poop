@@ -126,13 +126,21 @@ class VisitStore:
         self._write_manifest()
         return labeled
 
-    def remove_unlabeled(self, clip: str) -> None:
-        """Forget the unlabeled Visits of `clip` and that it was cut. Labeled ones stay."""
+    def remove_unlabeled(self, clip: str) -> int:
+        """Forget the unlabeled Visits of `clip` and that it was cut; return bytes freed.
+
+        Labeled Visits stay.
+        """
+        freed = 0
         for visit in self.unlabeled():
             if visit.clip == clip:
-                shutil.rmtree(self._frames_folder(visit), ignore_errors=True)
-                (self.visits / f"{visit.id}.json").unlink()
+                record = self.visits / f"{visit.id}.json"
+                folder = self._frames_folder(visit)
+                freed += record.stat().st_size + sum(f.stat().st_size for f in folder.glob("*"))
+                shutil.rmtree(folder, ignore_errors=True)
+                record.unlink()
         (self.visits / "scanned" / clip).unlink(missing_ok=True)
+        return freed
 
     def is_scanned(self, clip: str) -> bool:
         """Whether `clip` has been cut into Visits."""
