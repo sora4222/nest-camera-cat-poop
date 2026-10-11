@@ -81,3 +81,24 @@ def test_visits_are_read_once_per_prune_not_once_per_clip(tmp_path, monkeypatch)
     assert len(prune_clips(tmp_path, 0)) == 3
     assert len(reads) == 1
     assert store.unlabeled() == []
+
+
+def test_a_visit_labeled_after_the_listing_keeps_its_clip(tmp_path, monkeypatch):
+    sha = add_clip(tmp_path, "a", 1000, "2026-01-01T00:00:00+00:00")
+    store = VisitStore(tmp_path)
+    visit = store.add(Visit(visit_id(sha, 0), sha, 0, 2, None), [np.zeros((4, 4, 3), np.uint8)])
+    real_all = VisitStore.all
+
+    def label_after_listing(self):
+        listed = real_all(self)
+        monkeypatch.setattr(VisitStore, "all", real_all)
+        store.label(visit.id, Outcome.POOP, NOW)  # `make label` runs just after the listing
+        return listed
+
+    monkeypatch.setattr(VisitStore, "all", label_after_listing)
+    assert prune_clips(tmp_path, 0) == []
+    assert clips_left(tmp_path) == ["a"]
+    labeled = store.get(visit.id)
+    assert labeled is not None and labeled.outcome is Outcome.POOP
+    first_frame = store.frame_path(visit.id, 1)
+    assert first_frame is not None and first_frame.exists()

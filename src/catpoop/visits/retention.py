@@ -28,6 +28,14 @@ def _age_key(clip: Path) -> str:
     return datetime.fromtimestamp(clip.stat().st_mtime, UTC).isoformat()
 
 
+def _still_unlabeled(store: VisitStore, listed: list[Visit]) -> list[Visit] | None:
+    """Re-read `listed` from disk; None if one was labeled since (`make label` runs apart)."""
+    current = [visit for visit in (store.get(v.id) for v in listed) if visit is not None]
+    if any(visit.outcome is not None for visit in current):
+        return None
+    return current
+
+
 def prune_clips(private_data_store: Path, max_bytes: int) -> list[str]:
     """Delete the oldest clips with no labeled Visit while the store is over `max_bytes`.
 
@@ -53,7 +61,10 @@ def prune_clips(private_data_store: Path, max_bytes: int) -> list[str]:
         if size <= max_bytes:
             break
         sha = clip.stem
-        size -= store.remove_unlabeled(sha, unlabeled.get(sha, []))
+        still_unlabeled = _still_unlabeled(store, unlabeled.get(sha, []))
+        if still_unlabeled is None:
+            continue
+        size -= store.remove_unlabeled(sha, still_unlabeled)
         for path in (clip, clip.with_suffix(".json")):
             if path.exists():
                 size -= path.stat().st_size
