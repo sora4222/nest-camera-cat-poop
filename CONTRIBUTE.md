@@ -28,6 +28,18 @@ src/catpoop/
     portability_api.py  PortabilityApi interface, ArchiveState, PortabilityError
     portability_http.py the real Data Portability API client (httpx)
     folder.py           importer "folder" (clips saved by hand)
+  visits/           cut clips into Visits, label them, keep the dataset (docs/visits.md)
+    finder.py           find Visits from where the Cat is seen
+    video.py            read clip frames (PyAV), save JPEGs (Pillow)
+    cut.py              cut new history clips into Visits with the detector
+    store.py            Visit records, their frames and the dataset folders
+    manifest.py         dataset/manifest.csv
+    retention.py        delete the oldest unlabeled clips over the size limit
+    add_visit.py        add a clip found by hand straight to the dataset
+    labeling_app.py     the labeling page's requests and answers
+    labeling_server.py  serve it on localhost (stdlib http.server)
+    labeling.html       the labeling page
+    command.py          `catpoop cut-visits`, `label`, `add-visit`
   parts/            built-in implementations, one per file
     memory_event_log.py   event_log "memory"
     presence_off.py       presence "off" (always Unknown)
