@@ -4,6 +4,7 @@ Add a new implementation as its own module here and import it below.
 """
 
 from catpoop.parts import (
+    alexa_speaker,
     log_event_rules,
     log_speaker,
     memory_event_log,
@@ -16,6 +17,7 @@ from catpoop.parts import (
 )
 
 __all__ = [
+    "alexa_speaker",
     "log_event_rules",
     "log_speaker",
     "memory_event_log",
