@@ -6,9 +6,11 @@ readme = "README.md"
 license = "Unlicense"
 requires-python = ">=3.12"
 dependencies = [
+    "av>=14",
     "googlenestcam[images]",
     "httpx>=0.28.1",
     "numpy>=2",
+    "pillow>=11",
     "pydantic>=2.14.0",
 ]
 

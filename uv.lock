@@ -742,9 +742,11 @@ name = "nest-camera-cat-poop"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "av" },
     { name = "googlenestcam", extra = ["images"] },
     { name = "httpx" },
     { name = "numpy" },
+    { name = "pillow" },
     { name = "pydantic" },
 ]
 
@@ -773,12 +775,14 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "av", specifier = ">=14" },
     { name = "googlenestcam", extras = ["images"], git = "https://github.com/sora4222/nest-camera-access-python?rev=9f5f0af" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "numpy", specifier = ">=2" },
     { name = "onnxruntime", marker = "extra == 'cpu'", specifier = ">=1.20" },
     { name = "onnxruntime-gpu", extras = ["cuda", "cudnn"], marker = "extra == 'nvidia'", specifier = ">=1.20" },
     { name = "onnxruntime-migraphx", marker = "extra == 'amd'", specifier = ">=1.27" },
+    { name = "pillow", specifier = ">=11" },
     { name = "pydantic", specifier = ">=2.14.0" },
     { name = "tensorflow", marker = "extra == 'train'", specifier = ">=2.16" },
     { name = "tf2onnx", marker = "extra == 'train'", specifier = ">=1.16" },
