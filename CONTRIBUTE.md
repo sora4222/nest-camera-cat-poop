@@ -14,6 +14,20 @@ src/catpoop/
   watcher_lock.py   one live watcher per machine
   onnx_session.py   open an ONNX model on the CPU or a GPU (cpu/amd/nvidia extras)
   export_detector.py  TF detector SavedModel -> ONNX (`make export-detector`, train extra)
+  history/          import past clips into the Private Data Store (docs/history-import.md)
+    importer.py         HistoryClip and the HistoryImporter interface
+    command.py          `catpoop import-history`
+    run.py              copy an importer's clips into the store
+    clip_store.py       history/clips/<sha256>.mp4 + .json record of sources
+    archive.py          find MP4s and JSON sidecars in .zip/.tgz/folders
+    sidecar.py          recording time from a sidecar's JSON
+    mp4_time.py         recording time from the MP4 header
+    options.py          read importer options
+    takeout.py          importer "takeout" (Google Takeout archives)
+    portability.py      importer "portability" (Data Portability API export)
+    portability_api.py  PortabilityApi interface, ArchiveState, PortabilityError
+    portability_http.py the real Data Portability API client (httpx)
+    folder.py           importer "folder" (clips saved by hand)
   parts/            built-in implementations, one per file
     memory_event_log.py   event_log "memory"
     presence_off.py       presence "off" (always Unknown)
@@ -34,6 +48,7 @@ docs/               setup, configuration, ADRs
 | `PRESENCE` | `PresenceCheck` | `parts.presence`, options in `[presence]` |
 | `COMMUNICATIONS` | `CommunicationsHandler` | `parts.communications`, options in `[communications]` |
 | `SPEAKER` | `Speaker` | one per `[[speakers]]` entry, chosen by its `kind` |
+| `HISTORY_IMPORTER` | `HistoryImporter` | `catpoop import-history <name>`, options in `[history.<name>]` |
 
 ## Adding an implementation
 

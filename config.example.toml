@@ -68,3 +68,18 @@ min_score = 0.5
 # Options for the chosen implementation of each part, one table per part, e.g.:
 # [camera]
 # device = "Litter box"
+
+# History importers (`make import-history`, see docs/history-import.md).
+# Paths given on the command line are used instead of these.
+[history.takeout]
+paths = []  # Takeout archive parts (.zip/.tgz) or the folder they were unpacked to
+
+[history.portability]
+resources = ["nest.camera_event"]
+# start_time = "2026-01-01T00:00:00Z"
+# end_time = "2026-06-30T00:00:00Z"
+poll_seconds = 60
+max_wait_seconds = 86400
+
+[history.folder]
+paths = []  # folders of clips saved by hand from the Google Home app
