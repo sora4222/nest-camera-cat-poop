@@ -6,7 +6,7 @@ from fake_video import write_clip
 
 from catpoop.config import VisitSettings
 from catpoop.domain import Outcome
-from catpoop.visits.add_visit import add_visit
+from catpoop.visits.add_visit import add_visit, save_clip_as_visit
 from catpoop.visits.store import VisitStore
 from catpoop.visits.video import VideoError
 
@@ -36,3 +36,15 @@ def test_broken_clip_is_refused_and_not_stored(tmp_path):
     with pytest.raises(VideoError):
         add_visit(bad, Outcome.PEE, tmp_path / "store", SETTINGS, NOW)
     assert not (tmp_path / "store" / "history").exists()
+
+
+def test_clip_saved_as_an_unlabeled_visit_waits_for_labeling(tmp_path):
+    clip = write_clip(tmp_path / "live.mp4", [100] * 8)
+    store_path = tmp_path / "store"
+    recorded = datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
+    visit = save_clip_as_visit(clip, store_path, SETTINGS, NOW, source="live", recorded=recorded)
+    assert (visit.source, visit.outcome, visit.labeled_at) == ("live", None, None)
+    assert visit.recorded_at == recorded.isoformat()
+    assert [v.id for v in VisitStore(store_path).unlabeled()] == [visit.id]
+    assert (store_path / "visits" / "frames" / visit.id / "frame_0004.jpg").exists()
+    assert VisitStore(store_path).is_scanned(visit.clip)
