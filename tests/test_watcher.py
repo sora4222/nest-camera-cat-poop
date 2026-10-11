@@ -412,3 +412,18 @@ def test_a_failed_outcome_is_logged_and_the_visit_still_ends(tmp_path, caplog):
     assert isinstance(ended, obs.VisitEnded)
     assert ended.outcome is None
     assert ended.saved_visit is not None
+
+
+class StartBlowsUp(LiveVisitRecorder):
+    def start(self, frames):
+        raise RuntimeError("no room for the clip")
+
+
+def test_a_recording_that_cannot_start_is_logged_and_the_visit_goes_on(tmp_path, caplog):
+    recorder = StartBlowsUp(tmp_path / "store", SETTINGS, tmp_path / "temp")
+    run = Run(tmp_path, "..CCCC.....CCCC.....", recorder=recorder).step_through(20)
+    assert "no room for the clip" in caplog.text
+    assert [name for _, name in run.said()] == ["VisitStarted", "VisitEnded"] * 2
+    ended = run.first(obs.VisitEnded)
+    assert isinstance(ended, obs.VisitEnded)
+    assert ended.saved_visit is None

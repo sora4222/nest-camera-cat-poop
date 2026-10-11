@@ -169,7 +169,11 @@ class Watcher:
 
     def _start_visit(self, now: datetime, first_seen: float) -> None:
         self._visit_started_at = now
-        self._recorder.start(self._frames_since(first_seen - self._visits.padding_seconds))
+        try:
+            self._recorder.start(self._frames_since(first_seen - self._visits.padding_seconds))
+        except Exception:
+            log.exception("could not start recording the Visit; it will not be saved")
+            self._discard_recording()
         frames = self._frames_since(first_seen)
         guess = None
         if self._outcome_model and frames:
@@ -188,12 +192,19 @@ class Watcher:
                 log.exception("the Outcome model failed on the Visit's Outcome")
         saved = None
         try:
-            saved = self._recorder.save(now).id
+            if self._recorder.recording:
+                saved = self._recorder.save(now).id
         except (OSError, VideoError) as error:
             log.error("could not save the Visit: %s", error)
-            self._recorder.discard()
+            self._discard_recording()
         self._tell(obs.VisitEnded(now, self._visit_started_at or now, frames, outcome, saved))
         self._visit_started_at = None
+
+    def _discard_recording(self) -> None:
+        try:
+            self._recorder.discard()
+        except Exception:
+            log.exception("could not discard the Visit's recording")
 
     def _frames_since(self, seconds: float, after: bool = False) -> tuple[Frame, ...]:
         """Recent frames from `seconds` on (or only later ones with `after`)."""
