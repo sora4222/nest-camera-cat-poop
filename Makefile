@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config export-detector import-history cut-visits label add-visit train evaluate
+.PHONY: help setup dev check format test config export-detector import-history cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -30,6 +30,9 @@ help:
 	@echo "make add-visit OUTCOME=poop|pee|nothing CLIPS=\"a.mp4 b.mp4\"  clips found by hand to the dataset"
 	@echo "make train     train the Outcome model on the dataset, export it to ONNX (train extra)"
 	@echo "make evaluate  accuracy per class of the exported Outcome model on held-out Visits"
+	@echo "make dnd FOR=2h [ALLOW=\"urgent\"]  Do Not Disturb for a while (ALLOW: Urgencies still spoken, or none)"
+	@echo "make dnd-off   turn Do Not Disturb off"
+	@echo "make pee-on / make pee-off  turn Pee announcements on or off"
 
 # Copy the example files only if the private ones do not exist yet.
 setup:
@@ -79,3 +82,17 @@ train:
 
 evaluate:
 	$(UV_RUN) catpoop evaluate
+
+# Switches a running watcher reads at once (kept in $XDG_STATE_HOME/catpoop/switches.json).
+dnd:
+	@test -n "$(FOR)" || { echo "Set FOR, e.g. make dnd FOR=2h"; exit 1; }
+	$(UV_RUN) catpoop dnd --for "$(FOR)" $(if $(ALLOW),--allow $(ALLOW))
+
+dnd-off:
+	$(UV_RUN) catpoop dnd --off
+
+pee-on:
+	$(UV_RUN) catpoop pee-announcements on
+
+pee-off:
+	$(UV_RUN) catpoop pee-announcements off

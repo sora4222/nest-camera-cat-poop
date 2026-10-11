@@ -4,6 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from catpoop.communications import command as switches_command
 from catpoop.config import ConfigError, load_config
 from catpoop.history import command as history_command
 from catpoop.outcome import command as outcome_command
@@ -55,6 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     visits_command.add_commands(commands)
     outcome_command.add_commands(commands)
     watch_command.add_command(commands)
+    switches_command.add_commands(commands)
     args = parser.parse_args(argv)
     if args.command == "check-config":
         return _check_config(args.config)
@@ -66,6 +68,8 @@ def main(argv: list[str] | None = None) -> int:
         return outcome_command.run(args)
     if args.command == "watch":
         return watch_command.run(args)
+    if args.command in switches_command.COMMANDS:
+        return switches_command.run(args)
     return 2
 
 
