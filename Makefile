@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config export-detector import-history cut-visits label add-visit
+.PHONY: help setup dev check format test config export-detector import-history cut-visits label add-visit train evaluate
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -28,6 +28,8 @@ help:
 	@echo "make cut-visits  cut new clips into Visits; delete old unlabeled clips over the limit"
 	@echo "make label [PORT=8765]  labeling page on http://localhost:PORT/"
 	@echo "make add-visit OUTCOME=poop|pee|nothing CLIPS=\"a.mp4 b.mp4\"  clips found by hand to the dataset"
+	@echo "make train     train the Outcome model on the dataset, export it to ONNX (train extra)"
+	@echo "make evaluate  accuracy per class of the exported Outcome model on held-out Visits"
 
 # Copy the example files only if the private ones do not exist yet.
 setup:
@@ -70,3 +72,10 @@ label:
 add-visit:
 	@test -n "$(OUTCOME)" -a -n "$(CLIPS)" || { echo "Set OUTCOME and CLIPS, e.g. make add-visit OUTCOME=poop CLIPS=clip.mp4"; exit 1; }
 	$(RUN) catpoop add-visit $(OUTCOME) $(CLIPS)
+
+# Training needs TensorFlow (train extra); evaluating runs the exported ONNX files only.
+train:
+	$(UV_RUN) --extra train catpoop train
+
+evaluate:
+	$(UV_RUN) catpoop evaluate
