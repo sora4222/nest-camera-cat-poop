@@ -318,3 +318,12 @@ def test_poop_known_from_before_a_restart_is_said_at_the_end_of_quiet_hours(tmp_
 
 def test_standard_communications_resume_poop_at_a_restart(tmp_path):
     assert isinstance(Setup(tmp_path).handler, ResumesPoop)
+
+
+def test_poop_from_quiet_hours_is_said_when_the_restart_is_after_them(tmp_path):
+    setup = Setup(tmp_path, quiet=[NIGHTS])
+    night_poop = START + timedelta(hours=3)
+    setup.clock.advance(12 * 3600)  # restart at 08:00, Quiet Hours over
+    setup.handler.resume_poop(night_poop, setup.clock.now())
+    setup.wait(60)
+    assert setup.speaker.said == ["There is poop from the night."]
