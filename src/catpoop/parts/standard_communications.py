@@ -93,9 +93,10 @@ class StandardCommunications:
     def tick(self, at: datetime) -> None:
         """Say Poop once if Quiet Hours have just ended with Poop still in the Litter Box."""
         quiet = bool(active_quiet_hours(self._quiet_hours, at, self._zone))
-        if self._was_quiet and not quiet and self._poop_in_box:
-            self._announce(Event("poop_after_quiet_hours", Urgency.NORMAL, at))
+        just_ended = self._was_quiet and not quiet
         self._was_quiet = quiet
+        if just_ended and self._poop_in_box:
+            self._announce(Event("poop_after_quiet_hours", Urgency.NORMAL, at))
 
     def _announce(self, event: Event) -> None:
         reason = self._held_back(event)
