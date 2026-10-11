@@ -305,3 +305,11 @@ def test_end_of_quiet_hours_is_not_retried_when_announcing_it_fails(tmp_path):
     presence.broken = False
     setup.wait(60)
     assert setup.speaker.said == []
+
+
+def test_poop_known_from_before_a_restart_is_said_at_the_end_of_quiet_hours(tmp_path):
+    setup = Setup(tmp_path, quiet=[NIGHTS])
+    setup.clock.advance(3 * 3600)
+    setup.handler.resume_poop(START, setup.clock.now())
+    setup.wait(9 * 3600)
+    assert setup.speaker.said == ["There is poop from the night."]

@@ -79,6 +79,10 @@ class StandardCommunications:
         self._poop_in_box = False
         self._was_quiet: bool | None = None
 
+    def resume_poop(self, since: datetime, now: datetime) -> None:
+        """Poop found at `since` is still in the Litter Box, as the event log says at a restart."""
+        self._poop_in_box = True
+
     def handle(self, event: Event) -> None:
         """Log `event` and announce it if it is not log only and the rules allow it."""
         if event.kind == "poop":
