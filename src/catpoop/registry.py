@@ -79,6 +79,17 @@ class Registry:
         return factory(config, options)
 
 
+DEFAULT = Registry()
+"""The registry that built-in parts in `catpoop.parts` add themselves to."""
+
+
+def default_registry() -> Registry:
+    """`DEFAULT`, with every built-in part registered."""
+    import catpoop.parts  # noqa: F401  (registers the built-ins)
+
+    return DEFAULT
+
+
 @dataclass(frozen=True)
 class Parts:
     """One of each part, as chosen in config."""
