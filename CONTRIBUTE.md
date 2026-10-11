@@ -8,7 +8,7 @@ Dev rules are in [CLAUDE.md](CLAUDE.md). Run `make check` and `make test` before
 src/catpoop/
   cli.py            `catpoop <command>`; Make targets call it
   config.py         load and check the private config.toml
-  domain.py         glossary words as types: Urgency, Presence, Outcome, Frame, Detection, Event
+  domain.py         glossary words as types: Urgency, Presence, Outcome, OutcomeScores, Frame, Detection, Event
   interfaces.py     small Protocols for every swappable part
   registry.py       slots, the registry, and build_parts (config names -> parts)
   watcher_lock.py   one live watcher per machine
@@ -40,6 +40,18 @@ src/catpoop/
     labeling_server.py  serve it on localhost (stdlib http.server)
     labeling.html       the labeling page
     command.py          `catpoop cut-visits`, `label`, `add-visit`
+  outcome/          the Outcome model: train in TF, run with ONNX Runtime (docs/outcome-model.md)
+    features.py         pictures and time of day as model inputs (no TF)
+    examples.py         examples from dataset/manifest.csv; split by Visit
+    accuracy.py         accuracy overall and per class
+    model_files.py      outcome.onnx, outcome_guess.onnx and outcome.json
+    onnx_outcome.py     OutcomeModel on the server (ONNX Runtime, no TF)
+    evaluate.py         measure an OutcomeModel on held-out Visits
+    tf_data.py          examples as a tf.data pipeline (train extra)
+    network.py          the Keras network (train extra)
+    onnx_export.py      Keras -> ONNX with tf2onnx (train extra)
+    train.py            train, export and measure both models (train extra)
+    command.py          `catpoop train`, `evaluate`
   parts/            built-in implementations, one per file
     memory_event_log.py   event_log "memory"
     presence_off.py       presence "off" (always Unknown)
