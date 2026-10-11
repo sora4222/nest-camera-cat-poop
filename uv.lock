@@ -743,6 +743,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "googlenestcam", extra = ["images"] },
+    { name = "numpy" },
     { name = "pydantic" },
 ]
 
@@ -772,6 +773,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "googlenestcam", extras = ["images"], git = "https://github.com/sora4222/nest-camera-access-python?rev=9f5f0af" },
+    { name = "numpy", specifier = ">=2" },
     { name = "onnxruntime", marker = "extra == 'cpu'", specifier = ">=1.20" },
     { name = "onnxruntime-gpu", extras = ["cuda", "cudnn"], marker = "extra == 'nvidia'", specifier = ">=1.20" },
     { name = "onnxruntime-migraphx", marker = "extra == 'amd'", specifier = ">=1.27" },
