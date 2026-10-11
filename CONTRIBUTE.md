@@ -71,6 +71,12 @@ src/catpoop/
     watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
     command.py          `catpoop watch`, behind the watcher lock
+  service/          run the watcher as a systemd user service, `make install` (docs/service.md)
+    settings.py         what the service runs: checkout, uv, op, extras, secrets file
+    unit_file.py        the unit file text, escaped for systemd
+    installer.py        write the unit to ~/.config/systemd/user and start it, or remove it
+    systemd_user.py     ServiceManager that runs `systemctl --user`
+    command.py          `catpoop service install|uninstall|show`
   parts/            built-in implementations, one per file
     memory_event_log.py   event_log "memory"
     presence_off.py       presence "off" (always Unknown)

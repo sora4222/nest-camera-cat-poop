@@ -1,6 +1,6 @@
 # The live watcher
 
-`make dev` runs the watcher until Ctrl+C. Only one runs per user on a machine (see [setup](setup.md#one-watcher-per-machine)); a second one exits with an error.
+`make dev` runs the watcher until Ctrl+C; on the server `make install` runs it as a systemd service instead ([service.md](service.md)). Only one runs per user on a machine (see [setup](setup.md#one-watcher-per-machine)); a second one exits with an error.
 
 ## What it does
 
