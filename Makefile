@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config export-detector import-history cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off
+.PHONY: help setup dev check format test config export-detector import-history cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off install uninstall
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -22,6 +22,8 @@ endif
 help:
 	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia, EXTRAS=google), create config.toml and .env if missing"
 	@echo "make dev     run the live watcher (Ctrl+C stops it)"
+	@echo "make install    run the watcher from this checkout as a systemd user service (same RUNTIME, EXTRAS as setup)"
+	@echo "make uninstall  stop and remove that service"
 	@echo "make check   format check, lint and type check"
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
@@ -45,6 +47,13 @@ setup:
 
 dev:
 	$(RUN) catpoop watch
+
+# A systemd user service runs the watcher from this checkout (docs/service.md).
+install:
+	$(UV_RUN) catpoop service install --checkout "$(CURDIR)" --runtime $(RUNTIME) $(addprefix --extra ,$(EXTRAS))
+
+uninstall:
+	$(UV_RUN) catpoop service uninstall
 
 check:
 	$(UV_RUN) ruff format --check .
