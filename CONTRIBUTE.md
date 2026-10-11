@@ -62,6 +62,7 @@ src/catpoop/
     quiet_hours.py      which Quiet Hours are on at a moment
     switches.py         Do Not Disturb and Pee announcements, in switches.json in the state folder
     messages.py         spoken text from the Message templates
+    speaker_queue.py    say texts on one Speaker from its own thread, Urgent first
     command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
   speech/           speech for Google speakers (google extra)
     piper_speech.py     text -> wav on this machine with a Piper voice
