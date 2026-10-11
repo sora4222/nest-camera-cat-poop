@@ -24,6 +24,12 @@ All settings live in `config.toml` (git-ignored); `config.example.toml` lists ev
 | How often the live watcher checks the camera, and the litter surface for Poop | `[watcher] check_seconds`, `surface_check_seconds` |
 | Pee announcements, Dog and person labels, how long the Dog must be away | `[event_rules]` (see [watcher.md](watcher.md#event-rules)) |
 | Where the event log database is kept | `[event_log] path` |
+| Whether a Listener is home | `parts.presence`, each Listener's `phone_ip`, `[presence]` (see [Presence](#presence)) |
 | Secrets (tokens, passwords) | `.env`, not `config.toml` |
 
 To add a new implementation of a part, see [CONTRIBUTE.md](../CONTRIBUTE.md).
+
+## Presence
+
+- `off`: every Listener is Unknown, which counts as Away.
+- `wifi`: a Listener is Home while their phone was seen on the home Wi-Fi in the last `away_after_minutes` (default 10; iPhones sleep their Wi-Fi). Give the phone a fixed IP on the router (and turn off its private Wi-Fi address for that network), then set `phone_ip` in its `[[listeners]]` entry. Every `look_seconds` the server knocks on a TCP port of each phone and reads `ip neigh` (Linux, no root needed). A Listener with no `phone_ip` is Unknown. If looking fails, everyone is Unknown until it works again; the watcher keeps going.

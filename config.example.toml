@@ -26,6 +26,7 @@ dog = "the dog"
 
 [[listeners]]
 name = "Partner"
+# phone_ip = "192.0.2.10"  # presence "wifi": this Listener's phone (give it a fixed IP)
 
 [[speakers]]
 name = "Living room"
@@ -119,6 +120,13 @@ path = "events.sqlite"
 [communications]
 dnd_allow = ["urgent"]  # Urgencies Do Not Disturb lets through (`make dnd` can say otherwise)
 repeat_seconds = 30     # the same text is not said again within this
+
+# Presence "wifi" (set parts.presence = "wifi"; see docs/configuration.md#presence).
+# [presence]
+# away_after_minutes = 10  # Away once the phone has not been seen this long
+# look_seconds = 60        # time between looks for the phones
+# port = 62078             # TCP port knocked on to wake the phone (open on iPhones)
+# timeout_seconds = 1.0
 
 # Options for the chosen implementation of each other part, one table per part.
 
