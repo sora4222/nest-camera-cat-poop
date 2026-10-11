@@ -13,8 +13,10 @@ class PiperSpeech:
     """Text to a 16-bit mono wav with a loaded Piper voice."""
 
     def __init__(self, voice: Any, lead_in_seconds: float = 0.5) -> None:
-        """`voice` is a `piper.PiperVoice`. `lead_in_seconds` of silence come first, as speakers
-        often miss the start of a clip while they wake up."""
+        """`voice` is a `piper.PiperVoice`; `lead_in_seconds` of silence come first.
+
+        Speakers often miss the start of a clip while they wake up.
+        """
         self._voice = voice
         self._lead_in = lead_in_seconds
 

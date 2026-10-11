@@ -84,6 +84,30 @@ class Speaker(Protocol):
         ...
 
 
+class SpeechMaker(Protocol):
+    """Turns text into speech on this machine (Piper)."""
+
+    def wav(self, text: str) -> bytes:
+        """`text` spoken, as the bytes of a wav file."""
+        ...
+
+
+class AudioHost(Protocol):
+    """Makes audio reachable by speakers on the home network."""
+
+    def offer(self, wav: bytes) -> str:
+        """The URL `wav` can be fetched from for a while."""
+        ...
+
+
+class AudioPlayer(Protocol):
+    """One network speaker that plays audio from a URL (a Google speaker)."""
+
+    def play(self, url: str) -> None:
+        """Start playing `url`."""
+        ...
+
+
 class CommunicationsHandler(Protocol):
     """The one gate every Announcement goes through (Quiet Hours, presence, Speakers)."""
 
