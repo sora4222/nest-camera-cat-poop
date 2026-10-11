@@ -5,7 +5,9 @@ description = "Watch a Litter Box with a Nest camera and tell people about Visit
 readme = "README.md"
 license = "Unlicense"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.0",
+]
 
 [project.optional-dependencies]
 # Extras are declared here and filled in by later work (see docs/adr/0002).
