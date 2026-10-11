@@ -23,6 +23,11 @@ class ModelFiles:
 
     folder: Path
 
+    @classmethod
+    def in_store(cls, private_data_store: Path, models: Path) -> "ModelFiles":
+        """The files in `models`; a relative path is inside the Private Data Store."""
+        return cls(private_data_store / models)
+
     @property
     def outcome(self) -> Path:
         """The Outcome model (litter surface)."""

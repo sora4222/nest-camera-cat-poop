@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -54,3 +55,10 @@ def test_missing_model_file_is_an_error(tmp_path):
     files.guess.unlink()
     with pytest.raises(ModelInfoError, match=r"outcome_guess\.onnx"):
         load_outcome_model(files, "cpu")
+
+
+def test_models_folder_is_inside_the_store_unless_absolute(tmp_path):
+    assert (
+        ModelFiles.in_store(tmp_path, Path("models/outcome")).folder == tmp_path / "models/outcome"
+    )
+    assert ModelFiles.in_store(tmp_path, Path("/elsewhere")).folder == Path("/elsewhere")
