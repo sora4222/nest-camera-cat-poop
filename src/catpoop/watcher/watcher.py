@@ -2,7 +2,8 @@
 
 Each check hands the event rules one observation (`Seen` or `NoPicture`), plus Visit starts
 and ends, Camera Offline and Login Expired when they happen. The Events the rules give back
-go in the event log and then to the communications handler, which ticks once per check.
+go in the event log and then to the communications handler, which ticks once per check,
+before that check's Events.
 """
 
 import logging
@@ -98,6 +99,10 @@ class Watcher:
     def step(self) -> None:
         """Read the camera once and pass on what was seen."""
         now = self._clock.now()
+        try:  # before this check's Events, so it sees what was known at the end of the last one
+            self._communications.tick(now)
+        except Exception:
+            log.exception("the communications handler failed")
         try:
             frame = self._camera.read()
         except CameraLoginExpired as error:
@@ -110,10 +115,6 @@ class Watcher:
             self._no_picture(now)
         else:
             self._picture(now, frame)
-        try:
-            self._communications.tick(now)
-        except Exception:
-            log.exception("the communications handler failed")
 
     def _no_picture(self, now: datetime) -> None:
         if not self._offline_said and now - self._last_picture >= self._offline_after:
