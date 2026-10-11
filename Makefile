@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config
+.PHONY: help setup dev check format test config export-detector
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make dev RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -23,6 +23,7 @@ help:
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
 	@echo "make config  load the private config and say if it is valid"
+	@echo "make export-detector OUT=x.onnx [SAVED_MODEL=dir]  TF detector to ONNX (train extra)"
 
 # Copy the example files only if the private ones do not exist yet.
 setup: dev
@@ -46,3 +47,8 @@ test:
 
 config:
 	$(RUN) catpoop check-config
+
+# Export the TF detector to ONNX. Downloads SSD MobileNet v2 FPNLite 320 unless SAVED_MODEL is set.
+export-detector:
+	@test -n "$(OUT)" || { echo "Set OUT, e.g. make export-detector OUT=/mnt/nas/cat-poop/models/pets.onnx"; exit 1; }
+	uv run --extra train python -m catpoop.export_detector --output "$(OUT)" $(if $(SAVED_MODEL),--saved-model "$(SAVED_MODEL)")
