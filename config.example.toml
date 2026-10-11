@@ -65,6 +65,16 @@ min_score = 0.5
 17 = "cat"
 18 = "dog"
 
+# Cutting clips into Visits and labeling them (`make cut-visits`, see docs/visits.md).
+[visits]
+frame_seconds = 0.5      # time between checked and kept frames
+cat_label = "cat"        # the detector label of the Cat
+litter_box = [0.0, 0.0, 1.0, 1.0]  # left, top, right, bottom as fractions of the picture
+end_gap_seconds = 3.0    # the Cat must be gone this long for a Visit to end
+min_seconds = 2.0        # shorter Visits are dropped
+padding_seconds = 1.0    # kept before and after each Visit
+max_store_gb = 500       # then the oldest clips with no labeled Visit are deleted
+
 # Options for the chosen implementation of each part, one table per part, e.g.:
 # [camera]
 # device = "Litter box"
