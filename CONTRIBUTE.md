@@ -58,8 +58,13 @@ src/catpoop/
     onnx_export.py      Keras -> ONNX with tf2onnx (train extra)
     train.py            train, export and measure both models (train extra)
     command.py          `catpoop train`, `evaluate`
+  communications/   what may be said, and when (docs/watcher.md#announcements)
+    quiet_hours.py      which Quiet Hours are on at a moment
+    switches.py         Do Not Disturb and Pee announcements, in switches.json in the state folder
+    messages.py         spoken text from the Message templates
+    command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
   watcher/          the live watcher, `make dev` (docs/watcher.md)
-    watcher.py          camera -> detector -> Visits -> event rules, Camera Offline, Login Expired
+    watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
     command.py          `catpoop watch`, behind the watcher lock
   parts/            built-in implementations, one per file
@@ -70,6 +75,7 @@ src/catpoop/
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
     standard_event_rules.py  event_rules "standard" (Visits, Poop Reminders, Dog at Poop, camera problems)
     sqlite_event_log.py   event_log "sqlite" (SQLite file in the user's state folder)
+    standard_communications.py  communications "standard" (the one gate for every Announcement)
     nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
 docs/               setup, configuration, ADRs
