@@ -1,14 +1,17 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
 from fake_clock import FakeClock
 
 from catpoop import observations as obs
-from catpoop.config import VisitSettings
-from catpoop.domain import Detection, Event, Frame, Outcome, OutcomeScores, Urgency
+from catpoop.communications.switches import Switches
+from catpoop.config import Household, QuietHours, VisitSettings
+from catpoop.domain import Detection, Event, Frame, Outcome, OutcomeScores, Presence, Urgency
 from catpoop.interfaces import CameraLoginExpired
 from catpoop.parts.memory_event_log import MemoryEventLog
+from catpoop.parts.standard_communications import RoutedSpeaker, StandardCommunications
 from catpoop.visits.store import VisitStore
 from catpoop.watcher.recorder import LiveVisitRecorder
 from catpoop.watcher.watcher import Watcher
@@ -108,9 +111,10 @@ class Run:
         detector=None,
         surface_seconds=1000.0,
         communications=None,
+        rules=None,
     ) -> None:
         self.clock = FakeClock(START)
-        self.rules = RecordingRules()
+        self.rules = rules or RecordingRules()
         self.log = MemoryEventLog()
         self.communications = communications or RecordingCommunications()
         self.store = tmp_path / "store"
@@ -331,3 +335,52 @@ def test_a_communications_failure_is_logged_and_the_watcher_keeps_going(tmp_path
     assert [e.kind for e in run.log.recent(10)] == ["LoginExpired"]
     assert len(run.rules.seen) == 4
     assert "communications" in caplog.text
+
+
+DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
+class SayingSpeaker:
+    name = "Living room"
+
+    def __init__(self) -> None:
+        self.said: list[str] = []
+
+    def say(self, text: str) -> None:
+        self.said.append(text)
+
+
+class UnknownPresence:
+    def check(self, listener: str) -> Presence:
+        return Presence.UNKNOWN
+
+
+class PoopRules(RecordingRules):
+    """Sees Poop on the picture at `at`."""
+
+    def __init__(self, at: datetime) -> None:
+        super().__init__()
+        self._at = at
+
+    def update(self, observation: obs.Observation) -> list[Event]:
+        super().update(observation)
+        if isinstance(observation, obs.Seen) and observation.at == self._at:
+            return [Event("poop", Urgency.NORMAL, observation.at)]
+        return []
+
+
+def test_poop_seen_on_the_first_check_after_quiet_hours_is_said_once(tmp_path):
+    speaker = SayingSpeaker()
+    communications = StandardCommunications(
+        speakers=[RoutedSpeaker(speaker, frozenset(Urgency))],
+        presence=UnknownPresence(),
+        listeners=[],
+        quiet_hours=[QuietHours(days=[*DAYS], start=time(7), end=time(8, 0, 1))],
+        zone=ZoneInfo("UTC"),
+        messages={"poop": "Poop.", "poop_after_quiet_hours": "Poop from the night."},
+        household=Household(cat="Cat", dog="Dog"),
+        switches=Switches(tmp_path / "switches.json"),
+    )
+    rules = PoopRules(START + timedelta(seconds=1))  # Quiet Hours end at 08:00:01
+    Run(tmp_path, "..", communications=communications, rules=rules).step_through(2)
+    assert speaker.said == ["Poop."]
