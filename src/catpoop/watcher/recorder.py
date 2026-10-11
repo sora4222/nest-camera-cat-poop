@@ -1,8 +1,10 @@
 """Record the live Visit going on to a local MP4, then save it in the Private Data Store.
 
-Saved Visits wait for labeling (`make label`), so every Visit adds training data.
+Saved Visits wait for labeling (`make label`), so every Visit adds training data. After each
+save the store is kept under `visits.max_store_gb`.
 """
 
+import logging
 import shutil
 import tempfile
 from collections.abc import Iterable
@@ -13,7 +15,10 @@ from catpoop.config import VisitSettings
 from catpoop.domain import Frame
 from catpoop.visits.add_visit import save_clip_as_visit
 from catpoop.visits.clip_writer import ClipWriter
+from catpoop.visits.retention import prune_clips
 from catpoop.visits.store import Visit
+
+log = logging.getLogger(__name__)
 
 
 class LiveVisitRecorder:
@@ -54,7 +59,7 @@ class LiveVisitRecorder:
         self._writer.add((frame.taken_at - self._first).total_seconds(), frame.image)
 
     def save(self, now: datetime) -> Visit:
-        """Finish the clip and save it as a Visit; raises `OSError` or `VideoError`."""
+        """Finish the clip, save it as a Visit and prune; raises `OSError` or `VideoError`."""
         writer, first = self._writer, self._first
         if writer is None:
             raise RuntimeError("no Visit is being recorded")
@@ -63,11 +68,19 @@ class LiveVisitRecorder:
             writer.close()
             name = f"live-{(first or now).strftime('%Y%m%dT%H%M%S%z')}.mp4"
             clip = writer.path.replace(writer.path.with_name(name))
-            return save_clip_as_visit(
+            visit = save_clip_as_visit(
                 clip, self._store, self._settings, now, source="live", recorded=first
             )
         finally:
             shutil.rmtree(writer.path.parent, ignore_errors=True)
+        self._prune()
+        return visit
+
+    def _prune(self) -> None:
+        try:
+            prune_clips(self._store, int(self._settings.max_store_gb * 1e9))
+        except OSError as error:
+            log.error("could not keep the store under its size limit: %s", error)
 
     def discard(self) -> None:
         """Drop the clip being recorded, if any."""
