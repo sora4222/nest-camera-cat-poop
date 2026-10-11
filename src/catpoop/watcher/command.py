@@ -1,16 +1,21 @@
-"""`catpoop watch` (`make dev`): run the live watcher until stopped, one per machine."""
+"""`catpoop watch` (`make dev`): run the live watcher until stopped, one per machine.
+
+With `[alexa_skill] enabled`, the Alexa skill endpoint runs alongside it (docs/alexa-skill.md).
+"""
 
 import argparse
 import logging
+import os
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
+from catpoop.alexa_skill.run import alexa_skill_running
 from catpoop.clock import Clock, SystemClock
 from catpoop.config import Config, ConfigError, PartKind, load_config
-from catpoop.interfaces import OutcomeModel
+from catpoop.interfaces import EventLog, OutcomeModel
 from catpoop.outcome.model_files import ModelFiles, ModelInfoError
 from catpoop.registry import (
     CAMERA,
@@ -57,18 +62,28 @@ def start_watcher(
     registry: Registry,
     clock: Clock | None = None,
     stop: Callable[[], bool] = lambda: False,
+    environ: Mapping[str, str] | None = None,
 ) -> int:
-    """Take the watcher lock, make the parts and watch until `stop()` is true."""
+    """Take the watcher lock, make the parts and watch until `stop()` is true.
+
+    `environ` (default: the process's) gives the Alexa skill ID.
+    """
+    clock = clock or SystemClock()
     try:
         with WatcherLock(config.paths.lock_file or default_lock_path()):
-            _watcher(config, registry, clock or SystemClock()).run(stop)
+            event_log = registry.create(
+                EVENT_LOG, config.parts.event_log, config, config.part_options("event_log")
+            )
+            env = os.environ if environ is None else environ
+            with alexa_skill_running(config, event_log, clock, env):
+                _watcher(config, registry, clock, event_log).run(stop)
     except (WatcherAlreadyRunning, UnsafeLockPath) as error:
         print(error, file=sys.stderr)
         return 1
     return 0
 
 
-def _watcher(config: Config, registry: Registry, clock: Clock) -> Watcher:
+def _watcher(config: Config, registry: Registry, clock: Clock, event_log: EventLog) -> Watcher:
     def make[T](slot: Slot[T], kind: PartKind) -> T:
         return registry.create(slot, getattr(config.parts, kind), config, config.part_options(kind))
 
@@ -77,7 +92,7 @@ def _watcher(config: Config, registry: Registry, clock: Clock) -> Watcher:
         camera=make(CAMERA, "camera"),
         detector=make(DETECTOR, "detector"),
         rules=make(EVENT_RULES, "event_rules"),
-        event_log=make(EVENT_LOG, "event_log"),
+        event_log=event_log,
         communications=make(COMMUNICATIONS, "communications"),
         recorder=LiveVisitRecorder(store, config.visits),
         clock=clock,

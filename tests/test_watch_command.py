@@ -1,11 +1,13 @@
 import logging
 from datetime import UTC, datetime
 
+import httpx
 import numpy as np
+import pytest
 from fake_clock import FakeClock
 
 from catpoop.cli import main
-from catpoop.config import Config
+from catpoop.config import Config, ConfigError
 from catpoop.domain import Detection, Event, Frame
 from catpoop.parts.memory_event_log import MemoryEventLog
 from catpoop.registry import CAMERA, COMMUNICATIONS, DETECTOR, EVENT_LOG, EVENT_RULES, Registry
@@ -100,3 +102,40 @@ def test_a_second_watcher_refuses_to_start(tmp_path, capsys):
 def test_watch_reports_a_missing_config(tmp_path, capsys):
     assert main(["watch", "--config", str(tmp_path / "missing.toml")]) == 1
     assert "not found" in capsys.readouterr().err
+
+
+def free_port() -> int:
+    import socket
+
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return probe.getsockname()[1]
+
+
+def with_skill(config: Config, port: int) -> Config:
+    skill = config.alexa_skill.model_copy(update={"enabled": True, "port": port})
+    return config.model_copy(update={"alexa_skill": skill})
+
+
+def test_the_alexa_skill_is_served_while_the_watcher_runs(tmp_path):
+    config, registry, clock, _, _ = setup(tmp_path)
+    port = free_port()
+    statuses = []
+
+    def stop() -> bool:
+        with httpx.Client(trust_env=False) as client:
+            statuses.append(client.get(f"http://127.0.0.1:{port}/alexa").status_code)
+        return len(statuses) >= 2
+
+    environ = {"CATPOOP_ALEXA_SKILL_ID": "amzn1.ask.skill.test"}
+    assert start_watcher(with_skill(config, port), registry, clock, stop, environ) == 0
+    assert statuses == [405, 405]
+    with httpx.Client(trust_env=False) as client, pytest.raises(httpx.ConnectError):
+        client.get(f"http://127.0.0.1:{port}/alexa")
+
+
+def test_an_enabled_alexa_skill_without_its_id_stops_the_watcher(tmp_path):
+    config, registry, clock, camera, _ = setup(tmp_path)
+    with pytest.raises(ConfigError, match="CATPOOP_ALEXA_SKILL_ID"):
+        start_watcher(with_skill(config, free_port()), registry, clock, stop_after(3), {})
+    assert camera.reads == 0
