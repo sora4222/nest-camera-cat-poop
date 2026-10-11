@@ -57,24 +57,29 @@ class HistoryClipStore:
         return Path(name), digest.hexdigest()
 
     def _record(self, record_path: Path, clip_path: Path, clip: HistoryClip, now: datetime) -> None:
-        record: dict[str, Any]
-        if record_path.exists():
-            record = json.loads(record_path.read_text())
-        else:
-            recorded_at = clip.recorded_at or mp4_creation_time(clip_path)
-            record = {"recorded_at": recorded_at.isoformat() if recorded_at else None}
-        sources: list[dict[str, Any]] = record.setdefault("sources", [])
-        if any(s["source"] == clip.source and s["origin"] == clip.origin for s in sources):
-            return
-        sources.append(
-            {
-                "source": clip.source,
-                "origin": clip.origin,
-                "name": clip.name,
-                "imported_at": now.isoformat(),
-                "metadata": dict(clip.metadata),
-            }
+        record: dict[str, Any] = (
+            json.loads(record_path.read_text()) if record_path.exists() else {"recorded_at": None}
         )
+        changed = not record_path.exists()
+        if record["recorded_at"] is None:
+            recorded_at = clip.recorded_at or mp4_creation_time(clip_path)
+            if recorded_at:
+                record["recorded_at"] = recorded_at.isoformat()
+                changed = True
+        sources: list[dict[str, Any]] = record.setdefault("sources", [])
+        if not any(s["source"] == clip.source and s["origin"] == clip.origin for s in sources):
+            sources.append(
+                {
+                    "source": clip.source,
+                    "origin": clip.origin,
+                    "name": clip.name,
+                    "imported_at": now.isoformat(),
+                    "metadata": dict(clip.metadata),
+                }
+            )
+            changed = True
+        if not changed:
+            return
         temp = record_path.with_name(f".{record_path.name}.part")
         temp.write_text(json.dumps(record, indent=2))
         temp.replace(record_path)
