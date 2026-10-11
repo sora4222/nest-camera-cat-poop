@@ -79,6 +79,18 @@ class RecordingRules:
         return [Event(type(observation).__name__, Urgency.INFO, observation.at)]
 
 
+class RecordingCommunications:
+    def __init__(self) -> None:
+        self.handled: list[Event] = []
+        self.ticks: list[datetime] = []
+
+    def handle(self, event: Event) -> None:
+        self.handled.append(event)
+
+    def tick(self, at: datetime) -> None:
+        self.ticks.append(at)
+
+
 class BrokenRecorder(LiveVisitRecorder):
     def save(self, now):
         super().discard()
@@ -95,16 +107,19 @@ class Run:
         detect_seconds=0.0,
         detector=None,
         surface_seconds=1000.0,
+        communications=None,
     ) -> None:
         self.clock = FakeClock(START)
         self.rules = RecordingRules()
         self.log = MemoryEventLog()
+        self.communications = communications or RecordingCommunications()
         self.store = tmp_path / "store"
         self.watcher = Watcher(
             camera=ScriptedCamera(script, self.clock),
             detector=detector(self.clock) if detector else FakeDetector(self.clock, detect_seconds),
             rules=self.rules,
             event_log=self.log,
+            communications=self.communications,
             recorder=recorder or LiveVisitRecorder(self.store, SETTINGS, tmp_path / "temp"),
             clock=self.clock,
             visits=SETTINGS,
@@ -212,6 +227,12 @@ def test_events_from_the_rules_go_in_the_event_log(tmp_path):
     assert [e.kind for e in run.log.recent(10)] == ["LoginExpired"]
 
 
+def test_every_event_goes_to_the_communications_handler_which_ticks_each_check(tmp_path):
+    run = Run(tmp_path, "L.").step_through(2)
+    assert [e.kind for e in run.communications.handled] == ["LoginExpired"]
+    assert run.communications.ticks == [START, START + timedelta(seconds=1)]
+
+
 def test_run_checks_every_check_seconds_until_stopped(tmp_path):
     run = Run(tmp_path, "....", detect_seconds=0.25)
     checks = iter(range(4))
@@ -295,3 +316,18 @@ def test_a_failed_surface_check_is_logged_and_skipped(tmp_path, caplog):
     run = Run(tmp_path, "....", BrokenOutcomeModel(), surface_seconds=1).step_through(4)
     assert "model blew up" in caplog.text
     assert len([o for o in run.rules.seen if isinstance(o, obs.Seen)]) == 4
+
+
+class BrokenCommunications(RecordingCommunications):
+    def handle(self, event: Event) -> None:
+        raise RuntimeError("presence check is down")
+
+    def tick(self, at: datetime) -> None:
+        raise RuntimeError("presence check is down")
+
+
+def test_a_communications_failure_is_logged_and_the_watcher_keeps_going(tmp_path, caplog):
+    run = Run(tmp_path, "L..", communications=BrokenCommunications()).step_through(3)
+    assert [e.kind for e in run.log.recent(10)] == ["LoginExpired"]
+    assert len(run.rules.seen) == 4
+    assert "communications" in caplog.text

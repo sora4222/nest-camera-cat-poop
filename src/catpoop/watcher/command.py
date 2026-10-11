@@ -14,6 +14,7 @@ from catpoop.interfaces import OutcomeModel
 from catpoop.outcome.model_files import ModelFiles, ModelInfoError
 from catpoop.registry import (
     CAMERA,
+    COMMUNICATIONS,
     DETECTOR,
     EVENT_LOG,
     EVENT_RULES,
@@ -77,6 +78,7 @@ def _watcher(config: Config, registry: Registry, clock: Clock) -> Watcher:
         detector=make(DETECTOR, "detector"),
         rules=make(EVENT_RULES, "event_rules"),
         event_log=make(EVENT_LOG, "event_log"),
+        communications=make(COMMUNICATIONS, "communications"),
         recorder=LiveVisitRecorder(store, config.visits),
         clock=clock,
         visits=config.visits,

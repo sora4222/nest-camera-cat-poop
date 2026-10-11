@@ -2,7 +2,7 @@
 
 Each check hands the event rules one observation (`Seen` or `NoPicture`), plus Visit starts
 and ends, Camera Offline and Login Expired when they happen. The Events the rules give back
-go in the event log.
+go in the event log and then to the communications handler, which ticks once per check.
 """
 
 import logging
@@ -17,6 +17,7 @@ from catpoop.domain import Detection, Frame, OutcomeScores
 from catpoop.interfaces import (
     CameraLoginExpired,
     CameraSource,
+    CommunicationsHandler,
     Detector,
     EventLog,
     EventRules,
@@ -45,6 +46,7 @@ class Watcher:
         detector: Detector,
         rules: EventRules,
         event_log: EventLog,
+        communications: CommunicationsHandler,
         recorder: LiveVisitRecorder,
         clock: Clock,
         visits: VisitSettings,
@@ -62,6 +64,7 @@ class Watcher:
         self._detector = detector
         self._rules = rules
         self._event_log = event_log
+        self._communications = communications
         self._recorder = recorder
         self._clock = clock
         self._visits = visits
@@ -107,6 +110,10 @@ class Watcher:
             self._no_picture(now)
         else:
             self._picture(now, frame)
+        try:
+            self._communications.tick(now)
+        except Exception:
+            log.exception("the communications handler failed")
 
     def _no_picture(self, now: datetime) -> None:
         if not self._offline_said and now - self._last_picture >= self._offline_after:
@@ -193,3 +200,7 @@ class Watcher:
     def _tell(self, observation: obs.Observation) -> None:
         for event in self._rules.update(observation):
             self._event_log.record(event)
+            try:
+                self._communications.handle(event)
+            except Exception:
+                log.exception("the communications handler failed on %s", event.kind)
