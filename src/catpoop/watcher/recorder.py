@@ -2,12 +2,14 @@
 
 Saved Visits wait for labeling (`make label`), so every Visit adds training data. After each
 save the store is kept under `visits.max_store_gb`, on a background thread so the watcher
-loop does not wait for it.
+loop does not wait for it. Saving and pruning take turns, so a prune never sees a clip whose
+Visit is still being written.
 """
 
 import logging
 import shutil
 import tempfile
+import threading
 from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
@@ -35,6 +37,7 @@ class LiveVisitRecorder:
         self._temp_folder = temp_folder
         self._writer: ClipWriter | None = None
         self._first: datetime | None = None
+        self._store_lock = threading.Lock()
         self._pruning = BackgroundTask(self._prune, "pruning the Private Data Store")
 
     @property
@@ -71,9 +74,10 @@ class LiveVisitRecorder:
             writer.close()
             name = f"live-{(first or now).strftime('%Y%m%dT%H%M%S%z')}.mp4"
             clip = writer.path.replace(writer.path.with_name(name))
-            visit = save_clip_as_visit(
-                clip, self._store, self._settings, now, source="live", recorded=first
-            )
+            with self._store_lock:
+                visit = save_clip_as_visit(
+                    clip, self._store, self._settings, now, source="live", recorded=first
+                )
         finally:
             shutil.rmtree(writer.path.parent, ignore_errors=True)
         self._pruning.request()
@@ -85,7 +89,8 @@ class LiveVisitRecorder:
 
     def _prune(self) -> None:
         try:
-            prune_clips(self._store, int(self._settings.max_store_gb * 1e9))
+            with self._store_lock:
+                prune_clips(self._store, int(self._settings.max_store_gb * 1e9))
         except OSError as error:
             log.error("could not keep the store under its size limit: %s", error)
 
