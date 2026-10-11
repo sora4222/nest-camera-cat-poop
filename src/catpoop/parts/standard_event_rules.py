@@ -5,7 +5,8 @@
   and starts the Poop Reminders. The first reminder is always spoken; later ones only if a
   Listener is Home (Unknown counts as Away).
 - Poop is gone once a person reached into the Litter Box (their box overlaps it) and then
-  the surface no longer scores Poop.
+  the surface no longer scores Poop. Poop scored within `scoop_settle_seconds` of the
+  person is ignored; later, it means the Poop was left and a person must come again.
 - Dog at Poop: Urgent, once per approach; a new Poop or Poop gone starts afresh.
 - Camera Offline and Login Expired are said; Login Expired again once at
   `timers.login_expired_reminder_at` (Litter Box time) if still broken.
@@ -41,6 +42,9 @@ class RuleOptions(BaseModel):
     person_label: str = "person"
     dog_gone_seconds: float = 60
     """The Dog must be away from the Litter Box this long before Dog at Poop is said again."""
+    scoop_settle_seconds: float = 120
+    """After a person was at the Litter Box, surfaces still scoring Poop this long after are
+    ignored (litter settling, a shadow); only later ones mean the Poop was left there."""
 
 
 class StandardEventRules:
@@ -70,7 +74,7 @@ class StandardEventRules:
         )
         self._guess: Outcome | None = None
         self._poop_in_box = False
-        self._person_was_there = False
+        self._person_seen_at: datetime | None = None
         self._dog_said_at: datetime | None = None
         self._login_reminder_at: datetime | None = None
 
@@ -121,7 +125,7 @@ class StandardEventRules:
         events = [Event("visit_ended", Urgency.INFO, ended.at, details, announce=False)]
         if outcome is Outcome.POOP:
             self._poop_in_box = True
-            self._person_was_there = False
+            self._person_seen_at = None
             self._dog_said_at = None
             self._reminders.start(ended.at)
             events.append(Event("poop", Urgency.NORMAL, ended.at))
@@ -134,10 +138,12 @@ class StandardEventRules:
         inside = labels_in_litter_box(seen.detections, self._visits)
         events = self._dog(seen.at, self._options.dog_label in inside)
         if self._options.person_label in labels_over_litter_box(seen.detections, self._visits):
-            self._person_was_there = True
-        elif seen.surface and self._person_was_there:
+            self._person_seen_at = seen.at
+        elif seen.surface and self._person_seen_at:
             if seen.surface.best is Outcome.POOP:
-                self._person_was_there = False
+                settle = timedelta(seconds=self._options.scoop_settle_seconds)
+                if seen.at - self._person_seen_at >= settle:
+                    self._person_seen_at = None
             else:
                 self._poop_in_box = False
                 self._dog_said_at = None

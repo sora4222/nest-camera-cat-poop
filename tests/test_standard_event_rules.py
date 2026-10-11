@@ -159,13 +159,24 @@ def test_poop_is_gone_when_a_person_was_at_the_box_and_poop_is_no_longer_seen():
     assert feed.wait(120) == []
 
 
-def test_poop_still_seen_after_the_person_left_keeps_the_reminders():
-    feed = Feed()
+def test_poop_still_seen_a_while_after_the_person_left_keeps_the_reminders():
+    feed = Feed(scoop_settle_seconds=120)
     feed.visit(None, Outcome.POOP)
     feed.seen("person")
-    assert feed.seen(surface=Outcome.POOP) == []
+    feed.clock.advance(120)
+    assert "poop_gone" not in feed.kinds(feed.seen(surface=Outcome.POOP))
     assert feed.seen(surface=Outcome.NOTHING) == []  # needs a person at the box again
     assert len(feed.wait(10)) > 0
+
+
+def test_poop_scored_just_after_the_person_left_does_not_undo_their_visit():
+    feed = Feed(scoop_settle_seconds=120)
+    feed.visit(None, Outcome.POOP)
+    feed.seen("person")
+    feed.clock.advance(10)
+    assert feed.seen(surface=Outcome.POOP) == []  # litter still settling
+    feed.clock.advance(100)
+    assert feed.kinds(feed.seen(surface=Outcome.NOTHING)) == ["poop_gone"]
 
 
 def test_a_person_away_from_the_box_does_not_count():
