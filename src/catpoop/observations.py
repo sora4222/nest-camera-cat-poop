@@ -29,7 +29,7 @@ class VisitStarted:
     at: datetime
     frames: tuple[Frame, ...]
     guess: OutcomeScores | None
-    """None when there is no Outcome model yet."""
+    """The Outcome Guess; None when there is no Outcome model yet."""
 
 
 @dataclass(frozen=True)

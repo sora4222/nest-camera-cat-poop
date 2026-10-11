@@ -10,11 +10,18 @@ from catpoop.domain import Detection, Event, Frame, OutcomeScores, Presence
 from catpoop.observations import Observation
 
 
+class CameraLoginExpired(Exception):
+    """The camera service refused the login; a person must log in again."""
+
+
 class CameraSource(Protocol):
     """Gives pictures of the Litter Box."""
 
     def read(self) -> Frame | None:
-        """The next Frame, or None if there is no picture right now."""
+        """The next new Frame, or None if there is no new picture right now.
+
+        Raises `CameraLoginExpired` while the camera cannot be reached without a new login.
+        """
         ...
 
 
