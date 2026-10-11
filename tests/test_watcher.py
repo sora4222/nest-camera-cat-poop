@@ -213,3 +213,25 @@ def test_run_checks_every_check_seconds_until_stopped(tmp_path):
 def test_login_expired_is_not_also_camera_offline(tmp_path):
     run = Run(tmp_path, "L" * 12).step_through(12)
     assert run.said() == [(0, "LoginExpired")]
+
+
+def test_stopping_during_a_visit_discards_the_recording(tmp_path):
+    run = Run(tmp_path, "..CCCC")
+    checks = iter(range(6))
+    run.watcher.run(stop=lambda: next(checks, None) is None)
+    assert run.said() == [(4, "VisitStarted")]
+    assert list((tmp_path / "temp").iterdir()) == []
+
+
+def test_ctrl_c_during_a_visit_discards_the_recording(tmp_path):
+    run = Run(tmp_path, "..CCCC")
+    checks = iter(range(6))
+
+    def stop() -> bool:
+        if next(checks, None) is None:
+            raise KeyboardInterrupt
+        return False
+
+    with pytest.raises(KeyboardInterrupt):
+        run.watcher.run(stop=stop)
+    assert list((tmp_path / "temp").iterdir()) == []
