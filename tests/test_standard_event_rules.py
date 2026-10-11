@@ -9,6 +9,7 @@ from fake_clock import FakeClock
 from catpoop import observations as obs
 from catpoop.config import Config, ConfigError, Timers, VisitSettings, load_config
 from catpoop.domain import Detection, Event, Frame, Outcome, OutcomeScores, Presence, Urgency
+from catpoop.interfaces import ResumesPoop
 from catpoop.parts.sqlite_event_log import SqliteEventLog
 from catpoop.parts.standard_event_rules import RuleOptions, StandardEventRules
 from catpoop.registry import EVENT_LOG, EVENT_RULES, default_registry
@@ -292,3 +293,7 @@ def test_reminders_after_a_restart_carry_on_without_repeating_past_ones():
     reminders = feed.wait(60)
     assert [r.details["number"] for r in reminders] == ["4", "5", "6"]
     assert [round((r.at - START).total_seconds() / 60) for r in reminders] == [8, 16, 32]
+
+
+def test_standard_event_rules_resume_poop_at_a_restart():
+    assert isinstance(Feed().rules, ResumesPoop)

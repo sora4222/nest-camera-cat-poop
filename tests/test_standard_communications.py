@@ -9,6 +9,7 @@ from fake_clock import FakeClock
 from catpoop.communications.switches import Switches
 from catpoop.config import Config, ConfigError, Household, QuietHours, load_config
 from catpoop.domain import Event, Presence, Urgency
+from catpoop.interfaces import ResumesPoop
 from catpoop.parts.standard_communications import (
     CommunicationOptions,
     RoutedSpeaker,
@@ -313,3 +314,7 @@ def test_poop_known_from_before_a_restart_is_said_at_the_end_of_quiet_hours(tmp_
     setup.handler.resume_poop(START, setup.clock.now())
     setup.wait(9 * 3600)
     assert setup.speaker.said == ["There is poop from the night."]
+
+
+def test_standard_communications_resume_poop_at_a_restart(tmp_path):
+    assert isinstance(Setup(tmp_path).handler, ResumesPoop)
