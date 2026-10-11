@@ -27,6 +27,7 @@ def _rfc3339(when: datetime) -> str:
 
 def _check(response: httpx.Response) -> httpx.Response:
     if response.is_error:
+        response.read()
         try:
             reason = response.json()["error"]["message"]
         except (ValueError, KeyError, TypeError):

@@ -77,3 +77,13 @@ def test_no_temporary_files_are_left(tmp_path):
     store.save(clip(b"abc"), NOW)
     names = sorted(p.name for p in (tmp_path / "history" / "clips").iterdir())
     assert [n.rsplit(".", 1)[1] for n in names] == ["json", "mp4"]
+
+
+def test_unknown_recording_time_is_filled_in_by_a_later_source(tmp_path):
+    store = HistoryClipStore(tmp_path)
+    store.save(clip(b"not an mp4"), NOW)
+    again = store.save(
+        clip(b"not an mp4", source="takeout", origin="x.zip!clip.mp4", recorded_at=RECORDED), NOW
+    )
+    record = json.loads(again.path.with_suffix(".json").read_text())
+    assert record["recorded_at"] == "2026-03-04T05:06:07+00:00"
