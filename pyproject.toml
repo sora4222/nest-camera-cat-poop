@@ -70,4 +70,5 @@ select = ["D", "E", "F", "I", "UP", "RUF", "B"]
 convention = "google"
 
 [tool.ty.src]
-exclude = [".claude"]
+# Notebooks import TensorFlow, which only the train extra installs.
+exclude = [".claude", "notebooks"]
