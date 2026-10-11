@@ -1,6 +1,7 @@
 """`catpoop train` (train extra) and `catpoop evaluate` (ONNX Runtime only)."""
 
 import argparse
+import importlib
 import sys
 from pathlib import Path
 from typing import Any
@@ -39,7 +40,7 @@ def run(args: argparse.Namespace) -> int:
 
 def _train(config: Config) -> int:
     try:
-        from catpoop.outcome import train
+        train = importlib.import_module("catpoop.outcome.train")
     except ImportError as error:
         print(f"Training needs the train extra (`make train`): {error}", file=sys.stderr)
         return 1

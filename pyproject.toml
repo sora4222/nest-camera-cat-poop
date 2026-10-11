@@ -66,5 +66,9 @@ select = ["D", "E", "F", "I", "UP", "RUF", "B"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ty.analysis]
+# The train extra (TensorFlow) is only installed on the machine that trains.
+allowed-unresolved-imports = ["tensorflow", "tensorflow.**", "keras", "keras.**", "tf2onnx", "tf2onnx.**"]
+
 [tool.ty.src]
 exclude = [".claude"]
