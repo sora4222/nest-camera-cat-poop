@@ -171,13 +171,21 @@ class Watcher:
         self._visit_started_at = now
         self._recorder.start(self._frames_since(first_seen - self._visits.padding_seconds))
         frames = self._frames_since(first_seen)
-        guess = self._outcome_model.guess(frames[-1]) if self._outcome_model else None
+        guess = None
+        if self._outcome_model and frames:
+            try:
+                guess = self._outcome_model.guess(frames[-1])
+            except Exception:
+                log.exception("the Outcome model failed on the Outcome Guess")
         self._tell(obs.VisitStarted(now, frames, guess))
 
     def _end_visit(self, now: datetime, frames: tuple[Frame, ...]) -> None:
         outcome = None
         if self._outcome_model and frames:
-            outcome = self._outcome_model.outcome(frames[-1])
+            try:
+                outcome = self._outcome_model.outcome(frames[-1])
+            except Exception:
+                log.exception("the Outcome model failed on the Visit's Outcome")
         saved = None
         try:
             saved = self._recorder.save(now).id

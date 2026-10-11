@@ -384,3 +384,31 @@ def test_poop_seen_on_the_first_check_after_quiet_hours_is_said_once(tmp_path):
     rules = PoopRules(START + timedelta(seconds=1))  # Quiet Hours end at 08:00:01
     Run(tmp_path, "..", communications=communications, rules=rules).step_through(2)
     assert speaker.said == ["Poop."]
+
+
+class GuessBlowsUp(FakeOutcomeModel):
+    def guess(self, stance: Frame) -> OutcomeScores:
+        raise RuntimeError("guess blew up")
+
+
+class OutcomeBlowsUp(FakeOutcomeModel):
+    def outcome(self, surface: Frame) -> OutcomeScores:
+        raise RuntimeError("outcome blew up")
+
+
+def test_a_failed_outcome_guess_is_logged_and_the_visit_goes_on(tmp_path, caplog):
+    run = Run(tmp_path, "..CCCC.....", GuessBlowsUp()).step_through(11)
+    assert "guess blew up" in caplog.text
+    assert run.said() == [(4, "VisitStarted"), (9, "VisitEnded")]
+    started, ended = run.first(obs.VisitStarted), run.first(obs.VisitEnded)
+    assert isinstance(started, obs.VisitStarted) and isinstance(ended, obs.VisitEnded)
+    assert (started.guess, ended.outcome) == (None, scores(Outcome.PEE))
+
+
+def test_a_failed_outcome_is_logged_and_the_visit_still_ends(tmp_path, caplog):
+    run = Run(tmp_path, "..CCCC.....", OutcomeBlowsUp()).step_through(11)
+    assert "outcome blew up" in caplog.text
+    ended = run.first(obs.VisitEnded)
+    assert isinstance(ended, obs.VisitEnded)
+    assert ended.outcome is None
+    assert ended.saved_visit is not None
