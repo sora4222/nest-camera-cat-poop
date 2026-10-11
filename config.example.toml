@@ -1,0 +1,59 @@
+# Example private config. `make setup` copies it to config.toml (git-ignored).
+# Put real names, devices and paths only in config.toml, never in this file.
+# Secrets (tokens, passwords) go in .env, not here.
+
+# Which implementation to use for each swappable part (see docs/configuration.md).
+[parts]
+camera = "nest"
+detector = "onnx"
+event_rules = "standard"
+event_log = "memory"
+presence = "off"
+communications = "standard"
+
+[paths]
+# The Private Data Store on the NAS: clips, pictures and labels.
+private_data_store = "/mnt/nas/cat-poop"
+# One lock per user, shared by every worktree, so only one watcher runs.
+# Default: $XDG_RUNTIME_DIR/catpoop-watcher.lock, else /tmp/catpoop-<uid>/watcher.lock.
+# Its folder must be owned by you and not writable by others.
+# lock_file = "/run/user/1000/catpoop-watcher.lock"
+
+# Names used in Message templates.
+[household]
+cat = "the cat"
+dog = "the dog"
+
+[[listeners]]
+name = "Partner"
+
+[[speakers]]
+name = "Living room"
+kind = "log"
+
+# Spoken text. {cat}, {dog} and event details can be used.
+[messages]
+visit_started = "{cat} is in the litter box."
+poop = "{cat} left poop in the litter box."
+poop_reminder = "There is still poop in the litter box."
+dog_at_poop = "{dog} is at the litter box and there is poop in it."
+camera_offline = "The litter box camera is offline."
+login_expired = "The litter box camera needs you to log in again."
+
+# Repeating quiet times. `allow` lists the Urgencies (info, normal, urgent) still spoken.
+[[quiet_hours]]
+days = ["sun", "mon", "tue", "wed", "thu"]
+start = "22:00"
+end = "07:00"
+allow = ["urgent"]
+
+[timers]
+camera_offline_minutes = 10
+poop_reminder_first_minutes = 1
+poop_reminder_max_minutes = 60
+poop_reminder_max_count = 6
+login_expired_reminder_at = "18:00"
+
+# Options for the chosen implementation of each part, one table per part, e.g.:
+# [camera]
+# device = "Litter box"

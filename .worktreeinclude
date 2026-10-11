@@ -1,0 +1,3 @@
+# Private, git-ignored files that Claude Code copies into each new worktree.
+.env
+config.toml
