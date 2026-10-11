@@ -5,6 +5,7 @@ model sees the same pixels in training and on the server.
 """
 
 from collections.abc import Sequence
+from datetime import tzinfo
 from pathlib import Path
 
 import numpy as np
@@ -19,11 +20,15 @@ def make_dataset(
     image_size: int,
     batch_size: int,
     with_time: bool,
+    zone: tzinfo,
     shuffle: bool = False,
 ) -> tf.data.Dataset:
-    """Batches of `(inputs, class index)`; inputs are `{"image"}`, plus `{"time"}` if asked."""
+    """Batches of `(inputs, class index)`; inputs are `{"image"}`, plus `{"time"}` if asked.
+
+    The time of day is read in `zone`, the Litter Box's, whatever machine trains.
+    """
     paths = [str(e.picture) for e in examples]
-    times = np.array([time_features(e.taken_at) for e in examples], np.float32).reshape(
+    times = np.array([time_features(e.taken_at, zone) for e in examples], np.float32).reshape(
         -1, TIME_FEATURES
     )
     labels = np.array([CLASSES.index(e.outcome) for e in examples], np.int32)

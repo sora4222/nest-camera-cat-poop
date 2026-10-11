@@ -1,11 +1,12 @@
 from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
 
 from catpoop.domain import Outcome
 from catpoop.outcome.examples import Example
-from catpoop.outcome.features import CLASSES
+from catpoop.outcome.features import CLASSES, time_features
 from catpoop.visits.video import save_jpeg
 
 pytest.importorskip("tensorflow")
@@ -24,8 +25,11 @@ def examples(tmp_path, count=5):
     return found
 
 
+UTC_ZONE = ZoneInfo("UTC")
+
+
 def test_batches_pictures_and_labels(tmp_path):
-    data = make_dataset(examples(tmp_path), image_size=8, batch_size=4, with_time=False)
+    data = make_dataset(examples(tmp_path), 8, 4, with_time=False, zone=UTC_ZONE)
     inputs, labels = next(iter(data))
     assert set(inputs) == {"image"}
     assert inputs["image"].shape == (4, 8, 8, 3)
@@ -35,14 +39,16 @@ def test_batches_pictures_and_labels(tmp_path):
 
 
 def test_adds_the_time_of_day_for_the_guess(tmp_path):
-    data = make_dataset(examples(tmp_path), image_size=8, batch_size=5, with_time=True)
+    zone = ZoneInfo("Australia/Brisbane")
+    data = make_dataset(examples(tmp_path), 8, 5, with_time=True, zone=zone)
     inputs, _ = next(iter(data))
     assert inputs["time"].shape == (5, 3)
     assert inputs["time"][0].numpy().tolist() == [0.0, 0.0, 0.0]
-    assert inputs["time"][1, 2] == 1.0
+    assert inputs["time"][1].numpy() == pytest.approx(time_features(AT, zone))
+    assert inputs["time"][1].numpy() != pytest.approx(time_features(AT, UTC_ZONE))
 
 
 def test_shuffled_data_keeps_every_example(tmp_path):
-    data = make_dataset(examples(tmp_path), 8, 2, with_time=False, shuffle=True)
+    data = make_dataset(examples(tmp_path), 8, 2, with_time=False, zone=UTC_ZONE, shuffle=True)
     labels = sorted(int(x) for _, batch in data for x in batch)
     assert labels == [0, 0, 1, 1, 2]

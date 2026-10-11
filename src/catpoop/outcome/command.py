@@ -60,8 +60,9 @@ def _evaluate(config: Config) -> int:
     settings = config.outcome
     model = load_outcome_model(ModelFiles.in_store(store, settings.models), settings.runtime)
     visits = read_labeled_visits(store / "dataset")
+    # Hold out the Visits the models were trained without, whatever config.toml says now.
     evaluation = evaluate(
-        model, visits, settings.validation_fraction, settings.guess_frames_per_visit
+        model, visits, model.info.validation_fraction, settings.guess_frames_per_visit
     )
     print(evaluation.report())
     return 0

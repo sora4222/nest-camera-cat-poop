@@ -1,6 +1,5 @@
 """The Outcome model on the server: the exported ONNX files run with ONNX Runtime, no TensorFlow."""
 
-from datetime import tzinfo
 from typing import Any
 
 import numpy as np
@@ -13,14 +12,16 @@ from catpoop.outcome.model_files import ModelFiles, ModelInfo, ModelInfoError, l
 class OnnxOutcomeModel:
     """An `OutcomeModel` from two ONNX Runtime sessions (or fakes with `run`)."""
 
-    def __init__(
-        self, outcome: Any, guess: Any, info: ModelInfo, zone: tzinfo | None = None
-    ) -> None:
-        """`zone` is where the time of day is read; default this machine's."""
+    def __init__(self, outcome: Any, guess: Any, info: ModelInfo) -> None:
+        """The Outcome Guess reads the time of day in `info.zone`, the zone it was trained in."""
         self._outcome = outcome
         self._guess = guess
         self._info = info
-        self._zone = zone
+
+    @property
+    def info(self) -> ModelInfo:
+        """What the models take and give, and how they were trained."""
+        return self._info
 
     def outcome(self, surface: Frame) -> OutcomeScores:
         """The Outcome, from a Frame of the litter surface after the Cat has left."""
@@ -28,7 +29,7 @@ class OnnxOutcomeModel:
 
     def guess(self, stance: Frame) -> OutcomeScores:
         """The Outcome Guess, from a Frame of the Cat in the Litter Box and its time of day."""
-        time = time_features(stance.taken_at, self._zone)[None]
+        time = time_features(stance.taken_at, self._info.zone)[None]
         feed = {"image": self._image(stance), "time": time}
         return self._scores(self._guess.run(["scores"], feed))
 
@@ -40,9 +41,7 @@ class OnnxOutcomeModel:
         return OutcomeScores(dict(zip(self._info.classes, row, strict=True)))
 
 
-def load_outcome_model(
-    files: ModelFiles, runtime: str, zone: tzinfo | None = None
-) -> OnnxOutcomeModel:
+def load_outcome_model(files: ModelFiles, runtime: str) -> OnnxOutcomeModel:
     """Open the Outcome models in `files` on the providers `runtime` asks for (see onnx_session)."""
     from catpoop.onnx_session import open_session
 
@@ -51,5 +50,5 @@ def load_outcome_model(
         if not path.is_file():
             raise ModelInfoError(f"{path} not found; run `make train` first")
     return OnnxOutcomeModel(
-        open_session(files.outcome, runtime), open_session(files.guess, runtime), info, zone
+        open_session(files.outcome, runtime), open_session(files.guess, runtime), info
     )

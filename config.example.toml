@@ -87,6 +87,7 @@ epochs = 20
 batch_size = 16
 validation_fraction = 0.2  # share of Visits held out to measure accuracy
 guess_frames_per_visit = 5 # frames from the middle of each Visit for the Outcome Guess
+timezone = "UTC"           # IANA zone of the Litter Box (e.g. "Australia/Melbourne") for the time of day
 
 # Options for the chosen implementation of each part, one table per part, e.g.:
 # [camera]

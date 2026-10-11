@@ -40,10 +40,10 @@ def load_image(path: Path, size: int) -> np.ndarray:
     return prepare_image(read_picture(path), size)
 
 
-def time_features(at: datetime | None, zone: tzinfo | None = None) -> np.ndarray:
+def time_features(at: datetime | None, zone: tzinfo) -> np.ndarray:
     """Time of day as `[sin, cos, known]`, so 23:59 is next to 00:00.
 
-    The clock is read in `zone` (default: this machine's). An unknown time gives zeros.
+    The clock is read in `zone`, never this machine's. An unknown time gives zeros.
     """
     if at is None:
         return np.zeros(TIME_FEATURES, np.float32)

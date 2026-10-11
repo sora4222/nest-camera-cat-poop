@@ -1,7 +1,7 @@
 """Tiny hand-made ONNX Outcome models for tests: the mean colour picks the Outcome.
 
 A red picture scores Pee, green Poop and blue Nothing. The Outcome Guess model also
-adds 1000 to Poop times the `sin` of the time of day, so 6am always guesses Poop.
+adds 1000 to Poop times the `sin` of the time of day, so 6am in `ZONE` always guesses Poop.
 """
 
 from pathlib import Path
@@ -10,11 +10,14 @@ import numpy as np
 import pytest
 
 from catpoop.outcome.model_files import ModelFiles, save_model_info
+from catpoop.outcome.publish import publish, stage
 
 onnx = pytest.importorskip("onnx")
 from onnx import TensorProto, helper, numpy_helper  # noqa: E402
 
 SIZE = 4
+ZONE = "Australia/Brisbane"
+"""UTC+10 all year."""
 
 
 def _image_input():
@@ -30,7 +33,7 @@ def _save(nodes, inputs, path: Path, initializers=()) -> None:
     onnx.save(model, str(path))
 
 
-def write_tiny_models(folder: Path) -> ModelFiles:
+def write_tiny_models(folder: Path, validation_fraction: float = 0.5) -> ModelFiles:
     """Write both tiny models and their info to `folder`."""
     folder.mkdir(parents=True, exist_ok=True)
     files = ModelFiles(folder)
@@ -54,5 +57,12 @@ def write_tiny_models(folder: Path) -> ModelFiles:
         files.guess,
         [numpy_helper.from_array(weights, "weights")],
     )
-    save_model_info(files, SIZE)
+    save_model_info(files, SIZE, ZONE, validation_fraction)
     return files
+
+
+def publish_tiny_models(models: Path, validation_fraction: float = 0.5) -> ModelFiles:
+    """Write both tiny models and publish them as `make train` does, in `models`."""
+    staged = stage(models)
+    write_tiny_models(staged, validation_fraction)
+    return ModelFiles(publish(staged, models))

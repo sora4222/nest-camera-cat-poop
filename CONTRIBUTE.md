@@ -45,6 +45,7 @@ src/catpoop/
     examples.py         examples from dataset/manifest.csv; split by Visit
     accuracy.py         accuracy overall and per class
     model_files.py      outcome.onnx, outcome_guess.onnx and outcome.json
+    publish.py          swap in a training run all at once (`current` symlink)
     onnx_outcome.py     OutcomeModel on the server (ONNX Runtime, no TF)
     evaluate.py         measure an OutcomeModel on held-out Visits
     tf_data.py          examples as a tf.data pipeline (train extra)
