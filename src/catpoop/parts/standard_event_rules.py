@@ -4,7 +4,8 @@
 - Visit end: logged with the Outcome; a wrong Outcome Guess is only logged. Poop is announced
   and starts the Poop Reminders. The first reminder is always spoken; later ones only if a
   Listener is Home (Unknown counts as Away).
-- Poop is gone once a person was at the Litter Box and then the surface no longer scores Poop.
+- Poop is gone once a person reached into the Litter Box (their box overlaps it) and then
+  the surface no longer scores Poop.
 - Dog at Poop: Urgent, once per approach; a new Poop or Poop gone starts afresh.
 - Camera Offline and Login Expired are said; Login Expired again once at
   `timers.login_expired_reminder_at` (Litter Box time) if still broken.
@@ -24,7 +25,7 @@ from catpoop.domain import Event, Outcome, Presence, Urgency
 from catpoop.interfaces import PresenceCheck
 from catpoop.poop_reminders import PoopReminders
 from catpoop.registry import DEFAULT, EVENT_RULES, PRESENCE
-from catpoop.visits.finder import labels_in_litter_box
+from catpoop.visits.finder import labels_in_litter_box, labels_over_litter_box
 
 log = logging.getLogger(__name__)
 
@@ -132,7 +133,7 @@ class StandardEventRules:
             return []
         inside = labels_in_litter_box(seen.detections, self._visits)
         events = self._dog(seen.at, self._options.dog_label in inside)
-        if self._options.person_label in inside:
+        if self._options.person_label in labels_over_litter_box(seen.detections, self._visits):
             self._person_was_there = True
         elif seen.surface and self._person_was_there:
             if seen.surface.best is Outcome.POOP:

@@ -16,6 +16,7 @@ from catpoop.registry import EVENT_LOG, EVENT_RULES, default_registry
 START = datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
 VISITS = VisitSettings(litter_box=(0.5, 0.5, 1.0, 1.0))
 IN_BOX, OUTSIDE = (0.6, 0.6, 0.8, 0.8), (0.0, 0.0, 0.2, 0.2)
+STANDING_OVER_BOX = (0.3, 0.0, 0.7, 0.6)  # its middle is above the Litter Box
 
 
 def scores(best: Outcome) -> OutcomeScores:
@@ -172,6 +173,13 @@ def test_a_person_away_from_the_box_does_not_count():
     feed.visit(None, Outcome.POOP)
     feed.seen("person", where=OUTSIDE)
     assert feed.seen(surface=Outcome.NOTHING) == []
+
+
+def test_a_standing_person_reaching_into_the_box_counts():
+    feed = Feed()
+    feed.visit(None, Outcome.POOP)
+    feed.seen("person", where=STANDING_OVER_BOX)
+    assert feed.kinds(feed.seen(surface=Outcome.NOTHING)) == ["poop_gone"]
 
 
 def test_dog_at_poop_is_urgent_and_said_once_per_approach():

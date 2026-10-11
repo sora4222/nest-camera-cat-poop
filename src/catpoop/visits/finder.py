@@ -48,6 +48,17 @@ def labels_in_litter_box(detections: Sequence[Detection], settings: VisitSetting
     return inside
 
 
+def labels_over_litter_box(detections: Sequence[Detection], settings: VisitSettings) -> set[str]:
+    """Labels of everything found whose box overlaps the Litter Box (reaching into it)."""
+    left, top, right, bottom = settings.litter_box
+    return {
+        found.label
+        for found in detections
+        if min(found.box[2], right) > max(found.box[0], left)
+        and min(found.box[3], bottom) > max(found.box[1], top)
+    }
+
+
 def cat_in_litter_box(detections: Sequence[Detection], settings: VisitSettings) -> bool:
     """Whether a Cat was found with the middle of its box inside the Litter Box."""
     return settings.cat_label in labels_in_litter_box(detections, settings)

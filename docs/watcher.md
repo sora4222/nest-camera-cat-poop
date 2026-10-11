@@ -28,7 +28,7 @@ Event rules "standard" (the default) turn observations into Events. Each has an 
 | `visit_ended` | a Visit ends, with the Outcome and whether the Guess was right (log only) | Info |
 | `poop` | the Outcome is Poop; Poop Reminders start | Normal |
 | `poop_reminder` | `timers.poop_reminder_first_minutes` after the Poop, then 2x, 4x, 8x... that, until `poop_reminder_max_minutes` or `poop_reminder_max_count`. The first is always announced; later ones only if a Listener's Presence is Home (Unknown counts as Away), else log only | Normal |
-| `poop_gone` | a person was at the Litter Box, and the next surface check no longer scores Poop (log only). Reminders stop | Info |
+| `poop_gone` | a person reached into the Litter Box (their box overlaps it), and the next surface check no longer scores Poop (log only). Reminders stop | Info |
 | `dog_at_poop` | the Dog is in the Litter Box while Poop is there; again only after it was away `dog_gone_seconds` | Urgent |
 | `camera_offline` | Camera Offline | Normal |
 | `login_expired` | Login Expired, and once more at `timers.login_expired_reminder_at` (in `outcome.timezone`) if pictures have not come back | Normal |
