@@ -77,6 +77,17 @@ min_seconds = 2.0        # shorter Visits are dropped
 padding_seconds = 1.0    # kept before and after each Visit
 max_store_gb = 500       # then the oldest clips with no labeled Visit are deleted
 
+# The Outcome model (`make train`, `make evaluate`, see docs/outcome-model.md).
+[outcome]
+models = "models/outcome"  # folder of the exported models, inside paths.private_data_store
+runtime = "auto"           # auto, cpu, amd or nvidia, as for the detector
+backbone = "mobilenet"     # mobilenet (pretrained, downloaded once) or small (from scratch)
+image_size = 128           # pictures are resized to this many pixels square
+epochs = 20
+batch_size = 16
+validation_fraction = 0.2  # share of Visits held out to measure accuracy
+guess_frames_per_visit = 5 # frames from the middle of each Visit for the Outcome Guess
+
 # Options for the chosen implementation of each part, one table per part, e.g.:
 # [camera]
 # device = "Litter box"

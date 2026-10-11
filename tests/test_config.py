@@ -102,3 +102,22 @@ def test_visit_settings_are_read(tmp_path):
     visits = load_config(write(tmp_path, text)).visits
     assert visits.max_store_gb == 2
     assert visits.litter_box == (0.1, 0.2, 0.9, 1.0)
+
+
+def test_outcome_settings_have_defaults(tmp_path):
+    outcome = load_config(write(tmp_path, MINIMAL)).outcome
+    assert outcome.models == Path("models/outcome")
+    assert outcome.runtime == "auto"
+    assert outcome.backbone == "mobilenet"
+    assert 0 < outcome.validation_fraction < 1
+
+
+def test_outcome_settings_are_read_and_checked(tmp_path):
+    text = MINIMAL + '[outcome]\nimage_size = 64\nbackbone = "small"\n'
+    outcome = load_config(write(tmp_path, text)).outcome
+    assert outcome.image_size == 64
+    assert outcome.backbone == "small"
+    with pytest.raises(ConfigError, match=r"outcome\.backbone"):
+        load_config(write(tmp_path, MINIMAL + '[outcome]\nbackbone = "huge"\n'))
+    with pytest.raises(ConfigError, match=r"outcome\.runtime"):
+        load_config(write(tmp_path, MINIMAL + '[outcome]\nruntime = "tpu"\n'))

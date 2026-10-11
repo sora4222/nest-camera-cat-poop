@@ -10,7 +10,7 @@ from datetime import time
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from catpoop.domain import Urgency
 
@@ -108,6 +108,26 @@ class VisitSettings(_Strict):
     """Above this, the oldest clips with no labeled Visit are deleted."""
 
 
+class OutcomeSettings(_Strict):
+    """Where the Outcome model lives and how `make train` trains it."""
+
+    models: Path = Path("models/outcome")
+    """Folder of the exported models; a relative path is inside the Private Data Store."""
+    runtime: Literal["auto", "cpu", "amd", "nvidia"] = "auto"
+    """ONNX Runtime providers to run the models on (see onnx_session)."""
+    backbone: Literal["mobilenet", "small"] = "mobilenet"
+    """`mobilenet`: MobileNetV3 Small pretrained on ImageNet (downloaded once); `small`: a
+    tiny network learned from scratch."""
+    image_size: int = Field(128, ge=32)
+    """Pictures are resized to this many pixels square."""
+    epochs: int = Field(20, ge=1)
+    batch_size: int = Field(16, ge=1)
+    validation_fraction: float = Field(0.2, ge=0, lt=1)
+    """Share of Visits held out to measure accuracy."""
+    guess_frames_per_visit: int = Field(5, ge=1)
+    """Frames from the middle of each Visit used to learn the Outcome Guess."""
+
+
 class Config(_Strict):
     """The whole private config."""
 
@@ -120,6 +140,7 @@ class Config(_Strict):
     quiet_hours: list[QuietHours] = []
     timers: Timers = Timers()
     visits: VisitSettings = VisitSettings()
+    outcome: OutcomeSettings = OutcomeSettings()
     # Options for the chosen implementation of each part.
     camera: dict[str, Any] = {}
     detector: dict[str, Any] = {}

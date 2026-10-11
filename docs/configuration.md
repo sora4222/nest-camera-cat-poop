@@ -17,6 +17,7 @@ All settings live in `config.toml` (git-ignored); `config.example.toml` lists ev
 | Camera Offline delay, Poop Reminder timing, Login Expired reminder time | `[timers]` |
 | Where past clips are imported from | `[history.takeout]`, `[history.portability]`, `[history.folder]` (see [history-import.md](history-import.md)) |
 | How clips are cut into Visits, where the Litter Box is in the picture, the store size limit | `[visits]` (see [visits.md](visits.md)) |
+| Where the Outcome model is kept, how it is trained and run | `[outcome]` (see [outcome-model.md](outcome-model.md)) |
 | Secrets (tokens, passwords) | `.env`, not `config.toml` |
 
 To add a new implementation of a part, see [CONTRIBUTE.md](../CONTRIBUTE.md).
