@@ -1,4 +1,4 @@
-"""Open an ONNX model with ONNX Runtime on the CPU or a GPU.
+"""Open an ONNX model with ONNX Runtime on the CPU, a GPU, or Core ML on macOS.
 
 `onnxruntime` comes from the `cpu`, `amd` or `nvidia` extra and is imported only when a
 model is opened, so the rest of the package works without it.
@@ -12,10 +12,15 @@ _GPU_PROVIDERS = {
     "cpu": [],
     "nvidia": ["CUDAExecutionProvider"],
     "amd": ["MIGraphXExecutionProvider", "ROCMExecutionProvider"],
-    "auto": ["CUDAExecutionProvider", "MIGraphXExecutionProvider", "ROCMExecutionProvider"],
+    "auto": [
+        "CUDAExecutionProvider",
+        "MIGraphXExecutionProvider",
+        "ROCMExecutionProvider",
+        "CoreMLExecutionProvider",
+    ],
 }
 RUNTIMES = tuple(_GPU_PROVIDERS)
-"""Names accepted for `runtime`: cpu, nvidia, amd, or auto (any GPU that is installed)."""
+"""Names accepted for `runtime`: cpu, nvidia, amd, or auto (any installed GPU or Core ML)."""
 
 
 def pick_providers(runtime: str, available: Sequence[str]) -> list[str]:

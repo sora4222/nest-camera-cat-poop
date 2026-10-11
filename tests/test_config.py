@@ -38,7 +38,7 @@ def test_example_config_loads():
 def test_minimal_config_gets_defaults(tmp_path):
     config = load_config(write(tmp_path, MINIMAL))
     assert config.paths.private_data_store == Path("/data/store")
-    assert config.paths.lock_file == Path("/tmp/catpoop-watcher.lock")
+    assert config.paths.lock_file is None
     assert config.timers.camera_offline_minutes == 10
     assert config.timers.poop_reminder_max_count == 6
     assert config.speakers == []

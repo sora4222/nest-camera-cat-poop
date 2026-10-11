@@ -38,3 +38,19 @@ def test_missing_gpu_falls_back_to_cpu():
 def test_unknown_runtime_is_an_error():
     with pytest.raises(ValueError, match="tpu"):
         pick_providers("tpu", AVAILABLE)
+
+
+def test_auto_uses_coreml_on_macos():
+    assert pick_providers("auto", ["CoreMLExecutionProvider", "CPUExecutionProvider"]) == [
+        "CoreMLExecutionProvider",
+        "CPUExecutionProvider",
+    ]
+
+
+def test_auto_prefers_a_discrete_gpu_over_coreml():
+    available = ["CoreMLExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"]
+    assert pick_providers("auto", available) == [
+        "CUDAExecutionProvider",
+        "CoreMLExecutionProvider",
+        "CPUExecutionProvider",
+    ]
