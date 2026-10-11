@@ -5,8 +5,10 @@ from pathlib import Path
 
 import pytest
 
+from catpoop.config import Config
 from catpoop.history.portability import PortabilityImporter
 from catpoop.history.portability_api import ArchiveState, PortabilityError
+from catpoop.registry import DEFAULT, HISTORY_IMPORTER
 
 START = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -72,3 +74,23 @@ def test_gives_up_after_the_wait_limit(tmp_path):
     api = FakeApi([ArchiveState("IN_PROGRESS")] * 5, {})
     with pytest.raises(PortabilityError, match="job-1"):
         list(importer(api, tmp_path, poll_seconds=60, max_wait_seconds=120).clips())
+
+
+def test_registered_with_options_and_secrets_from_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("CATPOOP_PORTABILITY_CLIENT_ID", "id")
+    monkeypatch.setenv("CATPOOP_PORTABILITY_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("CATPOOP_PORTABILITY_REFRESH_TOKEN", "refresh")
+    config = Config.model_validate(
+        {
+            "parts": dict.fromkeys(
+                ["camera", "detector", "event_rules", "event_log", "presence", "communications"],
+                "fake",
+            ),
+            "paths": {"private_data_store": str(tmp_path)},
+        }
+    )
+    options = {"start_time": "2026-01-01T00:00:00Z", "end_time": START, "job_id": "job-9"}
+    made = DEFAULT.create(HISTORY_IMPORTER, "portability", config, options)
+    assert isinstance(made, PortabilityImporter)
+    assert (made.start, made.end, made.job_id) == (START, START, "job-9")
+    assert made.downloads == tmp_path / "history" / "downloads" / "portability"

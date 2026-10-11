@@ -6,13 +6,17 @@ Private Data Store, then reads the clips in them. Not offered in every country.
 
 import logging
 import time
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
+from catpoop.config import Config, ConfigError
 from catpoop.history.archive import archive_clips
 from catpoop.history.importer import HistoryClip
 from catpoop.history.portability_api import PortabilityApi, PortabilityError
+from catpoop.history.portability_http import PortabilityHttpApi
+from catpoop.registry import DEFAULT, HISTORY_IMPORTER
 
 log = logging.getLogger(__name__)
 
@@ -76,3 +80,27 @@ class PortabilityImporter:
                 partial.replace(archive)
             archives.append(archive)
         return archives
+
+
+def _time_option(value: Any) -> datetime | None:
+    if value is None or isinstance(value, datetime):
+        return value
+    try:
+        return datetime.fromisoformat(str(value))
+    except ValueError:
+        raise ConfigError(f"history portability: {value!r} is not an ISO time") from None
+
+
+@DEFAULT.part(HISTORY_IMPORTER, "portability")
+def _create(config: Config, options: Mapping[str, Any]) -> PortabilityImporter:
+    downloads = config.paths.private_data_store / "history" / "downloads" / "portability"
+    return PortabilityImporter(
+        PortabilityHttpApi.from_env(),
+        downloads,
+        resources=options.get("resources", ["nest.camera_event"]),
+        start=_time_option(options.get("start_time")),
+        end=_time_option(options.get("end_time")),
+        job_id=options.get("job_id"),
+        poll_seconds=float(options.get("poll_seconds", 60)),
+        max_wait_seconds=float(options.get("max_wait_seconds", 24 * 60 * 60)),
+    )
