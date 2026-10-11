@@ -9,6 +9,7 @@ import tempfile
 from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import keras
 
@@ -57,7 +58,7 @@ def train(
         log("Outcome Guess (the Cat's stance and the time of day)")
         stances = stance_examples(visits, settings.guess_frames_per_visit)
         _fit(stances, staged.guess, settings, with_time=True)
-        save_model_info(staged, settings.image_size)
+        save_model_info(staged, settings.image_size, settings.timezone)
         for name in ("outcome", "guess", "info"):
             os.replace(getattr(staged, name), getattr(files, name))
     log(f"Wrote {files.folder}")
@@ -73,8 +74,12 @@ def _fit(
     if not training:
         raise TrainingError("every Visit is held out for validation; lower validation_fraction")
 
+    zone = ZoneInfo(settings.timezone)
+
     def data(part: Sequence[Example], shuffle: bool):
-        return make_dataset(part, settings.image_size, settings.batch_size, with_time, shuffle)
+        return make_dataset(
+            part, settings.image_size, settings.batch_size, with_time, zone, shuffle
+        )
 
     model = build_model(settings.image_size, settings.backbone, with_time)
     callbacks = []

@@ -2,12 +2,14 @@
 
 - `outcome.onnx`: input `image` `[N, S, S, 3]` float32 pixels 0-255, output `scores` `[N, 3]`.
 - `outcome_guess.onnx`: inputs `image` and `time` `[N, 3]` (see `features.time_features`).
-- `outcome.json`: the picture size `S` and the Outcome of each score.
+- `outcome.json`: the picture size `S`, the Outcome of each score and the time zone the
+  time of day was read in.
 """
 
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from catpoop.domain import Outcome
 from catpoop.outcome.features import CLASSES
@@ -46,15 +48,16 @@ class ModelFiles:
 
 @dataclass(frozen=True)
 class ModelInfo:
-    """The picture size the models take and the Outcome of each score they give."""
+    """What the models take and give, and the zone the time of day is read in."""
 
     image_size: int
     classes: tuple[Outcome, ...]
+    zone: ZoneInfo
 
 
-def save_model_info(files: ModelFiles, image_size: int) -> None:
-    """Write `outcome.json` for models trained on `image_size` pictures."""
-    info = {"image_size": image_size, "classes": [c.value for c in CLASSES]}
+def save_model_info(files: ModelFiles, image_size: int, timezone: str) -> None:
+    """Write `outcome.json` for models trained on `image_size` pictures in `timezone`."""
+    info = {"image_size": image_size, "classes": [c.value for c in CLASSES], "timezone": timezone}
     files.info.write_text(json.dumps(info, indent=2) + "\n")
 
 
@@ -64,10 +67,11 @@ def load_model_info(files: ModelFiles) -> ModelInfo:
         data = json.loads(files.info.read_text())
         classes = tuple(Outcome(name) for name in data["classes"])
         size = int(data["image_size"])
+        zone = ZoneInfo(data["timezone"])
     except FileNotFoundError:
         raise ModelInfoError(f"{files.info} not found; run `make train` first") from None
     except (ValueError, KeyError, TypeError) as error:
         raise ModelInfoError(f"{files.info}: {error!r}") from None
     if sorted(classes) != sorted(Outcome):
         raise ModelInfoError(f"{files.info}: classes must be each Outcome once")
-    return ModelInfo(size, classes)
+    return ModelInfo(size, classes, zone)

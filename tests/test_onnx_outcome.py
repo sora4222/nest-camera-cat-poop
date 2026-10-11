@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -10,11 +10,11 @@ from catpoop.outcome.model_files import ModelFiles, ModelInfoError, load_model_i
 from catpoop.outcome.onnx_outcome import load_outcome_model
 
 ort = pytest.importorskip("onnxruntime")
-from tiny_outcome_onnx import SIZE, write_tiny_models  # noqa: E402
+from tiny_outcome_onnx import SIZE, ZONE, write_tiny_models  # noqa: E402
 
-ZONE = timezone(timedelta(hours=10))
-MIDNIGHT = datetime(2026, 1, 1, 0, 0, tzinfo=ZONE)
-SIX_AM = datetime(2026, 1, 1, 6, 0, tzinfo=ZONE)
+# Midnight and 6am in ZONE (UTC+10), given in UTC so the zone in outcome.json matters.
+MIDNIGHT = datetime(2025, 12, 31, 14, 0, tzinfo=UTC)
+SIX_AM = datetime(2025, 12, 31, 20, 0, tzinfo=UTC)
 
 
 def picture(red=0, green=0, blue=0, height=9, width=12):
@@ -26,6 +26,7 @@ def test_model_info_is_saved_next_to_the_models(tmp_path):
     info = load_model_info(files)
     assert info.image_size == SIZE
     assert list(info.classes) == [Outcome.PEE, Outcome.POOP, Outcome.NOTHING]
+    assert str(info.zone) == ZONE
 
 
 def test_missing_or_wrong_model_info_is_an_error(tmp_path):
@@ -36,6 +37,18 @@ def test_missing_or_wrong_model_info_is_an_error(tmp_path):
         load_model_info(ModelFiles(tmp_path))
 
 
+def test_unknown_time_zone_in_model_info_is_an_error(tmp_path):
+    files = write_tiny_models(tmp_path)
+    info = json.loads(files.info.read_text())
+    files.info.write_text(json.dumps({**info, "timezone": "Mars/Olympus"}))
+    with pytest.raises(ModelInfoError, match=r"Mars/Olympus"):
+        load_model_info(files)
+    del info["timezone"]
+    files.info.write_text(json.dumps(info))
+    with pytest.raises(ModelInfoError, match=r"timezone"):
+        load_model_info(files)
+
+
 def test_outcome_comes_from_the_litter_surface(tmp_path):
     model = load_outcome_model(write_tiny_models(tmp_path), "cpu")
     assert model.outcome(Frame(MIDNIGHT, picture(green=9))).best == Outcome.POOP
@@ -44,8 +57,8 @@ def test_outcome_comes_from_the_litter_surface(tmp_path):
     assert sum(scores.scores.values()) == pytest.approx(1.0)
 
 
-def test_outcome_guess_uses_the_time_of_day(tmp_path):
-    model = load_outcome_model(write_tiny_models(tmp_path), "cpu", zone=ZONE)
+def test_outcome_guess_uses_the_time_of_day_in_the_trained_zone(tmp_path):
+    model = load_outcome_model(write_tiny_models(tmp_path), "cpu")
     assert model.guess(Frame(MIDNIGHT, picture(red=9))).best == Outcome.PEE
     assert model.guess(Frame(SIX_AM, picture(red=9))).best == Outcome.POOP
 

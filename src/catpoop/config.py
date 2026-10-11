@@ -9,8 +9,9 @@ import tomllib
 from datetime import time
 from pathlib import Path
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from catpoop.domain import Urgency
 
@@ -126,6 +127,18 @@ class OutcomeSettings(_Strict):
     """Share of Visits held out to measure accuracy."""
     guess_frames_per_visit: int = Field(5, ge=1)
     """Frames from the middle of each Visit used to learn the Outcome Guess."""
+    timezone: str = "UTC"
+    """IANA time zone of the Litter Box, e.g. `Australia/Melbourne`; the time of day is
+    read in it. Saved with the models, so the server uses the zone they were trained in."""
+
+    @field_validator("timezone")
+    @classmethod
+    def _known_zone(cls, name: str) -> str:
+        try:
+            ZoneInfo(name)
+        except (ValueError, KeyError, OSError):  # ZoneInfoNotFoundError is a KeyError
+            raise ValueError(f"unknown time zone {name!r}") from None
+        return name
 
 
 class Config(_Strict):

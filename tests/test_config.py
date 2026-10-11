@@ -110,6 +110,7 @@ def test_outcome_settings_have_defaults(tmp_path):
     assert outcome.runtime == "auto"
     assert outcome.backbone == "mobilenet"
     assert 0 < outcome.validation_fraction < 1
+    assert outcome.timezone == "UTC"
 
 
 def test_outcome_settings_are_read_and_checked(tmp_path):
@@ -121,3 +122,10 @@ def test_outcome_settings_are_read_and_checked(tmp_path):
         load_config(write(tmp_path, MINIMAL + '[outcome]\nbackbone = "huge"\n'))
     with pytest.raises(ConfigError, match=r"outcome\.runtime"):
         load_config(write(tmp_path, MINIMAL + '[outcome]\nruntime = "tpu"\n'))
+
+
+def test_outcome_timezone_must_be_a_known_zone(tmp_path):
+    text = MINIMAL + '[outcome]\ntimezone = "Australia/Melbourne"\n'
+    assert load_config(write(tmp_path, text)).outcome.timezone == "Australia/Melbourne"
+    with pytest.raises(ConfigError, match=r"outcome\.timezone"):
+        load_config(write(tmp_path, MINIMAL + '[outcome]\ntimezone = "Mars/Olympus"\n'))

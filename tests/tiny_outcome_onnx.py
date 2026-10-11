@@ -1,7 +1,7 @@
 """Tiny hand-made ONNX Outcome models for tests: the mean colour picks the Outcome.
 
 A red picture scores Pee, green Poop and blue Nothing. The Outcome Guess model also
-adds 1000 to Poop times the `sin` of the time of day, so 6am always guesses Poop.
+adds 1000 to Poop times the `sin` of the time of day, so 6am in `ZONE` always guesses Poop.
 """
 
 from pathlib import Path
@@ -15,6 +15,8 @@ onnx = pytest.importorskip("onnx")
 from onnx import TensorProto, helper, numpy_helper  # noqa: E402
 
 SIZE = 4
+ZONE = "Australia/Brisbane"
+"""UTC+10 all year."""
 
 
 def _image_input():
@@ -54,5 +56,5 @@ def write_tiny_models(folder: Path) -> ModelFiles:
         files.guess,
         [numpy_helper.from_array(weights, "weights")],
     )
-    save_model_info(files, SIZE)
+    save_model_info(files, SIZE, ZONE)
     return files

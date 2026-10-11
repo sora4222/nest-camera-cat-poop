@@ -41,4 +41,4 @@ def test_time_features_go_round_the_clock_in_local_time():
 
 
 def test_unknown_time_is_marked():
-    assert time_features(None) == pytest.approx([0.0, 0.0, 0.0])
+    assert time_features(None, PLUS_TEN) == pytest.approx([0.0, 0.0, 0.0])
