@@ -18,6 +18,11 @@ class OnnxOutcomeModel:
         self._guess = guess
         self._info = info
 
+    @property
+    def info(self) -> ModelInfo:
+        """What the models take and give, and how they were trained."""
+        return self._info
+
     def outcome(self, surface: Frame) -> OutcomeScores:
         """The Outcome, from a Frame of the litter surface after the Cat has left."""
         return self._scores(self._outcome.run(["scores"], {"image": self._image(surface)}))

@@ -2,8 +2,8 @@
 
 - `outcome.onnx`: input `image` `[N, S, S, 3]` float32 pixels 0-255, output `scores` `[N, 3]`.
 - `outcome_guess.onnx`: inputs `image` and `time` `[N, 3]` (see `features.time_features`).
-- `outcome.json`: the picture size `S`, the Outcome of each score and the time zone the
-  time of day was read in.
+- `outcome.json`: the picture size `S`, the Outcome of each score, the time zone the
+  time of day was read in and the share of Visits held out from training.
 """
 
 import json
@@ -53,11 +53,19 @@ class ModelInfo:
     image_size: int
     classes: tuple[Outcome, ...]
     zone: ZoneInfo
+    validation_fraction: float
 
 
-def save_model_info(files: ModelFiles, image_size: int, timezone: str) -> None:
+def save_model_info(
+    files: ModelFiles, image_size: int, timezone: str, validation_fraction: float
+) -> None:
     """Write `outcome.json` for models trained on `image_size` pictures in `timezone`."""
-    info = {"image_size": image_size, "classes": [c.value for c in CLASSES], "timezone": timezone}
+    info = {
+        "image_size": image_size,
+        "classes": [c.value for c in CLASSES],
+        "timezone": timezone,
+        "validation_fraction": validation_fraction,
+    }
     files.info.write_text(json.dumps(info, indent=2) + "\n")
 
 
@@ -68,10 +76,11 @@ def load_model_info(files: ModelFiles) -> ModelInfo:
         classes = tuple(Outcome(name) for name in data["classes"])
         size = int(data["image_size"])
         zone = ZoneInfo(data["timezone"])
+        fraction = float(data["validation_fraction"])
     except FileNotFoundError:
         raise ModelInfoError(f"{files.info} not found; run `make train` first") from None
     except (ValueError, KeyError, TypeError) as error:
         raise ModelInfoError(f"{files.info}: {error!r}") from None
     if sorted(classes) != sorted(Outcome):
         raise ModelInfoError(f"{files.info}: classes must be each Outcome once")
-    return ModelInfo(size, classes, zone)
+    return ModelInfo(size, classes, zone, fraction)

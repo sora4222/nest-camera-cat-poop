@@ -58,7 +58,9 @@ def train(
         log("Outcome Guess (the Cat's stance and the time of day)")
         stances = stance_examples(visits, settings.guess_frames_per_visit)
         _fit(stances, staged.guess, settings, with_time=True)
-        save_model_info(staged, settings.image_size, settings.timezone)
+        save_model_info(
+            staged, settings.image_size, settings.timezone, settings.validation_fraction
+        )
         for name in ("outcome", "guess", "info"):
             os.replace(getattr(staged, name), getattr(files, name))
     log(f"Wrote {files.folder}")

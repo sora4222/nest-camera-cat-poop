@@ -32,7 +32,7 @@ def _save(nodes, inputs, path: Path, initializers=()) -> None:
     onnx.save(model, str(path))
 
 
-def write_tiny_models(folder: Path) -> ModelFiles:
+def write_tiny_models(folder: Path, validation_fraction: float = 0.5) -> ModelFiles:
     """Write both tiny models and their info to `folder`."""
     folder.mkdir(parents=True, exist_ok=True)
     files = ModelFiles(folder)
@@ -56,5 +56,5 @@ def write_tiny_models(folder: Path) -> ModelFiles:
         files.guess,
         [numpy_helper.from_array(weights, "weights")],
     )
-    save_model_info(files, SIZE, ZONE)
+    save_model_info(files, SIZE, ZONE, validation_fraction)
     return files

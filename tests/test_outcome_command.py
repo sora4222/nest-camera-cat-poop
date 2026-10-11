@@ -57,6 +57,25 @@ def test_evaluate_reports_accuracy_per_class_of_the_exported_models(tmp_path, ca
     assert "Outcome Guess:" in out
 
 
+def test_evaluate_holds_out_the_visits_the_models_were_trained_without(tmp_path, monkeypatch):
+    pytest.importorskip("onnxruntime")
+    from tiny_outcome_onnx import write_tiny_models
+
+    import catpoop.outcome.command as command
+
+    fractions = []
+
+    def evaluate(model, visits, validation_fraction, guess_frames_per_visit):
+        fractions.append(validation_fraction)
+        accuracy = Accuracy.of([])
+        return Evaluation(accuracy, accuracy)
+
+    monkeypatch.setattr(command, "evaluate", evaluate)
+    write_tiny_models(tmp_path / "store" / "models" / "outcome", validation_fraction=0.3)
+    assert main(["evaluate", "--config", str(write_config(tmp_path))]) == 0
+    assert fractions == [0.3]  # from outcome.json, not the 0.5 in config.toml
+
+
 def test_evaluate_without_models_says_to_train(tmp_path, capsys):
     pytest.importorskip("onnxruntime")
     assert main(["evaluate", "--config", str(write_config(tmp_path))]) == 1

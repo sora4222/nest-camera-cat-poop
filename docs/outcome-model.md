@@ -26,7 +26,7 @@ Under `paths.private_data_store`, in `outcome.models` (default `models/outcome/`
 
 - `outcome.onnx`: input `image` `[N, S, S, 3]` float32 RGB pixels 0-255, output `scores` `[N, 3]`.
 - `outcome_guess.onnx`: inputs `image` and `time` `[N, 3]` (`sin` and `cos` of the time of day, and 1 if it is known), output `scores`.
-- `outcome.json`: the picture size `S`, the Outcome of each score and the `timezone` the time of day was read in.
+- `outcome.json`: the picture size `S`, the Outcome of each score, the `timezone` the time of day was read in and the `validation_fraction` held out, which `make evaluate` uses whatever `config.toml` says now.
 
 The old files are only replaced once both new models are exported.
 

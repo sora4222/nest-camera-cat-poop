@@ -22,8 +22,9 @@ def picture(red=0, green=0, blue=0, height=9, width=12):
 
 
 def test_model_info_is_saved_next_to_the_models(tmp_path):
-    files = write_tiny_models(tmp_path / "models")
+    files = write_tiny_models(tmp_path / "models", validation_fraction=0.3)
     info = load_model_info(files)
+    assert info.validation_fraction == 0.3
     assert info.image_size == SIZE
     assert list(info.classes) == [Outcome.PEE, Outcome.POOP, Outcome.NOTHING]
     assert str(info.zone) == ZONE
