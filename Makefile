@@ -1,6 +1,6 @@
 .PHONY: help setup dev check format test config export-detector import-history cut-visits label add-visit
 
-# ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make dev RUNTIME=nvidia`.
+# ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
 UV_RUN := uv run --extra $(RUNTIME)
 
@@ -17,8 +17,8 @@ else
 endif
 
 help:
-	@echo "make setup   first-time setup: private config, .env and dev tools"
-	@echo "make dev     install the package and dev tools (RUNTIME=cpu|amd|nvidia)"
+	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia), create config.toml and .env if missing"
+	@echo "make dev     run the application locally"
 	@echo "make check   format check, lint and type check"
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
@@ -30,12 +30,13 @@ help:
 	@echo "make add-visit OUTCOME=poop|pee|nothing CLIPS=\"a.mp4 b.mp4\"  clips found by hand to the dataset"
 
 # Copy the example files only if the private ones do not exist yet.
-setup: dev
+setup:
+	uv sync --extra $(RUNTIME)
 	@test -f config.toml || { cp config.example.toml config.toml && echo "Created config.toml; edit it."; }
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 
 dev:
-	uv sync --extra $(RUNTIME)
+	$(RUN) catpoop check-config
 
 check:
 	$(UV_RUN) ruff format --check .
