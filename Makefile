@@ -18,7 +18,7 @@ endif
 
 help:
 	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia), create config.toml and .env if missing"
-	@echo "make dev     run the application locally"
+	@echo "make dev     run the live watcher (Ctrl+C stops it)"
 	@echo "make check   format check, lint and type check"
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
@@ -38,7 +38,7 @@ setup:
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 
 dev:
-	$(RUN) catpoop check-config
+	$(RUN) catpoop watch
 
 check:
 	$(UV_RUN) ruff format --check .

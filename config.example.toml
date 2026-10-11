@@ -6,7 +6,7 @@
 [parts]
 camera = "nest"
 detector = "onnx"
-event_rules = "standard"
+event_rules = "log"  # passes Visits and camera problems to the event log
 event_log = "memory"
 presence = "off"
 communications = "standard"
@@ -89,9 +89,17 @@ validation_fraction = 0.2  # share of Visits held out to measure accuracy
 guess_frames_per_visit = 5 # frames from the middle of each Visit for the Outcome Guess
 timezone = "UTC"           # IANA zone of the Litter Box (e.g. "Australia/Melbourne") for the time of day
 
-# Options for the chosen implementation of each part, one table per part, e.g.:
-# [camera]
-# device = "Litter box"
+# Camera "nest": a Google Nest camera through googlenestcam. Secrets are in .env.
+[camera]
+device = "Litter box"   # the camera's name in the Google Home app
+size = 720              # picture height in pixels
+retry_seconds = 30      # wait before reconnecting after the stream fails
+
+# The live watcher (`make dev`, see docs/watcher.md).
+[watcher]
+check_seconds = 0.25    # time between detector runs on the newest picture
+
+# Options for the chosen implementation of each other part, one table per part.
 
 # History importers (`make import-history`, see docs/history-import.md).
 # Paths given on the command line are used instead of these.
