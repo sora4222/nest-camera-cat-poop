@@ -41,3 +41,16 @@ def test_a_discarded_visit_leaves_nothing_behind(tmp_path):
     assert not recorder.recording
     assert list(temp.iterdir()) == []
     assert not (tmp_path / "store").exists()
+
+
+def test_saving_a_live_visit_keeps_the_store_under_its_size_limit(tmp_path):
+    store = tmp_path / "store"
+    old = store / "history" / "clips" / ("a" * 64 + ".mp4")
+    old.parent.mkdir(parents=True)
+    old.write_bytes(bytes(10_000))
+    recorder = LiveVisitRecorder(store, VisitSettings(max_store_gb=1e-9), tmp_path / "temp")
+    recorder.start([frame(0)])
+    for i in range(1, 9):
+        recorder.add(frame(i * 0.5))
+    recorder.save(START + timedelta(minutes=1))
+    assert not old.exists()

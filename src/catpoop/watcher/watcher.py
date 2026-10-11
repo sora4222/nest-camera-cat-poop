@@ -69,12 +69,15 @@ class Watcher:
         self._login_said = False
 
     def run(self, stop: Callable[[], bool] = lambda: False) -> None:
-        """Check every `check_seconds` until `stop()` is true."""
-        while not stop():
-            began = self._clock.now()
-            self.step()
-            used = (self._clock.now() - began).total_seconds()
-            self._clock.sleep(max(0.0, self._check_seconds - used))
+        """Check every `check_seconds` until `stop()` is true; drops an unfinished Visit's clip."""
+        try:
+            while not stop():
+                began = self._clock.now()
+                self.step()
+                used = (self._clock.now() - began).total_seconds()
+                self._clock.sleep(max(0.0, self._check_seconds - used))
+        finally:
+            self._recorder.discard()
 
     def step(self) -> None:
         """Read the camera once and pass on what was seen."""

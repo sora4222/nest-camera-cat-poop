@@ -238,3 +238,25 @@ def test_a_detector_failure_is_logged_and_the_watcher_keeps_going(tmp_path, capl
     assert "detector blew up" in caplog.text
     assert [type(o).__name__ for o in run.rules.seen[:3]] == ["Seen", "NoPicture", "Seen"]
     assert run.said() == [(4, "VisitStarted"), (9, "VisitEnded")]
+
+
+def test_stopping_during_a_visit_discards_the_recording(tmp_path):
+    run = Run(tmp_path, "..CCCC")
+    checks = iter(range(6))
+    run.watcher.run(stop=lambda: next(checks, None) is None)
+    assert run.said() == [(4, "VisitStarted")]
+    assert list((tmp_path / "temp").iterdir()) == []
+
+
+def test_ctrl_c_during_a_visit_discards_the_recording(tmp_path):
+    run = Run(tmp_path, "..CCCC")
+    checks = iter(range(6))
+
+    def stop() -> bool:
+        if next(checks, None) is None:
+            raise KeyboardInterrupt
+        return False
+
+    with pytest.raises(KeyboardInterrupt):
+        run.watcher.run(stop=stop)
+    assert list((tmp_path / "temp").iterdir()) == []
