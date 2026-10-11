@@ -269,3 +269,26 @@ def test_example_config_builds_the_standard_rules_and_sqlite_log(tmp_path, monke
     assert isinstance(rules, StandardEventRules)
     event_log = registry.create(EVENT_LOG, config.parts.event_log, config, config.event_log)
     assert isinstance(event_log, SqliteEventLog)
+
+
+def test_poop_known_from_before_a_restart_can_be_found_gone():
+    feed = Feed(timers=Timers(poop_reminder_max_count=0))
+    feed.rules.resume_poop(START, START)
+    feed.seen("person")
+    feed.clock.advance(10)
+    assert feed.kinds(feed.seen(surface=Outcome.NOTHING)) == ["poop_gone"]
+
+
+def test_poop_known_from_before_a_restart_keeps_dog_at_poop():
+    feed = Feed(timers=Timers(poop_reminder_max_count=0))
+    feed.rules.resume_poop(START, START)
+    assert feed.kinds(feed.seen("dog")) == ["dog_at_poop"]
+
+
+def test_reminders_after_a_restart_carry_on_without_repeating_past_ones():
+    feed = Feed()
+    feed.clock.advance(5 * 60)
+    feed.rules.resume_poop(START, feed.clock.now())
+    reminders = feed.wait(60)
+    assert [r.details["number"] for r in reminders] == ["4", "5", "6"]
+    assert [round((r.at - START).total_seconds() / 60) for r in reminders] == [8, 16, 32]
