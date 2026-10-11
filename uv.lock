@@ -391,8 +391,8 @@ provides-extras = ["amd", "nvidia", "train"]
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=9.1" },
-    { name = "ruff", specifier = ">=0.17" },
-    { name = "ty", specifier = ">=0.0.86" },
+    { name = "ruff", specifier = "==0.17.0" },
+    { name = "ty", specifier = "==0.0.86" },
 ]
 
 [[package]]
