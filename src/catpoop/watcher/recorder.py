@@ -1,7 +1,8 @@
 """Record the live Visit going on to a local MP4, then save it in the Private Data Store.
 
 Saved Visits wait for labeling (`make label`), so every Visit adds training data. After each
-save the store is kept under `visits.max_store_gb`.
+save the store is kept under `visits.max_store_gb`, on a background thread so the watcher
+loop does not wait for it.
 """
 
 import logging
@@ -17,6 +18,7 @@ from catpoop.visits.add_visit import save_clip_as_visit
 from catpoop.visits.clip_writer import ClipWriter
 from catpoop.visits.retention import prune_clips
 from catpoop.visits.store import Visit
+from catpoop.watcher.background_task import BackgroundTask
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +35,7 @@ class LiveVisitRecorder:
         self._temp_folder = temp_folder
         self._writer: ClipWriter | None = None
         self._first: datetime | None = None
+        self._pruning = BackgroundTask(self._prune, "pruning the Private Data Store")
 
     @property
     def recording(self) -> bool:
@@ -73,8 +76,12 @@ class LiveVisitRecorder:
             )
         finally:
             shutil.rmtree(writer.path.parent, ignore_errors=True)
-        self._prune()
+        self._pruning.request()
         return visit
+
+    def wait_for_prune(self, timeout: float | None = None) -> bool:
+        """Wait for a prune going on to finish; False if `timeout` seconds passed first."""
+        return self._pruning.wait(timeout)
 
     def _prune(self) -> None:
         try:

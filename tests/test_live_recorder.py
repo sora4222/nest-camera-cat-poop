@@ -1,3 +1,4 @@
+import threading
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
@@ -6,6 +7,7 @@ import pytest
 from catpoop.config import VisitSettings
 from catpoop.domain import Frame
 from catpoop.visits.store import VisitStore
+from catpoop.watcher import recorder as recorder_module
 from catpoop.watcher.recorder import LiveVisitRecorder
 
 START = datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
@@ -53,4 +55,25 @@ def test_saving_a_live_visit_keeps_the_store_under_its_size_limit(tmp_path):
     for i in range(1, 9):
         recorder.add(frame(i * 0.5))
     recorder.save(START + timedelta(minutes=1))
+    assert recorder.wait_for_prune(5)
     assert not old.exists()
+
+
+def test_saving_returns_without_waiting_for_the_prune(tmp_path, monkeypatch):
+    release, pruned = threading.Event(), threading.Event()
+
+    def slow_prune(store, max_bytes):
+        release.wait(5)
+        pruned.set()
+        return []
+
+    monkeypatch.setattr(recorder_module, "prune_clips", slow_prune)
+    recorder = LiveVisitRecorder(tmp_path / "store", VisitSettings(), tmp_path / "temp")
+    recorder.start([frame(0)])
+    for i in range(1, 9):
+        recorder.add(frame(i * 0.5))
+    recorder.save(START + timedelta(minutes=1))
+    assert not pruned.is_set()
+    release.set()
+    assert recorder.wait_for_prune(5)
+    assert pruned.is_set()
