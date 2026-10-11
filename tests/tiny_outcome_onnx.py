@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from catpoop.outcome.model_files import ModelFiles, save_model_info
+from catpoop.outcome.publish import publish, stage
 
 onnx = pytest.importorskip("onnx")
 from onnx import TensorProto, helper, numpy_helper  # noqa: E402
@@ -58,3 +59,10 @@ def write_tiny_models(folder: Path, validation_fraction: float = 0.5) -> ModelFi
     )
     save_model_info(files, SIZE, ZONE, validation_fraction)
     return files
+
+
+def publish_tiny_models(models: Path, validation_fraction: float = 0.5) -> ModelFiles:
+    """Write both tiny models and publish them as `make train` does, in `models`."""
+    staged = stage(models)
+    write_tiny_models(staged, validation_fraction)
+    return ModelFiles(publish(staged, models))

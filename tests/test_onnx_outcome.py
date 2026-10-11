@@ -72,7 +72,6 @@ def test_missing_model_file_is_an_error(tmp_path):
 
 
 def test_models_folder_is_inside_the_store_unless_absolute(tmp_path):
-    assert (
-        ModelFiles.in_store(tmp_path, Path("models/outcome")).folder == tmp_path / "models/outcome"
-    )
-    assert ModelFiles.in_store(tmp_path, Path("/elsewhere")).folder == Path("/elsewhere")
+    files = ModelFiles.in_store(tmp_path, Path("models/outcome"))
+    assert files.folder == tmp_path / "models/outcome/current"
+    assert ModelFiles.in_store(tmp_path, Path("/elsewhere")).folder == Path("/elsewhere/current")

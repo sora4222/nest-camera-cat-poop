@@ -1,4 +1,6 @@
-"""The files `make train` writes to the models folder, and `outcome.json` that describes them.
+"""The files of one training run, and `outcome.json` that describes them.
+
+The server reads the published run, `<models>/current` (see `publish`).
 
 - `outcome.onnx`: input `image` `[N, S, S, 3]` float32 pixels 0-255, output `scores` `[N, 3]`.
 - `outcome_guess.onnx`: inputs `image` and `time` `[N, 3]` (see `features.time_features`).
@@ -13,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from catpoop.domain import Outcome
 from catpoop.outcome.features import CLASSES
+from catpoop.outcome.publish import CURRENT
 
 
 class ModelInfoError(Exception):
@@ -21,14 +24,14 @@ class ModelInfoError(Exception):
 
 @dataclass(frozen=True)
 class ModelFiles:
-    """Paths of the Outcome model files in one folder."""
+    """Paths of the Outcome model files of one training run."""
 
     folder: Path
 
     @classmethod
     def in_store(cls, private_data_store: Path, models: Path) -> "ModelFiles":
-        """The files in `models`; a relative path is inside the Private Data Store."""
-        return cls(private_data_store / models)
+        """The published files in `models`; a relative path is inside the Private Data Store."""
+        return cls(private_data_store / models / CURRENT)
 
     @property
     def outcome(self) -> Path:

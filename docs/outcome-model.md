@@ -22,13 +22,13 @@ The picture network is `backbone = "mobilenet"` (MobileNetV3 Small pretrained on
 
 ## What is stored
 
-Under `paths.private_data_store`, in `outcome.models` (default `models/outcome/`):
+Under `paths.private_data_store`, in `outcome.models` (default `models/outcome/`), each training run is a dated folder and `current` is a symlink to the published one. The server and `make evaluate` read `current/`:
 
 - `outcome.onnx`: input `image` `[N, S, S, 3]` float32 RGB pixels 0-255, output `scores` `[N, 3]`.
 - `outcome_guess.onnx`: inputs `image` and `time` `[N, 3]` (`sin` and `cos` of the time of day, and 1 if it is known), output `scores`.
 - `outcome.json`: the picture size `S`, the Outcome of each score, the `timezone` the time of day was read in and the `validation_fraction` held out, which `make evaluate` uses whatever `config.toml` says now.
 
-The old files are only replaced once both new models are exported.
+A run is written to a hidden folder and published only once both models are exported, by renaming the `current` symlink in one step, so a reader never sees old and new files mixed. The previous run is kept; older ones are deleted.
 
 ## On the server
 

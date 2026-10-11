@@ -39,6 +39,8 @@ def test_trains_exports_and_reports_both_models(tmp_path):
     assert files.outcome.is_file()
     assert files.guess.is_file()
     assert load_model_info(files).image_size == 32
+    assert files.folder.is_symlink()  # published all at once
+    assert not [p for p in files.folder.parent.iterdir() if p.name.startswith(".training-")]
     assert evaluation.outcome.total > 0
     assert evaluation.guess.total > 0
     model = load_outcome_model(files, "cpu")

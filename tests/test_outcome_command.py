@@ -46,9 +46,9 @@ def add_visits(store, count=12):
 
 def test_evaluate_reports_accuracy_per_class_of_the_exported_models(tmp_path, capsys):
     pytest.importorskip("onnxruntime")
-    from tiny_outcome_onnx import write_tiny_models
+    from tiny_outcome_onnx import publish_tiny_models
 
-    write_tiny_models(tmp_path / "store" / "models" / "outcome")
+    publish_tiny_models(tmp_path / "store" / "models" / "outcome")
     add_visits(tmp_path / "store")
     assert main(["evaluate", "--config", str(write_config(tmp_path))]) == 0
     out = capsys.readouterr().out
@@ -59,7 +59,7 @@ def test_evaluate_reports_accuracy_per_class_of_the_exported_models(tmp_path, ca
 
 def test_evaluate_holds_out_the_visits_the_models_were_trained_without(tmp_path, monkeypatch):
     pytest.importorskip("onnxruntime")
-    from tiny_outcome_onnx import write_tiny_models
+    from tiny_outcome_onnx import publish_tiny_models
 
     import catpoop.outcome.command as command
 
@@ -71,7 +71,7 @@ def test_evaluate_holds_out_the_visits_the_models_were_trained_without(tmp_path,
         return Evaluation(accuracy, accuracy)
 
     monkeypatch.setattr(command, "evaluate", evaluate)
-    write_tiny_models(tmp_path / "store" / "models" / "outcome", validation_fraction=0.3)
+    publish_tiny_models(tmp_path / "store" / "models" / "outcome", validation_fraction=0.3)
     assert main(["evaluate", "--config", str(write_config(tmp_path))]) == 0
     assert fractions == [0.3]  # from outcome.json, not the 0.5 in config.toml
 

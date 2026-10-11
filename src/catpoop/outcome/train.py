@@ -1,11 +1,10 @@
 """Train the Outcome and Outcome Guess models, export them to ONNX and measure them (train extra).
 
-The new files replace the old ones only once both models are exported. Accuracy is then
+The new files are published all at once, only once both models are exported. Accuracy is then
 measured with the exported ONNX files, as the server will run them.
 """
 
-import os
-import tempfile
+import shutil
 from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -27,6 +26,7 @@ from catpoop.outcome.model_files import ModelFiles, save_model_info
 from catpoop.outcome.network import build_model
 from catpoop.outcome.onnx_export import export_onnx
 from catpoop.outcome.onnx_outcome import load_outcome_model
+from catpoop.outcome.publish import publish, stage
 from catpoop.outcome.tf_data import make_dataset
 
 
@@ -49,10 +49,9 @@ def train(
     if not visits:
         raise TrainingError(f"no labeled Visits in {dataset}; label some with `make label`")
     log(f"Training on {len(visits)} labeled Visits")
-    files = ModelFiles.in_store(private_data_store, settings.models)
-    files.folder.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=files.folder, prefix=".training-") as temp:
-        staged = ModelFiles(Path(temp))
+    models = private_data_store / settings.models
+    staged = ModelFiles(stage(models))
+    try:
         log("Outcome (litter surface after the Visit)")
         _fit(surface_examples(visits), staged.outcome, settings, with_time=False)
         log("Outcome Guess (the Cat's stance and the time of day)")
@@ -61,9 +60,11 @@ def train(
         save_model_info(
             staged, settings.image_size, settings.timezone, settings.validation_fraction
         )
-        for name in ("outcome", "guess", "info"):
-            os.replace(getattr(staged, name), getattr(files, name))
-    log(f"Wrote {files.folder}")
+        files = ModelFiles(publish(staged.folder, models))
+    except BaseException:
+        shutil.rmtree(staged.folder, ignore_errors=True)
+        raise
+    log(f"Published {files.folder}")
     model = load_outcome_model(files, "cpu")
     return evaluate(model, visits, settings.validation_fraction, settings.guess_frames_per_visit)
 
