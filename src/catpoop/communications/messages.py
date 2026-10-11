@@ -19,6 +19,6 @@ def message_text(templates: Mapping[str, str], household: Household, event: Even
         return None
     try:
         return template.format(**{"cat": household.cat, "dog": household.dog, **event.details})
-    except (KeyError, IndexError, ValueError) as error:
+    except (KeyError, IndexError, AttributeError, TypeError, ValueError) as error:
         log.warning("message %r cannot be filled in: %r", event.kind, error)
         return None

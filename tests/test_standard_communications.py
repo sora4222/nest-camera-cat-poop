@@ -280,3 +280,28 @@ def test_wrong_options_and_speaker_urgencies_are_config_errors(tmp_path):
         registry.create(COMMUNICATIONS, "standard", config({"urgencies": ["loud"]}), {})
     built = registry.create(COMMUNICATIONS, "standard", config({"urgencies": ["urgent"]}), {})
     assert isinstance(built, StandardCommunications)
+
+
+class BrokenPresence(FakePresence):
+    def __init__(self) -> None:
+        super().__init__()
+        self.broken = True
+
+    def check(self, listener: str) -> Presence:
+        if self.broken:
+            raise ConnectionError("presence check is down")
+        return super().check(listener)
+
+
+def test_end_of_quiet_hours_is_not_retried_when_announcing_it_fails(tmp_path):
+    presence = BrokenPresence()
+    setup = Setup(tmp_path, quiet=[NIGHTS], presence=presence)
+    setup.clock.advance(3 * 3600)  # 23:00, quiet
+    setup.event("poop")
+    setup.wait(8 * 3600 - 60)  # to 06:59
+    setup.clock.advance(60)
+    with pytest.raises(ConnectionError):
+        setup.handler.tick(setup.clock.now())
+    presence.broken = False
+    setup.wait(60)
+    assert setup.speaker.said == []
