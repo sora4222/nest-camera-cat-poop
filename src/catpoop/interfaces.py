@@ -108,6 +108,22 @@ class AudioPlayer(Protocol):
         ...
 
 
+class ServiceManager(Protocol):
+    """The user's systemd (`systemctl --user`), for installing the watcher service."""
+
+    def reload(self) -> None:
+        """Read unit files again after one was added, changed or removed."""
+        ...
+
+    def enable_now(self, unit: str) -> None:
+        """Start `unit` now and at every start of the user's systemd."""
+        ...
+
+    def disable_now(self, unit: str) -> None:
+        """Stop `unit` now and no longer start it."""
+        ...
+
+
 class CommunicationsHandler(Protocol):
     """The one gate every Announcement goes through (Quiet Hours, presence, Speakers)."""
 
