@@ -83,6 +83,21 @@ def test_visit_added_with_an_outcome_goes_straight_to_the_dataset(tmp_path):
     assert "manual" in (tmp_path / "dataset" / "manifest.csv").read_text()
 
 
+def test_adding_a_visit_again_with_another_outcome_drops_its_old_frames(tmp_path):
+    store = VisitStore(tmp_path)
+    store.add(visit(outcome=Outcome.PEE, labeled_at=NOW.isoformat()), images(2))
+    again = store.add(visit(outcome=Outcome.POOP, labeled_at=NOW.isoformat()), images(2))
+    assert not (tmp_path / "dataset" / "pee" / again.id).exists()
+    assert (tmp_path / "dataset" / "poop" / again.id / "frame_0001.jpg").exists()
+
+
+def test_adding_a_labeled_visit_over_an_unlabeled_one_drops_its_old_frames(tmp_path):
+    store = VisitStore(tmp_path)
+    store.add(visit(), images(2))
+    again = store.add(visit(outcome=Outcome.POOP, labeled_at=NOW.isoformat()), images(2))
+    assert not (tmp_path / "visits" / "frames" / again.id).exists()
+
+
 def test_unknown_or_odd_ids_are_refused(tmp_path):
     store = VisitStore(tmp_path)
     assert store.get("../../etc") is None

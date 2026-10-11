@@ -63,7 +63,10 @@ class VisitStore:
         self.dataset = private_data_store / "dataset"
 
     def add(self, visit: Visit, images: Iterable[np.ndarray]) -> Visit:
-        """Save `visit` with `images` as its frames; one with an Outcome goes to the dataset."""
+        """Save `visit` with `images` as its frames; one with an Outcome goes to the dataset.
+
+        A Visit already saved under the same id is replaced, frames and all.
+        """
         folder = self._frames_folder(visit)
         temp = folder.with_name(f".{folder.name}.part")
         shutil.rmtree(temp, ignore_errors=True)
@@ -73,6 +76,9 @@ class VisitStore:
         temp.mkdir(parents=True, exist_ok=True)
         shutil.rmtree(folder, ignore_errors=True)
         temp.replace(folder)
+        existing = self.get(visit.id)
+        if existing is not None and self._frames_folder(existing) != folder:
+            shutil.rmtree(self._frames_folder(existing), ignore_errors=True)
         saved = replace(visit, frames=count)
         self._write(saved)
         if saved.outcome is not None:
