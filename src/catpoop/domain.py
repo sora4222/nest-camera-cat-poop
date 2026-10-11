@@ -72,3 +72,5 @@ class Event:
     urgency: Urgency
     at: datetime
     details: dict[str, str] = field(default_factory=dict)
+    announce: bool = True
+    """False for Events that only go in the event log, such as a wrong Outcome Guess."""
