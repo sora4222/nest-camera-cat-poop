@@ -136,3 +136,24 @@ def test_outcome_timezone_must_be_a_known_zone(tmp_path):
     assert load_config(write(tmp_path, text)).outcome.timezone == "Australia/Melbourne"
     with pytest.raises(ConfigError, match=r"outcome\.timezone"):
         load_config(write(tmp_path, MINIMAL + '[outcome]\ntimezone = "Mars/Olympus"\n'))
+
+
+def test_alexa_skill_is_off_by_default(tmp_path):
+    skill = load_config(write(tmp_path, MINIMAL)).alexa_skill
+    assert skill.enabled is False
+    assert (skill.host, skill.port, skill.tunnel, skill.hostname) == (
+        "127.0.0.1",
+        8767,
+        "cloudflare",
+        None,
+    )
+
+
+def test_alexa_skill_settings_are_read_and_checked(tmp_path):
+    text = MINIMAL + '\n[alexa_skill]\nenabled = true\nport = 9000\ntunnel = "tailscale"\n'
+    skill = load_config(write(tmp_path, text)).alexa_skill
+    assert (skill.enabled, skill.port, skill.tunnel) == (True, 9000, "tailscale")
+    with pytest.raises(ConfigError, match="tunnel"):
+        load_config(write(tmp_path, MINIMAL + '\n[alexa_skill]\ntunnel = "ngrok"\n'))
+    with pytest.raises(ConfigError, match="port"):
+        load_config(write(tmp_path, MINIMAL + "\n[alexa_skill]\nport = 70000\n"))
