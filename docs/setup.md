@@ -8,7 +8,18 @@ Needs [uv](https://docs.astral.sh/uv/) and Linux or macOS.
 make setup      # installs the package and dev tools, creates config.toml and .env
 ```
 
-Optional extras: `uv sync --extra amd` or `--extra nvidia` for GPU detection, `--extra train` on the machine that trains models (see [ADR 0002](adr/0002-train-in-tensorflow-run-with-onnx-runtime.md)).
+The detector runs on ONNX Runtime from one of the `cpu` (default), `amd` or `nvidia` extras; pick one with `make dev RUNTIME=nvidia` and use the same `RUNTIME` for other Make targets. Only one can be installed at a time. Add `--extra train` on the machine that trains models (see [ADR 0002](adr/0002-train-in-tensorflow-run-with-onnx-runtime.md)).
+
+## Pet detector
+
+The "onnx" detector runs a TensorFlow Object Detection API model exported to ONNX. Make one on a machine with the `train` extra:
+
+```sh
+make export-detector OUT=/mnt/nas/cat-poop/models/pets.onnx   # downloads SSD MobileNet v2 FPNLite 320
+make export-detector OUT=... SAVED_MODEL=path/to/saved_model    # or convert another TF2 zoo model
+```
+
+Then set `[detector] model` in `config.toml`. To try another detector, export it and change `model` (and `labels` if its class ids differ).
 
 ## Private files
 
