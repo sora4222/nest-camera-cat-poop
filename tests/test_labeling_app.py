@@ -86,3 +86,11 @@ def test_unknown_paths_are_not_found(tmp_path):
     _, app = setup(tmp_path)
     assert app.handle("GET", "/nope", b"", HOST).status == 404
     assert app.handle("DELETE", "/api/next", b"", HOST).status == 404
+
+
+def test_a_visit_labeled_elsewhere_is_not_relabeled(tmp_path):
+    store, app = setup(tmp_path)
+    first = visit_id(SHA, 1.0)
+    label(app, first, "poop")
+    assert label(app, first, "pee").status == 409
+    assert store.get(first).outcome is Outcome.POOP

@@ -147,7 +147,7 @@ def check_skill_id(request: Mapping[str, Any], skill_id: str) -> None:
 
 
 class RequestVerifier:
-    """Checks every rule in the module docstring; caches signing certificates by URL."""
+    """Checks every rule in the module docstring; caches signing certificates that signed."""
 
     def __init__(
         self,
@@ -174,7 +174,9 @@ class RequestVerifier:
             raise RequestRejected("no SignatureCertChainUrl or Signature-256 header")
         check_cert_url(url)
         now = self._clock.now()
-        check_signature(self._leaf(url, now), signature, body)
+        leaf = self._leaf(url, now)
+        check_signature(leaf, signature, body)
+        self._leaves[url] = leaf  # kept only once Amazon's signature proves the URL is real
         try:
             request = json.loads(body)
         except ValueError:
@@ -193,9 +195,7 @@ class RequestVerifier:
             chain = self._certificates.fetch(url)
         except OSError as error:
             raise RequestRejected(f"cannot fetch the cert chain: {error}") from None
-        leaf = check_chain(chain, now, self._trusted)
-        self._leaves[url] = leaf
-        return leaf
+        return check_chain(chain, now, self._trusted)
 
 
 def _valid_at(cert: x509.Certificate, now: datetime) -> bool:

@@ -84,9 +84,12 @@ def _create(config: Config, options: Mapping[str, Any]) -> NestCamera:
     if not device:
         raise ConfigError("camera.device: the camera's name in the Google Home app is missing")
     size = options.get("size", 720)
+    retry = options.get("retry_seconds", 30.0)
+    if isinstance(retry, bool) or not isinstance(retry, int | float) or retry <= 0:
+        raise ConfigError("camera.retry_seconds: must be a number of seconds above 0")
 
     def connect() -> AbstractContextManager[Any]:
         camera = gnc.Nest(on_missing_token="raise").camera(device)
         return camera.stream(frames="latest", size=size, audio=False)
 
-    return NestCamera(connect, options.get("retry_seconds", 30.0))
+    return NestCamera(connect, retry)
