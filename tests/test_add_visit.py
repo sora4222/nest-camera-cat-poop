@@ -36,3 +36,20 @@ def test_broken_clip_is_refused_and_not_stored(tmp_path):
     with pytest.raises(VideoError):
         add_visit(bad, Outcome.PEE, tmp_path / "store", SETTINGS, NOW)
     assert not (tmp_path / "store" / "history").exists()
+
+
+def test_clip_without_video_is_refused_and_not_stored(tmp_path):
+    import av
+
+    sound = tmp_path / "sound.mp4"
+    with av.open(str(sound), "w") as container:
+        stream = container.add_stream("aac", rate=8000)
+        frame = av.AudioFrame(format="fltp", layout="mono", samples=8000)
+        frame.rate = 8000
+        for plane in frame.planes:
+            plane.update(bytes(plane.buffer_size))
+        for packet in [*stream.encode(frame), *stream.encode()]:
+            container.mux(packet)
+    with pytest.raises(VideoError):
+        add_visit(sound, Outcome.PEE, tmp_path / "store", SETTINGS, NOW)
+    assert not (tmp_path / "store" / "history").exists()
