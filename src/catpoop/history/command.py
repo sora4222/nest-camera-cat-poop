@@ -3,6 +3,8 @@
 import argparse
 import logging
 import sys
+import tarfile
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -50,7 +52,14 @@ def run(args: argparse.Namespace) -> int:
             options["job_id"] = args.job_id
         importer = _registry().create(HISTORY_IMPORTER, args.importer, config, options)
         counts = import_history(importer, HistoryClipStore(config.paths.private_data_store))
-    except (ConfigError, PortabilityError, ValueError, OSError) as error:
+    except (
+        ConfigError,
+        PortabilityError,
+        ValueError,
+        OSError,
+        zipfile.BadZipFile,
+        tarfile.TarError,
+    ) as error:
         print(error, file=sys.stderr)
         return 1
     print(f"{args.importer}: {counts.new} new, {counts.known} already stored")
