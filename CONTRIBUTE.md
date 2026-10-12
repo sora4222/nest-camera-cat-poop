@@ -63,6 +63,9 @@ src/catpoop/
     switches.py         Do Not Disturb and Pee announcements, in switches.json in the state folder
     messages.py         spoken text from the Message templates
     command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
+  speech/           speech for Google speakers (google extra)
+    piper_speech.py     text -> wav on this machine with a Piper voice
+    audio_server.py     serve wav clips on the LAN at random URLs (stdlib http.server)
   watcher/          the live watcher, `make dev` (docs/watcher.md)
     watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
