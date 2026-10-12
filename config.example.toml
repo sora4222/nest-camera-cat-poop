@@ -32,13 +32,13 @@ name = "Living room"
 kind = "log"
 # urgencies = ["normal", "urgent"]  # which Urgencies this Speaker says (default: all)
 
-# An Alexa device; the login is CATPOOP_ALEXA_REFRESH_TOKEN in .env.
+# An Alexa device through Voice Monkey; the token is CATPOOP_VOICE_MONKEY_TOKEN in .env.
 # [[speakers]]
 # name = "Kitchen"
-# kind = "alexa"
-# device = "Kitchen Echo"   # its name in the Alexa app (default: name)
-# domain = "amazon.com.au"  # your Amazon site (default: amazon.com)
-# locale = "en-AU"          # default: en-US
+# kind = "voice_monkey"
+# device = "kitchen-echo"  # the Speaker device id in the Voice Monkey console
+# voice = "Brian"          # optional Amazon Polly voice
+# chime = "soundbank://soundlibrary/alarms/beeps_and_bloops/bell_02"  # optional
 
 # Spoken text, one template per Event kind; kinds with no template are not said.
 # {cat}, {dog} and event details (e.g. {guess} on visit_started) can be used.
