@@ -17,6 +17,7 @@ src/catpoop/
   registry.py       slots, the registry, and build_parts (config names -> parts)
   watcher_lock.py   one live watcher per machine
   poop_reminders.py when Poop Reminders are due (1, 2, 4, 8... minutes)
+  alexa_web.py      Amazon's unofficial Alexa web API: log in, make a device speak
   onnx_session.py   open an ONNX model on the CPU or a GPU (cpu/amd/nvidia extras)
   export_detector.py  TF detector SavedModel -> ONNX (`make export-detector`, train extra)
   history/          import past clips into the Private Data Store (docs/history-import.md)
@@ -78,6 +79,7 @@ src/catpoop/
     onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
     google_speaker.py     speaker kind "google" (Piper speech on a Google Home / Nest speaker)
+    alexa_speaker.py      speaker kind "alexa" (an Alexa device by name)
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
     standard_event_rules.py  event_rules "standard" (Visits, Poop Reminders, Dog at Poop, camera problems)
     sqlite_event_log.py   event_log "sqlite" (SQLite file in the user's state folder)

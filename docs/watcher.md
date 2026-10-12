@@ -88,3 +88,9 @@ A `[[speakers]]` entry with `kind = "google"` says Announcements on a Google Hom
 ## Camera "nest"
 
 Reads a Google Nest camera's live stream with [googlenestcam](https://github.com/sora4222/nest-camera-access-python). Set `[camera] device` to the camera's name in the Google Home app and the `GOOGLENESTCAM_*` secrets in `.env` ([setup](setup.md#camera-login)). When the stream fails it reconnects every `[camera] retry_seconds`. A refused or missing Token is Login Expired: log in again and the watcher picks up the new Token on its next try.
+
+## Speaker "alexa"
+
+Says Announcements on an Alexa device through Amazon's Alexa web API, the one the Alexa app uses. It is free and runs on this server, with no third party, but it is unofficial and Amazon may change it. In a `[[speakers]]` entry with `kind = "alexa"`, set `device` to the device's name in the Alexa app (default: the Speaker's `name`), `domain` to your Amazon site (default `amazon.com`, e.g. `amazon.com.au`) and `locale` (default `en-US`).
+
+To log in, run `npx alexa-cookie-cli` once, sign in to Amazon in the browser it opens, and copy the refresh token it prints (it starts with `Atnr|`). Put it in `.env` as `CATPOOP_ALEXA_REFRESH_TOKEN` (a 1Password `op://` reference works); it is never logged. If Amazon refuses the token, run the tool again.
