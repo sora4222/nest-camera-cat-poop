@@ -15,6 +15,7 @@ All settings live in `config.toml` (git-ignored); `config.example.toml` lists ev
 | What is said | `[messages]` |
 | Quiet Hours and which Urgencies still get through | `[[quiet_hours]]` |
 | Camera Offline delay, Poop Reminder timing, Login Expired reminder time | `[timers]` |
+| Where past clips are imported from | `[history.takeout]`, `[history.portability]`, `[history.folder]` (see [history-import.md](history-import.md)) |
 | Secrets (tokens, passwords) | `.env`, not `config.toml` |
 
 To add a new implementation of a part, see [CONTRIBUTE.md](../CONTRIBUTE.md).

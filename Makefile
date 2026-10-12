@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config export-detector notebook
+.PHONY: help setup dev check format test config import-history export-detector notebook
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -23,6 +23,7 @@ help:
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
 	@echo "make config  load the private config and say if it is valid"
+	@echo "make import-history ARGS=\"takeout|portability|folder [paths]\"  copy past clips to the NAS"
 	@echo "make export-detector OUT=x.onnx [SAVED_MODEL=dir]  TF detector to ONNX (train extra)"
 	@echo "make notebook  open JupyterLab on notebooks/ (train extra + notebook group)"
 
@@ -49,6 +50,9 @@ test:
 
 config:
 	$(RUN) catpoop check-config
+
+import-history:
+	$(RUN) catpoop import-history $(ARGS)
 
 # Export the TF detector to ONNX. Downloads SSD MobileNet v2 FPNLite 320 unless SAVED_MODEL is set.
 export-detector:
