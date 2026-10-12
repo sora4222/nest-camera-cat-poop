@@ -10,13 +10,36 @@ Each check, and each of these, is handed to the event rules:
 
 | Observation | When | Carries |
 |---|---|---|
-| `Seen` / `NoPicture` | every check | the Frame and what the detector found |
+| `Seen` / `NoPicture` | every check | the Frame, what the detector found and, every `watcher.surface_check_seconds` while the Litter Box is empty, the Outcome model's scores of the surface |
 | `VisitStarted` | a Visit starts | its frames so far and the Outcome Guess |
 | `VisitEnded` | a Visit ends | the frames after the Cat left, the Outcome, the saved Visit's id |
 | `CameraOffline` | no picture for `timers.camera_offline_minutes` (once per outage) | when the last picture came |
 | `LoginExpired` | Google refuses the camera login (once until pictures come back) | |
 
-Camera Offline also ends a Visit going on. The Events the rules give back go in the event log. Event rules "log" just turn Visits and camera problems into Events and write them to the log.
+Camera Offline also ends a Visit going on. The Events the rules give back go in the event log. If the detector fails on a picture, the error is logged, that picture is skipped (`NoPicture`) and the watcher keeps going.
+
+## Event rules
+
+Event rules "standard" (the default) turn observations into Events. Each has an Urgency; Events marked "log only" go in the event log but are never announced.
+
+| Event | When | Urgency |
+|---|---|---|
+| `visit_started` | a Visit starts, with the Outcome Guess. Pee guesses are log only when `[event_rules] announce_pee = false` | Info |
+| `visit_ended` | a Visit ends, with the Outcome and whether the Guess was right (log only) | Info |
+| `poop` | the Outcome is Poop; Poop Reminders start | Normal |
+| `poop_reminder` | `timers.poop_reminder_first_minutes` after the Poop, then 2x, 4x, 8x... that, until `poop_reminder_max_minutes` or `poop_reminder_max_count`. The first is always announced; later ones only if a Listener's Presence is Home (Unknown counts as Away), else log only | Normal |
+| `poop_gone` | a person was at the Litter Box, and the next surface check no longer scores Poop (log only). Reminders stop | Info |
+| `dog_at_poop` | the Dog is in the Litter Box while Poop is there; again only after it was away `dog_gone_seconds` | Urgent |
+| `camera_offline` | Camera Offline | Normal |
+| `login_expired` | Login Expired, and once more at `timers.login_expired_reminder_at` (in `outcome.timezone`) if pictures have not come back | Normal |
+
+Poop being "no longer seen" comes from the Outcome model scoring the empty litter surface: the watcher runs it every `watcher.surface_check_seconds` when nothing is in the Litter Box. With no Outcome model there is no Poop, so none of this happens.
+
+Event rules "log" are a simpler stand-in: one Event per Visit start and end and camera problem.
+
+## Event log
+
+Event log "sqlite" (the default) keeps every Event in a small SQLite database on the server, at `[event_log] path`; a relative path is inside `$XDG_STATE_HOME/catpoop` (else `~/.local/state/catpoop`). Event log "memory" forgets everything on restart.
 
 The Outcome Guess and Outcome come from the [Outcome model](outcome-model.md). Until one has been trained the watcher still runs, without them.
 

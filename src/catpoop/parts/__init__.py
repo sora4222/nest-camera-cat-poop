@@ -11,6 +11,7 @@ from catpoop.parts import (
     onnx_detector,
     presence_off,
     sqlite_event_log,
+    standard_event_rules,
 )
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "onnx_detector",
     "presence_off",
     "sqlite_event_log",
+    "standard_event_rules",
 ]
