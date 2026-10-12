@@ -61,3 +61,19 @@ def test_rare_outcomes_weigh_more():
     weights = class_weights(examples)
     assert weights[CLASSES.index(Outcome.POOP)] == pytest.approx(3 * weights[2])
     assert CLASSES.index(Outcome.PEE) not in weights
+
+
+def test_models_the_runtime_cannot_load_are_not_published(tmp_path, monkeypatch):
+    make_dataset(tmp_path)
+    train(tmp_path, SETTINGS)
+    current = ModelFiles.in_store(tmp_path, SETTINGS.models).folder
+    before = current.readlink()
+
+    def broken(files, runtime):
+        raise RuntimeError("cannot load")
+
+    monkeypatch.setattr("catpoop.outcome.train.load_outcome_model", broken)
+    with pytest.raises(RuntimeError, match="cannot load"):
+        train(tmp_path, SETTINGS)
+    assert current.readlink() == before
+    assert not [p for p in current.parent.iterdir() if p.name.startswith(".training-")]

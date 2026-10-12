@@ -10,7 +10,8 @@ Each check, and each of these, is handed to the event rules:
 
 | Observation | When | Carries |
 |---|---|---|
-| `Seen` / `NoPicture` | every check | the Frame, what the detector found and, every `watcher.surface_check_seconds` while the Litter Box is empty, the Outcome model's scores of the surface |
+| `Seen` | every check with a new picture | the Frame, what the detector found and, every `watcher.surface_check_seconds` while the Litter Box is empty, the Outcome model's scores of the surface |
+| `NoPicture` | every check without one | only the time |
 | `VisitStarted` | a Visit starts | its frames so far and the Outcome Guess |
 | `VisitEnded` | a Visit ends | the frames after the Cat left, the Outcome, the saved Visit's id |
 | `CameraOffline` | no picture for `timers.camera_offline_minutes` (once per outage) | when the last picture came |

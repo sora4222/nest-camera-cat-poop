@@ -27,6 +27,12 @@ def test_reads_only_a_span(tmp_path):
     assert [s for s, _ in read_frames(clip, 0.5, start=2, end=3.5)] == [2, 2.5, 3, 3.5]
 
 
+def test_times_count_from_the_clip_start(tmp_path):
+    clip = write_clip(tmp_path / "c.mp4", list(range(0, 240, 10)), first_frame=40)
+    assert [s for s, _ in read_frames(clip, 1)][:2] == [0, 1]
+    assert [s for s, _ in read_frames(clip, 0.5, start=2, end=3)] == [2, 2.5, 3]
+
+
 def test_clip_length(tmp_path):
     assert clip_seconds(write_clip(tmp_path / "c.mp4", [0] * 10)) == pytest.approx(2.5)
 
