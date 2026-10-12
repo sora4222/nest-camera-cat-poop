@@ -1,3 +1,5 @@
+import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -69,3 +71,12 @@ def test_paths_are_required(tmp_path, name):
 def test_history_options_come_from_config(tmp_path):
     loaded = config(tmp_path, {"takeout": {"paths": ["/exports"]}})
     assert loaded.history["takeout"] == {"paths": ["/exports"]}
+
+
+def test_default_registry_loads_the_history_importers():
+    code = (
+        "from catpoop.registry import HISTORY_IMPORTER, default_registry;"
+        "print(' '.join(default_registry().names(HISTORY_IMPORTER)))"
+    )
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert {"folder", "takeout"} <= set(out.stdout.split())
