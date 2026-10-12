@@ -13,4 +13,5 @@ from catpoop.parts import (
     sqlite_event_log,
     standard_communications,
     standard_event_rules,
+    voice_monkey_speaker,
 )
