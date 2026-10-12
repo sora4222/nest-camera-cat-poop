@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Label Visits</title>
+<style>
+  :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+  body { margin: 0 auto; max-width: 960px; padding: 16px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  img { width: 100%; background: #000; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 6px; }
+  .controls { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+  .controls input { flex: 1; }
+  .outcomes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .outcomes button { font-size: 1.25rem; padding: 16px; border-radius: 8px; cursor: pointer; }
+  .muted { opacity: 0.7; font-size: 0.9rem; }
+  #done { display: none; font-size: 1.25rem; text-align: center; padding: 48px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Label Visits</h1>
+  <span id="remaining" class="muted"></span>
+</header>
+<main id="visit">
+  <img id="frame" alt="Frame of the Visit">
+  <div class="controls">
+    <button id="play" type="button">Pause</button>
+    <input id="scrub" type="range" min="1" value="1" aria-label="Frame">
+    <span id="position" class="muted"></span>
+  </div>
+  <p id="info" class="muted"></p>
+  <div class="outcomes">
+    <button type="button" data-outcome="pee">Pee <span class="muted">(1)</span></button>
+    <button type="button" data-outcome="poop">Poop <span class="muted">(2)</span></button>
+    <button type="button" data-outcome="nothing">Nothing <span class="muted">(3)</span></button>
+  </div>
+</main>
+<p id="done">Every Visit is labeled.</p>
+<script>
+  const FRAMES_PER_SECOND = 4;
+  const el = (id) => document.getElementById(id);
+  let visit = null, frame = 1, playing = true, busy = false;
+
+  function show(number) {
+    frame = number;
+    el("frame").src = `/frames/${visit.id}/${frame}.jpg`;
+    el("scrub").value = frame;
+    el("position").textContent = `${frame} / ${visit.frames}`;
+  }
+
+  async function next() {
+    const answer = await (await fetch("/api/next")).json();
+    visit = answer.visit;
+    el("remaining").textContent = `${answer.remaining} to label`;
+    el("visit").style.display = visit ? "" : "none";
+    el("done").style.display = visit ? "none" : "block";
+    if (!visit) return;
+    el("scrub").max = visit.frames;
+    const when = visit.recorded_at ? new Date(visit.recorded_at).toLocaleString() : "unknown time";
+    el("info").textContent = `${when}, ${visit.start.toFixed(1)}s to ${visit.end.toFixed(1)}s of the clip`;
+    show(1);
+  }
+
+  async function label(outcome) {
+    if (!visit || busy) return;
+    busy = true;
+    const response = await fetch("/api/label", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visit_id: visit.id, outcome }),
+    });
+    busy = false;
+    if (!response.ok) { alert((await response.json()).error); return; }
+    await next();
+  }
+
+  setInterval(() => { if (visit && playing && visit.frames > 0) show(frame % visit.frames + 1); },
+              1000 / FRAMES_PER_SECOND);
+  el("play").onclick = () => { playing = !playing; el("play").textContent = playing ? "Pause" : "Play"; };
+  el("scrub").oninput = (e) => { playing = false; el("play").textContent = "Play"; show(Number(e.target.value)); };
+  document.querySelectorAll("[data-outcome]").forEach((b) => (b.onclick = () => label(b.dataset.outcome)));
+  document.addEventListener("keydown", (e) => {
+    const outcome = { 1: "pee", 2: "poop", 3: "nothing" }[e.key];
+    if (outcome) label(outcome);
+    if (e.key === " ") { e.preventDefault(); el("play").click(); }
+  });
+  next();
+</script>
+</body>
+</html>
