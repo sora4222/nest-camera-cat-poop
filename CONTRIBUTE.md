@@ -75,6 +75,7 @@ src/catpoop/
     wifi_neighbours.py    is a phone on the Wi-Fi? (TCP knock, then `ip neigh`)
     onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
+    voice_monkey_speaker.py  speaker kind "voice_monkey" (Alexa through the Voice Monkey announce API)
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
     standard_event_rules.py  event_rules "standard" (Visits, Poop Reminders, Dog at Poop, camera problems)
     sqlite_event_log.py   event_log "sqlite" (SQLite file in the user's state folder)
