@@ -1,5 +1,6 @@
 """`catpoop watch` (`make dev`): run the live watcher until stopped, one per machine.
 
+Poop the event log says is still in the Litter Box is picked up again at startup.
 With `[alexa_skill] enabled`, the Alexa skill endpoint runs alongside it (docs/alexa-skill.md).
 """
 
@@ -12,10 +13,11 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
+from catpoop.alexa_skill.poop_status import litter_box_status
 from catpoop.alexa_skill.run import alexa_skill_running
 from catpoop.clock import Clock, SystemClock
 from catpoop.config import Config, ConfigError, PartKind, load_config
-from catpoop.interfaces import EventLog, OutcomeModel
+from catpoop.interfaces import EventLog, OutcomeModel, ResumesPoop
 from catpoop.outcome.model_files import ModelFiles, ModelInfoError
 from catpoop.registry import (
     CAMERA,
@@ -88,12 +90,15 @@ def _watcher(config: Config, registry: Registry, clock: Clock, event_log: EventL
         return registry.create(slot, getattr(config.parts, kind), config, config.part_options(kind))
 
     store = config.paths.private_data_store
+    rules = make(EVENT_RULES, "event_rules")
+    communications = make(COMMUNICATIONS, "communications")
+    _resume_poop(event_log, clock, [rules, communications])
     return Watcher(
         camera=make(CAMERA, "camera"),
         detector=make(DETECTOR, "detector"),
-        rules=make(EVENT_RULES, "event_rules"),
+        rules=rules,
         event_log=event_log,
-        communications=make(COMMUNICATIONS, "communications"),
+        communications=communications,
         recorder=LiveVisitRecorder(store, config.visits),
         clock=clock,
         visits=config.visits,
@@ -102,6 +107,17 @@ def _watcher(config: Config, registry: Registry, clock: Clock, event_log: EventL
         outcome_model=_outcome_model(config),
         surface_check_seconds=config.watcher.surface_check_seconds,
     )
+
+
+def _resume_poop(event_log: EventLog, clock: Clock, parts: list[object]) -> None:
+    """Tell the parts about Poop the event log says is still in the Litter Box (a restart)."""
+    newest = litter_box_status(event_log).newest_poop
+    if newest is None:
+        return
+    log.info("Poop found at %s is still in the Litter Box", newest.isoformat())
+    for part in parts:
+        if isinstance(part, ResumesPoop):
+            part.resume_poop(newest, clock.now())
 
 
 def _outcome_model(config: Config) -> OutcomeModel | None:
