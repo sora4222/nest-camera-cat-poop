@@ -10,7 +10,8 @@ Each check, and each of these, is handed to the event rules:
 
 | Observation | When | Carries |
 |---|---|---|
-| `Seen` / `NoPicture` | every check | the Frame and what the detector found |
+| `Seen` | every check with a new picture | the Frame and what the detector found |
+| `NoPicture` | every check without one | only the time |
 | `VisitStarted` | a Visit starts | its frames so far and the Outcome Guess |
 | `VisitEnded` | a Visit ends | the frames after the Cat left, the Outcome, the saved Visit's id |
 | `CameraOffline` | no picture for `timers.camera_offline_minutes` (once per outage) | when the last picture came |
