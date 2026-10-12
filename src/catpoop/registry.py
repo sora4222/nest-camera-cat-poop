@@ -87,6 +87,8 @@ DEFAULT = Registry()
 
 def default_registry() -> Registry:
     """`DEFAULT`, with every built-in part registered."""
+    import catpoop.history.folder
+    import catpoop.history.takeout
     import catpoop.parts  # noqa: F401  (registers the built-ins)
 
     return DEFAULT
