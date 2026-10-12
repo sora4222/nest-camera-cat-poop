@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from cryptography.x509.verification import Store
