@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Protocol
 
-from catpoop.domain import Detection, Event, Frame, Presence
+from catpoop.domain import Detection, Event, Frame, OutcomeScores, Presence
 
 
 class CameraSource(Protocol):
@@ -24,6 +24,18 @@ class Detector(Protocol):
 
     def detect(self, frame: Frame) -> list[Detection]:
         """Everything found in `frame`."""
+        ...
+
+
+class OutcomeModel(Protocol):
+    """Decides the Outcome of a Visit and makes the Outcome Guess while it goes on."""
+
+    def outcome(self, surface: Frame) -> OutcomeScores:
+        """The Outcome, from a Frame of the litter surface after the Cat has left."""
+        ...
+
+    def guess(self, stance: Frame) -> OutcomeScores:
+        """The Outcome Guess, from a Frame of the Cat in the Litter Box and its time of day."""
         ...
 
 
