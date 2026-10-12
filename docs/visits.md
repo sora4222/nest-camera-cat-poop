@@ -1,5 +1,7 @@
 # Cutting clips into Visits and labeling them
 
+A Visit is one stay by the Cat in the Litter Box, from going in to coming out. Each Visit is labeled with its Outcome: what it left behind (Pee, Poop or Nothing).
+
 After [importing camera history](history-import.md), turn the clips into labeled Visits for training:
 
 ```sh
