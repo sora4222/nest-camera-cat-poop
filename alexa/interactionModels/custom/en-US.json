@@ -15,11 +15,15 @@
             "turn on do not disturb for {duration}",
             "quiet for {duration}",
             "for {duration}",
-            "{duration}",
             "be quiet",
             "do not disturb",
             "turn on do not disturb"
           ]
+        },
+        {
+          "name": "DurationIntent",
+          "slots": [{ "name": "duration", "type": "AMAZON.DURATION" }],
+          "samples": ["{duration}"]
         },
         {
           "name": "StopDoNotDisturbIntent",

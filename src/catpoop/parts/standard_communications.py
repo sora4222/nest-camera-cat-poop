@@ -118,10 +118,11 @@ class StandardCommunications:
         if reason or text is None:
             log.info("%s (%s) %s: not said, %s", event.kind, event.urgency, event.details, reason)
             return
+        routed = [r.speaker for r in self._speakers if event.urgency in r.urgencies]
+        if not [speaker for speaker in routed if self._say(speaker, text)]:
+            log.info("%s (%s) %s: no Speaker said it", event.kind, event.urgency, event.details)
+            return
         self._last_said[text] = event.at
-        for routed in self._speakers:
-            if event.urgency in routed.urgencies:
-                self._say(routed.speaker, text)
         log.info("%s (%s) %s: said %r", event.kind, event.urgency, event.details, text)
 
     def _held_back(self, event: Event) -> str | None:
@@ -150,11 +151,14 @@ class StandardCommunications:
         last = self._last_said.get(text)
         return last is not None and at - last < timedelta(seconds=self._options.repeat_seconds)
 
-    def _say(self, speaker: Speaker, text: str) -> None:
+    def _say(self, speaker: Speaker, text: str) -> bool:
+        """Whether `speaker` said `text`."""
         try:
             speaker.say(text)
         except Exception:
             log.exception("Speaker %s could not say %r", speaker.name, text)
+            return False
+        return True
 
 
 def _routed(config: Config) -> list[RoutedSpeaker]:

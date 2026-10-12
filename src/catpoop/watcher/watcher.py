@@ -139,15 +139,20 @@ class Watcher:
         self._recent.append(frame)
         while self._recent and frame.taken_at - self._recent[0].taken_at > self._keep:
             self._recent.popleft()
-        self._recorder.add(frame)
         seen = cat_in_litter_box(detections, self._visits)
-        for change in self._tracker.see(self._seconds(frame.taken_at), seen):
+        changes = self._tracker.see(self._seconds(frame.taken_at), seen)
+        # A Cat coming back after the gap belongs to the next Visit, not the one ending.
+        returned = seen and any(isinstance(c, VisitEnded) for c in changes)
+        if not returned:
+            self._recorder.add(frame)
+        for change in changes:
             match change:
                 case VisitStarted(first_seen=first):
                     self._start_visit(now, first)
                 case VisitEnded(span=span):
                     last_seen = span.end - self._visits.padding_seconds
-                    self._end_visit(now, self._frames_since(last_seen, after=True))
+                    after = self._frames_since(last_seen, after=True)
+                    self._end_visit(now, tuple(f for f in after if not returned or f is not frame))
 
     def _surface(
         self, now: datetime, frame: Frame, detections: tuple[Detection, ...]

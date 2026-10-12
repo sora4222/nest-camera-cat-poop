@@ -327,3 +327,14 @@ def test_poop_from_quiet_hours_is_said_when_the_restart_is_after_them(tmp_path):
     setup.handler.resume_poop(night_poop, setup.clock.now())
     setup.wait(60)
     assert setup.speaker.said == ["There is poop from the night."]
+
+
+def test_text_no_speaker_could_say_is_not_held_back_as_said(tmp_path, caplog):
+    setup = Setup(tmp_path, repeat_seconds=30)
+    setup.speaker.fails = True
+    setup.event("poop")
+    assert "said 'Cat left poop.'" not in caplog.text
+    setup.speaker.fails = False
+    setup.clock.advance(5)
+    setup.event("poop")
+    assert setup.speaker.said == ["Cat left poop."]
