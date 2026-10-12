@@ -16,7 +16,10 @@ def _boxes(file: BinaryIO, end: int) -> Iterator[tuple[bytes, int, int]]:
         size, kind = struct.unpack(">I4s", file.read(8))
         header = 8
         if size == 1:
-            (size,) = struct.unpack(">Q", file.read(8))
+            extended = file.read(8)
+            if len(extended) < 8:
+                return
+            (size,) = struct.unpack(">Q", extended)
             header = 16
         elif size == 0:
             size = end - start
