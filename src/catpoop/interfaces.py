@@ -4,18 +4,24 @@ Each part is registered by name in `catpoop.registry`. Tests use fakes, never re
 cameras, speakers or the network.
 """
 
-from collections.abc import Sequence
-from datetime import datetime
 from typing import Protocol
 
 from catpoop.domain import Detection, Event, Frame, OutcomeScores, Presence
+from catpoop.observations import Observation
+
+
+class CameraLoginExpired(Exception):
+    """The camera service refused the login; a person must log in again."""
 
 
 class CameraSource(Protocol):
     """Gives pictures of the Litter Box."""
 
     def read(self) -> Frame | None:
-        """The next Frame, or None if there is no picture right now."""
+        """The next new Frame, or None if there is no new picture right now.
+
+        Raises `CameraLoginExpired` while the camera cannot be reached without a new login.
+        """
         ...
 
 
@@ -40,10 +46,10 @@ class OutcomeModel(Protocol):
 
 
 class EventRules(Protocol):
-    """Turns what the camera sees over time into Events."""
+    """Turns what the live watcher sees over time into Events."""
 
-    def update(self, now: datetime, detections: Sequence[Detection] | None) -> list[Event]:
-        """New Events at `now`. `detections` is None when there was no picture."""
+    def update(self, observation: Observation) -> list[Event]:
+        """New Events now that the watcher has seen `observation`."""
         ...
 
 

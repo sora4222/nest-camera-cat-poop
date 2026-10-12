@@ -42,6 +42,12 @@ def test_minimal_config_gets_defaults(tmp_path):
     assert config.timers.camera_offline_minutes == 10
     assert config.timers.poop_reminder_max_count == 6
     assert config.speakers == []
+    assert config.watcher.check_seconds == 0.25
+
+
+def test_watcher_must_check_a_positive_number_of_seconds(tmp_path):
+    with pytest.raises(ConfigError, match="check_seconds"):
+        load_config(write(tmp_path, MINIMAL + "\n[watcher]\ncheck_seconds = 0\n"))
 
 
 def test_quiet_hours_are_parsed(tmp_path):
