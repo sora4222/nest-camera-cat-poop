@@ -14,7 +14,7 @@ class HistoryClip:
     """
 
     source: str
-    """The importer that found it: `takeout`, `portability` or `folder`."""
+    """Where it came from: an importer (`takeout`, `portability`, `folder`), `manual` or `live`."""
     origin: str
     """Where it was inside that source, such as `export.zip!Takeout/Nest/clip.mp4`."""
     name: str

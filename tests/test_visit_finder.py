@@ -1,6 +1,12 @@
 from catpoop.config import VisitSettings
 from catpoop.domain import Detection
-from catpoop.visits.finder import VisitSpan, cat_in_litter_box, find_visits
+from catpoop.visits.finder import (
+    VisitEnded,
+    VisitSpan,
+    VisitTracker,
+    cat_in_litter_box,
+    find_visits,
+)
 
 SETTINGS = VisitSettings(end_gap_seconds=3, min_seconds=2, padding_seconds=1)
 
@@ -46,3 +52,40 @@ def test_cat_counts_only_inside_the_litter_box():
     assert cat_in_litter_box([cat((0.6, 0.6, 0.8, 0.8))], settings)
     assert not cat_in_litter_box([cat((0.0, 0.0, 0.3, 0.3))], settings)
     assert not cat_in_litter_box([cat((0.6, 0.6, 0.8, 0.8), "dog")], settings)
+
+
+def changes(seen: str) -> list[tuple[float, str]]:
+    """Feed one sample per character to a VisitTracker; list what it said and when."""
+    tracker = VisitTracker(SETTINGS)
+    said: list[tuple[float, str]] = []
+    for seconds, cat_seen in samples(seen):
+        for change in tracker.see(seconds, cat_seen):
+            said.append((seconds, "end" if isinstance(change, VisitEnded) else "start"))
+    return said
+
+
+def test_tracker_starts_a_visit_once_the_cat_has_stayed_min_seconds():
+    assert changes("..CCCC") == [(4, "start")]
+
+
+def test_tracker_ends_a_visit_after_end_gap_seconds_without_the_cat():
+    assert changes("CCC..CC.....") == [(2, "start"), (10, "end")]
+
+
+def test_tracker_ignores_short_sightings():
+    assert changes("C.......C......") == []
+
+
+def test_tracker_gives_the_padded_span_when_a_visit_ends():
+    tracker = VisitTracker(SETTINGS)
+    ended = [c for s, seen in samples("..CCC.....") for c in tracker.see(s, seen)][-1]
+    assert ended == VisitEnded(VisitSpan(1, 5))
+
+
+def test_tracker_finish_closes_an_open_visit():
+    tracker = VisitTracker(SETTINGS)
+    for s, seen in samples("CCCC"):
+        tracker.see(s, seen)
+    assert tracker.in_visit
+    assert tracker.finish() == VisitEnded(VisitSpan(-1, 4))
+    assert not tracker.in_visit
