@@ -1,3 +1,4 @@
+import gc
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -203,3 +204,12 @@ def test_event_rules_and_communications_share_one_wifi_presence(monkeypatch):
     assert isinstance(communications, StandardCommunications)
     assert rules._presence is shared
     assert communications._presence is shared
+
+
+def test_stops_looking_when_its_config_is_gone(monkeypatch):
+    monkeypatch.setattr(wifi_presence, "NeighbourTable", lambda **options: FakeNetwork())
+    home = config([{"name": "P", "phone_ip": PHONE}])
+    stopped = looking(home)._stop
+    del home
+    gc.collect()
+    assert stopped.is_set()

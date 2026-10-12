@@ -129,8 +129,8 @@ def build_wifi_presence(
 
 
 _shared: dict[int, WifiPresence] = {}
-"""The looking `WifiPresence` for each live `Config`, by `id`; dropped when the config is."""
-_shared_lock = threading.Lock()
+"""The looking `WifiPresence` for each live `Config`, by `id`; stopped when the config is gone."""
+_shared_lock = threading.RLock()  # a finalizer may run during gc inside `_create`
 
 
 @DEFAULT.part(PRESENCE, "wifi")
@@ -141,8 +141,16 @@ def _create(config: Config, options: Mapping[str, Any]) -> WifiPresence:
         if presence is None:
             presence = _start(config, options)
             _shared[id(config)] = presence
-            weakref.finalize(config, _shared.pop, id(config), None)
+            weakref.finalize(config, _forget, id(config))
         return presence
+
+
+def _forget(config_id: int) -> None:
+    """Stop and drop the `WifiPresence` of a config that is gone."""
+    with _shared_lock:
+        presence = _shared.pop(config_id, None)
+    if presence is not None:
+        presence.close()
 
 
 def _start(config: Config, options: Mapping[str, Any]) -> WifiPresence:
