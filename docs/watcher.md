@@ -93,4 +93,6 @@ Reads a Google Nest camera's live stream with [googlenestcam](https://github.com
 
 ## Speaker "alexa"
 
-Says Announcements on an Alexa device through [Voice Monkey](https://voicemonkey.io/docs/api/announcement.html) (API v3). In Voice Monkey, add a Speaker device and use its id as `device` in a `[[speakers]]` entry with `kind = "alexa"`; `voice` (an Amazon Polly voice) and `chime` are optional. Put the Voice Monkey token in `.env` as `CATPOOP_VOICE_MONKEY_TOKEN` (a 1Password `op://` reference works); it is never logged. The text goes to Voice Monkey and Amazon, and is spoken in Amazon's voice.
+Says Announcements on an Alexa device through Amazon's Alexa web API, the one the Alexa app uses. It is free and runs on this server, with no third party, but it is unofficial and Amazon may change it. In a `[[speakers]]` entry with `kind = "alexa"`, set `device` to the device's name in the Alexa app (default: the Speaker's `name`), `domain` to your Amazon site (default `amazon.com`, e.g. `amazon.com.au`) and `locale` (default `en-US`).
+
+To log in, run `npx alexa-cookie-cli` once, sign in to Amazon in the browser it opens, and copy the refresh token it prints (it starts with `Atnr|`). Put it in `.env` as `CATPOOP_ALEXA_REFRESH_TOKEN` (a 1Password `op://` reference works); it is never logged. If Amazon refuses the token, run the tool again.
