@@ -39,6 +39,9 @@ def test_discovery_lists_a_motion_sensor_per_message():
     motion = endpoint["capabilities"][0]
     assert motion["interface"] == "Alexa.MotionSensor"
     assert motion["properties"]["proactivelyReported"] is True
+    health = endpoint["capabilities"][1]
+    assert (health["interface"], health["version"]) == ("Alexa.EndpointHealth", "3.1")
+    assert health["properties"]["proactivelyReported"] is True
 
 
 def test_accept_grant_hands_the_code_over():
