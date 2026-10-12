@@ -5,7 +5,7 @@ cameras, speakers or the network.
 """
 
 from datetime import datetime
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from catpoop.domain import Detection, Event, Frame, OutcomeScores, Presence
 from catpoop.observations import Observation
@@ -51,6 +51,18 @@ class EventRules(Protocol):
 
     def update(self, observation: Observation) -> list[Event]:
         """New Events now that the watcher has seen `observation`."""
+        ...
+
+
+@runtime_checkable
+class ResumesPoop(Protocol):
+    """A part (event rules, communications) that keeps whether Poop is in the Litter Box.
+
+    At startup the watcher tells it Poop the event log says is still there.
+    """
+
+    def resume_poop(self, since: datetime, now: datetime) -> None:
+        """Poop last found at `since` is still in the Litter Box; it is `now`."""
         ...
 
 

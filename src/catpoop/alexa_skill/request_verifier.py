@@ -2,10 +2,10 @@
 
 Amazon's rules for skills hosted as a web service:
 
-1. `SignatureCertChainUrl` is `https://s3.amazonaws.com/echo.api/...` (port 443 if given),
-   after `..` and `%2e` are resolved.
-2. The chain there leads from a certificate for `echo-api.amazon.com`, valid now, to a
-   trusted root (certifi's list unless tests pass their own).
+1. `SignatureCertChainUrl` is `https://s3.amazonaws.com/echo.api/...`, on port 443 if given.
+   `..` and `%2e` are resolved first.
+2. The chain there leads from a certificate for `echo-api.amazon.com`, valid now, to a root.
+   The roots are certifi's list unless tests pass their own.
 3. `Signature-256` is that certificate's RSA SHA-256 signature of the raw body.
 4. `request.timestamp` is within 150 seconds of now.
 5. The skill ID in the request is ours.
@@ -66,8 +66,8 @@ def check_cert_url(url: str) -> None:
 def default_trust_store() -> Store:
     """The root certificates in certifi's list (Mozilla's).
 
-    Each is loaded on its own, so one that this `cryptography` refuses (some old roots break
-    RFC 5280) is skipped instead of failing them all.
+    Each is loaded on its own, so one that this `cryptography` refuses is skipped.
+    Some old roots break RFC 5280, and one bad root must not fail them all.
     """
     with open(certifi.where(), "rb") as file:
         blocks = re.findall(_PEM_BLOCK, file.read(), re.DOTALL)
