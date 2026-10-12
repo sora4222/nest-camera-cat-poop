@@ -129,3 +129,9 @@ def test_outcome_timezone_must_be_a_known_zone(tmp_path):
     assert load_config(write(tmp_path, text)).outcome.timezone == "Australia/Melbourne"
     with pytest.raises(ConfigError, match=r"outcome\.timezone"):
         load_config(write(tmp_path, MINIMAL + '[outcome]\ntimezone = "Mars/Olympus"\n'))
+
+
+def test_visit_padding_must_keep_a_frame_after_the_cat_leaves(tmp_path):
+    text = MINIMAL + "[visits]\nframe_seconds = 0.5\npadding_seconds = 0\n"
+    with pytest.raises(ConfigError, match="padding_seconds"):
+        load_config(write(tmp_path, text))
