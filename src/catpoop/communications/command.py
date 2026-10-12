@@ -63,6 +63,12 @@ def run_dnd(
     allow: list[str] | None = None,
 ) -> int:
     """Turn Do Not Disturb on for `duration`, off, or (with neither) say whether it is on."""
+    if allow is not None and not duration:
+        print("--allow needs --for", file=sys.stderr)
+        return 2
+    if allow is not None and "none" in allow and len(allow) > 1:
+        print("--allow none cannot go with other Urgencies", file=sys.stderr)
+        return 2
     if off:
         switches.clear_do_not_disturb()
         print("Do Not Disturb is off.")

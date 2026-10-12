@@ -25,3 +25,8 @@ def test_naive_time_is_taken_as_utc():
 
 def test_no_time_gives_none():
     assert sidecar_time({"time": "soon", "name": "2026-03-04T05:06:07Z"}) is None
+
+
+def test_out_of_range_timestamp_is_skipped():
+    metadata = {"timestamp": "99999999999999999", "detail": {"time": "2026-03-04T05:06:07Z"}}
+    assert sidecar_time(metadata) == WHEN
