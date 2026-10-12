@@ -1,7 +1,7 @@
 """Train the Outcome and Outcome Guess models, export them to ONNX and measure them (train extra).
 
-The new files are published all at once, only once both models are exported. Accuracy is then
-measured with the exported ONNX files, as the server will run them.
+Accuracy is measured with the exported ONNX files, as the server will run them. Only when
+that works are the new files published, all at once.
 """
 
 import shutil
@@ -60,13 +60,16 @@ def train(
         save_model_info(
             staged, settings.image_size, settings.timezone, settings.validation_fraction
         )
+        model = load_outcome_model(staged, "cpu")
+        evaluation = evaluate(
+            model, visits, settings.validation_fraction, settings.guess_frames_per_visit
+        )
         files = ModelFiles(publish(staged.folder, models))
     except BaseException:
         shutil.rmtree(staged.folder, ignore_errors=True)
         raise
     log(f"Published {files.folder}")
-    model = load_outcome_model(files, "cpu")
-    return evaluate(model, visits, settings.validation_fraction, settings.guess_frames_per_visit)
+    return evaluation
 
 
 def _fit(

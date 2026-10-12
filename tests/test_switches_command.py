@@ -84,3 +84,20 @@ def test_the_cli_uses_the_switches_in_the_state_folder(tmp_path, monkeypatch, ca
     assert dnd is not None and dnd.allow == (Urgency.URGENT,)
     assert main(["dnd", "--off"]) == 0
     assert switches.do_not_disturb(datetime.now(UTC)) is None
+
+
+@pytest.mark.parametrize("off", [False, True])
+def test_dnd_rejects_allow_without_a_duration(tmp_path, capsys, off):
+    switches = Switches(tmp_path / "switches.json")
+    run_dnd(switches, FakeClock(NOW), duration="1h")
+    assert run_dnd(switches, FakeClock(NOW), off=off, allow=["none"]) == 2
+    assert "--allow" in capsys.readouterr().err
+    dnd = switches.do_not_disturb(NOW)
+    assert dnd is not None and dnd.allow is None
+
+
+def test_dnd_rejects_none_with_other_urgencies(tmp_path, capsys):
+    switches = Switches(tmp_path / "switches.json")
+    assert run_dnd(switches, FakeClock(NOW), duration="2h", allow=["none", "urgent"]) == 2
+    assert "none" in capsys.readouterr().err
+    assert switches.do_not_disturb(NOW) is None
