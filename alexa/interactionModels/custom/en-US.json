@@ -1,0 +1,86 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "litter box",
+      "intents": [
+        {
+          "name": "DoNotDisturbIntent",
+          "slots": [{ "name": "duration", "type": "AMAZON.DURATION" }],
+          "samples": [
+            "be quiet for {duration}",
+            "stay quiet for {duration}",
+            "keep quiet for {duration}",
+            "do not disturb for {duration}",
+            "don't disturb me for {duration}",
+            "turn on do not disturb for {duration}",
+            "quiet for {duration}",
+            "for {duration}",
+            "{duration}",
+            "be quiet",
+            "do not disturb",
+            "turn on do not disturb"
+          ]
+        },
+        {
+          "name": "StopDoNotDisturbIntent",
+          "slots": [],
+          "samples": [
+            "stop being quiet",
+            "you can talk again",
+            "you can speak again",
+            "turn off do not disturb",
+            "end do not disturb",
+            "cancel do not disturb",
+            "stop do not disturb"
+          ]
+        },
+        {
+          "name": "PeeAnnouncementsOnIntent",
+          "slots": [],
+          "samples": [
+            "turn on pee announcements",
+            "turn pee announcements on",
+            "announce pee",
+            "start announcing pee",
+            "tell me about pee"
+          ]
+        },
+        {
+          "name": "PeeAnnouncementsOffIntent",
+          "slots": [],
+          "samples": [
+            "turn off pee announcements",
+            "turn pee announcements off",
+            "stop announcing pee",
+            "don't announce pee",
+            "don't tell me about pee"
+          ]
+        },
+        {
+          "name": "StatusIntent",
+          "slots": [],
+          "samples": [
+            "is there poop in the box",
+            "is there poop in the litter box",
+            "is there poop",
+            "if there is poop",
+            "if there is poop in the box",
+            "whether there is poop in the box",
+            "is the box clean",
+            "is the litter box clean",
+            "does the box need cleaning",
+            "does the litter box need cleaning",
+            "what is the status",
+            "status"
+          ]
+        },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+      ],
+      "types": []
+    }
+  }
+}
