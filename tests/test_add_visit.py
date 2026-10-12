@@ -48,3 +48,20 @@ def test_clip_saved_as_an_unlabeled_visit_waits_for_labeling(tmp_path):
     assert [v.id for v in VisitStore(store_path).unlabeled()] == [visit.id]
     assert (store_path / "visits" / "frames" / visit.id / "frame_0004.jpg").exists()
     assert VisitStore(store_path).is_scanned(visit.clip)
+
+
+def test_clip_without_video_is_refused_and_not_stored(tmp_path):
+    import av
+
+    sound = tmp_path / "sound.mp4"
+    with av.open(str(sound), "w") as container:
+        stream = container.add_stream("aac", rate=8000)
+        frame = av.AudioFrame(format="fltp", layout="mono", samples=8000)
+        frame.rate = 8000
+        for plane in frame.planes:
+            plane.update(bytes(plane.buffer_size))
+        for packet in [*stream.encode(frame), *stream.encode()]:
+            container.mux(packet)
+    with pytest.raises(VideoError):
+        add_visit(sound, Outcome.PEE, tmp_path / "store", SETTINGS, NOW)
+    assert not (tmp_path / "store" / "history").exists()

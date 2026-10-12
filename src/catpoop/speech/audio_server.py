@@ -16,7 +16,7 @@ from catpoop.clock import Clock, SystemClock
 def lan_address() -> str:
     """This machine's address on the network that leads to the internet (no packet is sent)."""
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
-        probe.connect(("10.255.255.255", 1))
+        probe.connect(("8.8.8.8", 80))  # public unicast: takes the default route
         return probe.getsockname()[0]
 
 

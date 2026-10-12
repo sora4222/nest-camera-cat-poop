@@ -1,3 +1,5 @@
+import subprocess
+import sys
 import zipfile
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -94,3 +96,12 @@ def test_registered_with_options_and_secrets_from_env(tmp_path, monkeypatch):
     assert isinstance(made, PortabilityImporter)
     assert (made.start, made.end, made.job_id) == (START, START, "job-9")
     assert made.downloads == tmp_path / "history" / "downloads" / "portability"
+
+
+def test_default_registry_loads_the_portability_importer():
+    code = (
+        "from catpoop.registry import HISTORY_IMPORTER, default_registry;"
+        "print(' '.join(default_registry().names(HISTORY_IMPORTER)))"
+    )
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert "portability" in out.stdout.split()

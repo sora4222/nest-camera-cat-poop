@@ -3,23 +3,24 @@ import types
 
 import pytest
 
-from catpoop.speech.cast_player import CastPlayer, SpeakerNotFound, find_cast
+from catpoop.speech.cast_player import CastPlayer, SpeakerFailed, SpeakerNotFound, find_cast
 
 
 class FakeMedia:
-    def __init__(self, fail=False):
+    def __init__(self, fail=False, answer=(True, {"type": "MEDIA_STATUS"})):
         self.played: list[tuple] = []
-        self.fail = fail
+        self.fail, self.answer = fail, answer
 
-    def play_media(self, url, content_type, **kwargs):
+    def play_media(self, url, content_type, callback_function, **kwargs):
         if self.fail:
             raise ConnectionError("gone")
         self.played.append((url, content_type, kwargs.get("stream_type")))
+        callback_function(*self.answer)
 
 
 class FakeCast:
-    def __init__(self, fail=False):
-        self.media_controller = FakeMedia(fail)
+    def __init__(self, fail=False, **answer):
+        self.media_controller = FakeMedia(fail, **answer)
         self.volumes: list[float] = []
 
     def set_volume(self, volume):
@@ -78,6 +79,12 @@ def test_finds_the_device_again_after_a_failure():
         player.play("http://lan/a.wav")
     player.play("http://lan/a.wav")
     assert len(discover.asked) == 2
+
+
+def test_a_clip_the_speaker_does_not_load_is_a_failure():
+    cast = FakeCast(answer=(True, {"type": "LOAD_FAILED"}))
+    with pytest.raises(SpeakerFailed):
+        CastPlayer("Kitchen speaker", FakeDiscover(cast)).play("http://lan/a.wav")
 
 
 def test_sets_the_volume_when_given():
