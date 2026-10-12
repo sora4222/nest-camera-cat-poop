@@ -36,17 +36,21 @@ class VisitEnded:
 type VisitChange = VisitStarted | VisitEnded
 
 
-def cat_in_litter_box(detections: Sequence[Detection], settings: VisitSettings) -> bool:
-    """Whether a Cat was found with the middle of its box inside the Litter Box."""
+def labels_in_litter_box(detections: Sequence[Detection], settings: VisitSettings) -> set[str]:
+    """Labels of everything found with the middle of its box inside the Litter Box."""
     left, top, right, bottom = settings.litter_box
+    inside = set()
     for found in detections:
-        if found.label != settings.cat_label:
-            continue
         x = (found.box[0] + found.box[2]) / 2
         y = (found.box[1] + found.box[3]) / 2
         if left <= x <= right and top <= y <= bottom:
-            return True
-    return False
+            inside.add(found.label)
+    return inside
+
+
+def cat_in_litter_box(detections: Sequence[Detection], settings: VisitSettings) -> bool:
+    """Whether a Cat was found with the middle of its box inside the Litter Box."""
+    return settings.cat_label in labels_in_litter_box(detections, settings)
 
 
 class VisitTracker:

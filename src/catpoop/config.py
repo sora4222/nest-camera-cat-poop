@@ -114,6 +114,8 @@ class WatcherSettings(_Strict):
 
     check_seconds: float = Field(0.25, gt=0)
     """Time between detector runs on the newest picture."""
+    surface_check_seconds: float = Field(10, gt=0)
+    """Time between Outcome model checks of the empty Litter Box (is Poop still there?)."""
 
 
 class OutcomeSettings(_Strict):

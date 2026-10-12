@@ -14,6 +14,7 @@ src/catpoop/
   interfaces.py     small Protocols for every swappable part
   registry.py       slots, the registry, and build_parts (config names -> parts)
   watcher_lock.py   one live watcher per machine
+  poop_reminders.py when Poop Reminders are due (1, 2, 4, 8... minutes)
   onnx_session.py   open an ONNX model on the CPU or a GPU (cpu/amd/nvidia extras)
   export_detector.py  TF detector SavedModel -> ONNX (`make export-detector`, train extra)
   history/          import past clips into the Private Data Store (docs/history-import.md)
@@ -66,6 +67,7 @@ src/catpoop/
     onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
+    sqlite_event_log.py   event_log "sqlite" (SQLite file in the user's state folder)
     nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
 docs/               setup, configuration, ADRs

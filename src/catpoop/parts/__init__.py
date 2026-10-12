@@ -10,6 +10,7 @@ from catpoop.parts import (
     nest_camera,
     onnx_detector,
     presence_off,
+    sqlite_event_log,
 )
 
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "nest_camera",
     "onnx_detector",
     "presence_off",
+    "sqlite_event_log",
 ]

@@ -43,6 +43,7 @@ def test_minimal_config_gets_defaults(tmp_path):
     assert config.timers.poop_reminder_max_count == 6
     assert config.speakers == []
     assert config.watcher.check_seconds == 0.25
+    assert config.watcher.surface_check_seconds == 10
 
 
 def test_watcher_must_check_a_positive_number_of_seconds(tmp_path):
