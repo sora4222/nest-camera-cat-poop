@@ -107,6 +107,8 @@ class Config(_Strict):
     event_log: dict[str, Any] = {}
     presence: dict[str, Any] = {}
     communications: dict[str, Any] = {}
+    # Options for each history importer, one `[history.<name>]` table each.
+    history: dict[str, dict[str, Any]] = {}
 
     def part_options(self, kind: PartKind) -> dict[str, Any]:
         """The `[<kind>]` table: options for the chosen implementation of that part."""
