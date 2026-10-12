@@ -8,11 +8,15 @@ import itertools
 import logging
 import queue
 import threading
+from collections.abc import Callable
 
 from catpoop.domain import Urgency
 from catpoop.interfaces import Speaker
 
 log = logging.getLogger(__name__)
+
+Done = Callable[[bool], None]
+"""Told whether the Speaker said the text."""
 
 _ORDER = {Urgency.URGENT: 0, Urgency.NORMAL: 1, Urgency.INFO: 1}
 
@@ -23,17 +27,19 @@ class SpeakerQueue:
     def __init__(self, speaker: Speaker) -> None:
         """Say texts on `speaker`."""
         self.speaker = speaker
-        self._waiting: queue.PriorityQueue[tuple[int, int, str]] = queue.PriorityQueue()
+        self._waiting: queue.PriorityQueue[tuple[int, int, str, Done | None]] = (
+            queue.PriorityQueue()
+        )
         self._count = itertools.count()
         self._said = threading.Condition()
         self._unsaid = 0
         self._thread: threading.Thread | None = None
 
-    def put(self, text: str, urgency: Urgency) -> None:
-        """Say `text` soon; returns at once."""
+    def put(self, text: str, urgency: Urgency, done: Done | None = None) -> None:
+        """Say `text` soon; returns at once. `done(said)` is called once it was tried."""
         with self._said:
             self._unsaid += 1
-            self._waiting.put((_ORDER[urgency], next(self._count), text))
+            self._waiting.put((_ORDER[urgency], next(self._count), text, done))
             if self._thread is None:
                 name = f"speaker {self.speaker.name}"
                 self._thread = threading.Thread(target=self._run, name=name, daemon=True)
@@ -46,11 +52,16 @@ class SpeakerQueue:
 
     def _run(self) -> None:
         while True:
-            _, _, text = self._waiting.get()
+            _, _, text, done = self._waiting.get()
+            said = False
             try:
                 self.speaker.say(text)
+                said = True
             except Exception:
                 log.exception("Speaker %s could not say %r", self.speaker.name, text)
+            try:
+                if done is not None:
+                    done(said)
             finally:
                 with self._said:
                     self._unsaid -= 1

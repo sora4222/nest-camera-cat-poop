@@ -335,3 +335,15 @@ def test_a_hanging_speaker_holds_up_neither_the_caller_nor_the_others(tmp_path):
     assert working.said == ["Cat left poop."]
     hanging.answer.set()
     assert setup.handler.wait_until_said(5)
+
+
+def test_text_no_speaker_could_say_is_not_held_back_as_said(tmp_path, caplog):
+    setup = Setup(tmp_path, repeat_seconds=30)
+    setup.speaker.fails = True
+    with caplog.at_level(logging.INFO):
+        setup.event("poop")
+    assert "no Speaker said it" in caplog.text
+    setup.speaker.fails = False
+    setup.clock.advance(5)
+    setup.event("poop")
+    assert setup.speaker.said == ["Cat left poop."]

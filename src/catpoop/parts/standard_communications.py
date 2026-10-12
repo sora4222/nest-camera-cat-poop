@@ -12,7 +12,8 @@ since), `poop_after_quiet_hours` is said once, through the same gate.
 """
 
 import logging
-from collections.abc import Mapping, Sequence
+import threading
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -112,11 +113,21 @@ class StandardCommunications:
         if reason or text is None:
             log.info("%s (%s) %s: not said, %s", event.kind, event.urgency, event.details, reason)
             return
+        routed = [speaker for speaker, urgencies in self._speakers if event.urgency in urgencies]
+        if not routed:
+            log.info("%s (%s) %s: no Speaker said it", event.kind, event.urgency, event.details)
+            return
         self._last_said[text] = event.at
-        for speaker, urgencies in self._speakers:
-            if event.urgency in urgencies:
-                speaker.put(text, event.urgency)
+        done = _AllFailed(len(routed), lambda: self._forget(text, event))
+        for speaker in routed:
+            speaker.put(text, event.urgency, done)
         log.info("%s (%s) %s: saying %r", event.kind, event.urgency, event.details, text)
+
+    def _forget(self, text: str, event: Event) -> None:
+        """No Speaker said `text`, so it does not count as said."""
+        if self._last_said.get(text) == event.at:
+            del self._last_said[text]
+        log.info("%s (%s) %s: no Speaker said it", event.kind, event.urgency, event.details)
 
     def wait_until_said(self, timeout: float | None = None) -> bool:
         """Wait until every Speaker has said what it was given; False if `timeout` ran out.
@@ -150,6 +161,22 @@ class StandardCommunications:
     def _said_recently(self, text: str, at: datetime) -> bool:
         last = self._last_said.get(text)
         return last is not None and at - last < timedelta(seconds=self._options.repeat_seconds)
+
+
+class _AllFailed:
+    """Calls `then` once every one of `count` Speakers has failed to say a text."""
+
+    def __init__(self, count: int, then: Callable[[], None]) -> None:
+        self._left, self._said, self._then = count, False, then
+        self._lock = threading.Lock()
+
+    def __call__(self, said: bool) -> None:
+        with self._lock:
+            self._left -= 1
+            self._said = self._said or said
+            if self._left or self._said:
+                return
+        self._then()
 
 
 def _routed(config: Config) -> list[RoutedSpeaker]:

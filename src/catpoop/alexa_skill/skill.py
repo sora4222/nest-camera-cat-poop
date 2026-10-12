@@ -123,6 +123,7 @@ class AlexaSkill:
 
 INTENTS: dict[str, Callable[[AlexaSkill, dict[str, str]], Answer]] = {
     "DoNotDisturbIntent": AlexaSkill._do_not_disturb,
+    "DurationIntent": AlexaSkill._do_not_disturb,  # a bare "two hours" after "how long?"
     "StopDoNotDisturbIntent": AlexaSkill._stop_do_not_disturb,
     "PeeAnnouncementsOnIntent": AlexaSkill._pee_on,
     "PeeAnnouncementsOffIntent": AlexaSkill._pee_off,
