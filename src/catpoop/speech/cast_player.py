@@ -4,6 +4,7 @@
 for. Finding uses mDNS, so the server must be on the same home network as the speakers.
 """
 
+import queue
 from collections.abc import Callable, Sequence
 from contextlib import suppress
 from typing import Any
@@ -28,6 +29,10 @@ type Discover = Callable[[str], FoundCast | None]
 
 class SpeakerNotFound(LookupError):
     """No Google speaker with that name answered on the home network."""
+
+
+class SpeakerFailed(RuntimeError):
+    """The speaker did not accept the clip, e.g. it could not fetch the URL."""
 
 
 def find_cast(
@@ -84,9 +89,14 @@ class CastPlayer:
         try:
             if self._volume is not None:
                 cast.set_volume(self._volume)
+            answers: queue.Queue[tuple[bool, dict | None]] = queue.Queue()
             cast.media_controller.play_media(
-                url, "audio/wav", title="Litter box", stream_type="BUFFERED"
-            )
+                url, "audio/wav", title="Litter box", stream_type="BUFFERED",
+                callback_function=lambda sent, response: answers.put((sent, response)),
+            )  # fmt: skip
+            sent, response = answers.get(timeout=10)  # queue.Empty if no answer
+            if not sent or (response or {}).get("type") == "LOAD_FAILED":
+                raise SpeakerFailed(f"{self._device!r} did not load the clip: {response}")
         except Exception:
             with suppress(Exception):
                 self.close()
