@@ -25,7 +25,7 @@ The endpoint listens on `127.0.0.1` only (`[alexa_skill] host`, `port`); the tun
 
 ## Security
 
-- **Only `/alexa` is public.** The tunnel forwards only that path (other paths get 404 from Cloudflare or are not served by Tailscale), and the endpoint itself answers 404 to any other path and 405 to anything but POST.
+- **Only `/alexa` is public.** The tunnel forwards only that path (other paths get 404 from Cloudflare or are not served by Tailscale, provided nothing else is served on port 443 of the machine; see Tailscale Funnel below), and the endpoint itself answers 404 to any other path and 405 to anything but POST.
 - **Every request is checked** before the skill sees it (`src/catpoop/alexa_skill/request_verifier.py`), as Amazon requires for skills hosted as a web service:
   1. the `SignatureCertChainUrl` header is `https://s3.amazonaws.com/echo.api/...` (port 443 if any, after `..` is resolved);
   2. the certificate chain there is for `echo-api.amazon.com`, valid now, and leads to a trusted root (certifi's list);
@@ -96,11 +96,12 @@ The endpoint for the skill is `https://litter.example.com/alexa`.
 Needs the server on a tailnet with HTTPS certificates and Funnel allowed for it (the first `tailscale funnel` prints a link to allow it in the admin console). Set `tunnel = "tailscale"`, then:
 
 ```sh
+tailscale serve status          # must show nothing else on port 443 (see below)
 tailscale funnel --bg --set-path=/alexa http://127.0.0.1:8767/alexa
 tailscale funnel status          # shows https://<machine>.<tailnet>.ts.net/alexa
 ```
 
-Only `/alexa` is funnelled. `--bg` keeps it on across restarts of the machine; `tailscale funnel reset` turns it off. The endpoint for the skill is `https://<machine>.<tailnet>.ts.net/alexa`.
+Only `/alexa` is funnelled, **as long as nothing else is served on port 443 of this machine**: Funnel makes the whole port public, so any existing `tailscale serve` handler on 443 would become reachable from the internet too ([tailscale#10234](https://github.com/tailscale/tailscale/issues/10234)). Move such handlers to another port (`--https=8443`) or remove them first. `--bg` keeps it on across restarts of the machine; `tailscale funnel reset` turns it off. The endpoint for the skill is `https://<machine>.<tailnet>.ts.net/alexa`.
 
 ### 3. Point the skill at it
 

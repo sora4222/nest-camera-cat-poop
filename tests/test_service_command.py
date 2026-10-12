@@ -62,13 +62,28 @@ def test_install_with_linger_on_does_not_ask_for_it(checkout, places, capsys):
     assert "enable-linger" not in capsys.readouterr().out
 
 
-def test_install_with_op_warns_when_there_is_no_service_account_token(checkout, places, capsys):
+def test_install_with_op_stops_before_starting_without_a_service_account_token(
+    checkout, places, capsys
+):
     (checkout / ".env").write_text("A=op://v/i/f\n")
     which = _which({"uv": "/opt/uv", "op": "/opt/op"})
-    run_service("install", checkout, "cpu", [], places, FakeServiceManager(), which, "u")
-    out = capsys.readouterr().out
-    assert "OP_SERVICE_ACCOUNT_TOKEN" in out
-    assert str(places.secrets_file) in out
+    manager = FakeServiceManager()
+    code = run_service("install", checkout, "cpu", [], places, manager, which, "u")
+    err = capsys.readouterr().err
+    assert code == 1
+    assert manager.calls == []
+    assert "OP_SERVICE_ACCOUNT_TOKEN" in err
+    assert str(places.secrets_file) in err
+
+
+def test_install_with_op_and_a_service_account_token_starts(checkout, places):
+    (checkout / ".env").write_text("A=op://v/i/f\n")
+    places.secrets_file.parent.mkdir()
+    places.secrets_file.write_text("OP_SERVICE_ACCOUNT_TOKEN=x\n")
+    which = _which({"uv": "/opt/uv", "op": "/opt/op"})
+    manager = FakeServiceManager()
+    assert run_service("install", checkout, "cpu", [], places, manager, which, "u") == 0
+    assert ("enable_and_restart", UNIT_NAME, "True") in manager.calls
 
 
 def test_install_warns_when_the_checkout_has_no_config(tmp_path, places, capsys):
