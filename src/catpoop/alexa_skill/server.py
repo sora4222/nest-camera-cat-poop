@@ -5,8 +5,9 @@ Tailscale) brings `/alexa` from the internet to it.
 """
 
 import logging
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Protocol
+from typing import Any, Protocol
 
 from catpoop.alexa_skill.endpoint import MAX_BODY, EndpointResponse
 
@@ -24,27 +25,22 @@ class Endpoint(Protocol):
 
 
 def make_server(endpoint: Endpoint, host: str, port: int) -> ThreadingHTTPServer:
-    """An HTTP server for `endpoint` on `host:port`; port 0 picks a free one."""
+    """An HTTP server for `endpoint` on `host:port`; port 0 picks a free one.
+
+    Requests are read on their own threads, but `endpoint` answers one at a time, so two
+    intents never change the switches together.
+    """
+    one_at_a_time = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "catpoop"
         sys_version = ""
         timeout = 10
 
-        def do_GET(self) -> None:
-            self._answer()
-
-        def do_POST(self) -> None:
-            self._answer()
-
-        def do_PUT(self) -> None:
-            self._answer()
-
-        def do_DELETE(self) -> None:
-            self._answer()
-
-        def do_HEAD(self) -> None:
-            self._answer()
+        def __getattr__(self, name: str) -> Any:
+            if name.startswith("do_"):  # every method (GET, PATCH, ...) goes to the endpoint
+                return self._answer
+            raise AttributeError(name)
 
         def _answer(self) -> None:
             try:
@@ -56,7 +52,9 @@ def make_server(endpoint: Endpoint, host: str, port: int) -> ThreadingHTTPServer
                 self.close_connection = True
                 return
             body = self.rfile.read(length) if length else b""
-            self._send(endpoint.handle(self.command, self.path, dict(self.headers), body))
+            with one_at_a_time:
+                response = endpoint.handle(self.command, self.path, dict(self.headers), body)
+            self._send(response)
 
         def _send(self, response: EndpointResponse) -> None:
             self.send_response(response.status)

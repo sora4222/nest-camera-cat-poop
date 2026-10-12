@@ -157,3 +157,9 @@ def test_alexa_skill_settings_are_read_and_checked(tmp_path):
         load_config(write(tmp_path, MINIMAL + '\n[alexa_skill]\ntunnel = "ngrok"\n'))
     with pytest.raises(ConfigError, match="port"):
         load_config(write(tmp_path, MINIMAL + "\n[alexa_skill]\nport = 70000\n"))
+
+
+def test_visit_padding_must_keep_a_frame_after_the_cat_leaves(tmp_path):
+    text = MINIMAL + "[visits]\nframe_seconds = 0.5\npadding_seconds = 0\n"
+    with pytest.raises(ConfigError, match="padding_seconds"):
+        load_config(write(tmp_path, text))

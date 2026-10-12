@@ -72,6 +72,14 @@ def run_service(
         if action == "show":
             print(unit, end="")
             return 0
+        if settings.op is not None and not places.secrets_file.is_file():
+            print(
+                f"Not installed: op fills in .env without you only with OP_SERVICE_ACCOUNT_TOKEN"
+                f" in {places.secrets_file}. Add it, then install again"
+                " (see docs/service.md#secrets).",
+                file=sys.stderr,
+            )
+            return 1
         if not (settings.checkout / "config.toml").is_file():
             print(f"Warning: no config.toml in {settings.checkout}.", file=sys.stderr)
         path = installer.install(unit, places.unit_folder, manager)
@@ -79,11 +87,6 @@ def run_service(
         print(error, file=sys.stderr)
         return 1
     print(f"Installed {path} and started it. Logs: {_LOGS}")
-    if settings.op is not None and not places.secrets_file.is_file():
-        print(
-            f"op fills in .env without you only with OP_SERVICE_ACCOUNT_TOKEN in "
-            f"{places.secrets_file} (see docs/service.md#secrets)."
-        )
     if not (places.linger_folder / (user or getpass.getuser())).exists():
         print(
             "To keep it running after you log out and start it at boot: "
