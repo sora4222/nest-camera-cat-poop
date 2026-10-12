@@ -44,6 +44,12 @@ kind = "log"
 # volume = 0.6                       # 0.0-1.0; default: leave the speaker's volume as it is
 # known_hosts = ["..."]              # speaker addresses, if finding them by name (mDNS) fails
 
+# An Alexa device through our Smart Home skill and routines (docs/alexa-smart-home.md).
+# [[speakers]]
+# name = "Echo"
+# kind = "alexa"
+# region = "FE"  # NA, EU or FE (Australia, Japan, India)
+
 # An Alexa device through Voice Monkey; the token is CATPOOP_VOICE_MONKEY_TOKEN in .env.
 # [[speakers]]
 # name = "Kitchen"
@@ -149,6 +155,7 @@ host = "127.0.0.1"      # the tunnel reaches the endpoint on this machine
 port = 8767
 tunnel = "cloudflare"   # cloudflare (Cloudflare Tunnel) or tailscale (Tailscale Funnel)
 # hostname = "litter.example.com"  # Cloudflare only: the tunnel's public host name
+# smart_home = true     # also serve /alexa/smart-home for speaker kind "alexa"
 
 # Options for the chosen implementation of each other part, one table per part.
 

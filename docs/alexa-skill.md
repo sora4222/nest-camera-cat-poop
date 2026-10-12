@@ -25,7 +25,7 @@ The endpoint listens on `127.0.0.1` only (`[alexa_skill] host`, `port`); the tun
 
 ## Security
 
-- **Only `/alexa` is public.** The tunnel forwards only that path (other paths get 404 from Cloudflare or are not served by Tailscale, provided nothing else is served on port 443 of the machine; see Tailscale Funnel below), and the endpoint itself answers 404 to any other path and 405 to anything but POST.
+- **Only `/alexa` is public** (and `/alexa/smart-home` when `smart_home = true`, behind its own secret; see [alexa-smart-home.md](alexa-smart-home.md)). The tunnel forwards only that path (other paths get 404 from Cloudflare or are not served by Tailscale, provided nothing else is served on port 443 of the machine; see Tailscale Funnel below), and the endpoint itself answers 404 to any other path and 405 to anything but POST.
 - **Every request is checked** before the skill sees it (`src/catpoop/alexa_skill/request_verifier.py`), as Amazon requires for skills hosted as a web service:
   1. the `SignatureCertChainUrl` header is `https://s3.amazonaws.com/echo.api/...` (port 443 if any, after `..` is resolved);
   2. the certificate chain there is for `echo-api.amazon.com`, valid now, and leads to a trusted root (certifi's list);
