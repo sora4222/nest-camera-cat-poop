@@ -47,6 +47,13 @@ def test_accept_trades_the_code_and_saves_only_the_refresh_token_privately(tmp_p
     assert os.stat(tmp_path / "grant.json").st_mode & 0o777 == 0o600
 
 
+def test_accept_makes_an_existing_file_private_too(tmp_path):
+    (tmp_path / "grant.json").write_text("{}")
+    os.chmod(tmp_path / "grant.json", 0o644)
+    grants(Amazon(), tmp_path).accept("code-1")
+    assert os.stat(tmp_path / "grant.json").st_mode & 0o777 == 0o600
+
+
 def test_access_token_is_refreshed_from_the_saved_token_and_cached(tmp_path):
     fake = Amazon()
     grants(fake, tmp_path).accept("code-1")
