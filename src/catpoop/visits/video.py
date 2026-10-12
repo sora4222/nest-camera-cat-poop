@@ -38,13 +38,16 @@ def read_frames(
     try:
         with av.open(str(path)) as container:
             stream = container.streams.video[0]
+            origin = 0.0
+            if stream.start_time is not None and stream.time_base is not None:
+                origin = float(stream.start_time * stream.time_base)
             if start > 0 and stream.time_base is not None:
-                container.seek(int(start / stream.time_base), stream=stream)
+                container.seek(int((start + origin) / stream.time_base), stream=stream)
             wanted = start
             for frame in container.decode(stream):
                 if frame.time is None:
                     continue
-                seconds = float(frame.time)
+                seconds = float(frame.time) - origin
                 if end is not None and seconds > end + _EPSILON:
                     return
                 if seconds + _EPSILON < wanted:
