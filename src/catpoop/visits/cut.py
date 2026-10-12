@@ -11,7 +11,7 @@ from catpoop.domain import Frame
 from catpoop.interfaces import Detector
 from catpoop.visits.finder import cat_in_litter_box, find_visits
 from catpoop.visits.store import Visit, VisitStore, visit_id
-from catpoop.visits.video import VideoError, read_frames
+from catpoop.visits.video import VideoError, clip_seconds, read_frames
 
 log = logging.getLogger(__name__)
 
@@ -43,13 +43,11 @@ def cut_clip(
     when = recorded_at(clip)
     base = datetime.fromisoformat(when) if when else _UNKNOWN_TIME
     samples = []
-    clip_end = 0.0
     for seconds, image in read_frames(clip, settings.frame_seconds):
         found = detector.detect(Frame(base + timedelta(seconds=seconds), image))
         samples.append((seconds, cat_in_litter_box(found, settings)))
-        clip_end = seconds
     saved = []
-    for span in find_visits(samples, clip_end, settings):
+    for span in find_visits(samples, clip_seconds(clip), settings):
         visit = Visit(visit_id(sha, span.start), sha, span.start, span.end, when)
         if store.get(visit.id) is not None:
             continue  # already labeled; keep it as it is

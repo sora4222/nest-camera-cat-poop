@@ -61,3 +61,12 @@ def test_problems_are_reported(tmp_path, capsys):
         main(["import-history", "takeout", str(tmp_path / "x.rar"), "--config", str(config)]) == 1
     )
     assert "x.rar" in capsys.readouterr().err
+
+
+def test_damaged_archives_are_reported(tmp_path, capsys):
+    config = write_config(tmp_path)
+    for name in ["broken.zip", "broken.tgz"]:
+        (tmp_path / name).write_bytes(b"not an archive")
+        args = ["import-history", "takeout", str(tmp_path / name), "--config", str(config)]
+        assert main(args) == 1
+        assert capsys.readouterr().err

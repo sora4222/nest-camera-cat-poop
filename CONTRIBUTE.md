@@ -1,6 +1,7 @@
 # Contributing
 
 Dev rules are in [CLAUDE.md](CLAUDE.md). Run `make check` and `make test` before each commit.
+CI (`.github/workflows/ci.yml`) runs `make setup`, `make check` and `make test` on every pull request push.
 
 ## Code layout
 
