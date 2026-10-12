@@ -68,6 +68,8 @@ src/catpoop/
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
     nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
+notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
+  export_toy_model_to_onnx.ipynb  a toy Keras model -> ONNX, step by step
 docs/               setup, configuration, ADRs
 ```
 
