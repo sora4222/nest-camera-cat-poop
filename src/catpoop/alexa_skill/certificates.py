@@ -3,7 +3,6 @@
 import httpx
 
 MAX_BYTES = 64 * 1024
-"""A real chain is a few KB; anything far bigger is not one."""
 
 
 class HttpCertificates:
