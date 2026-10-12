@@ -58,11 +58,13 @@ class PortabilityHttpApi:
     def from_env(cls) -> Self:
         """Build from environment variables, or raise `ConfigError` naming what is missing."""
         env = os.environ
+        own = env.get("CATPOOP_PORTABILITY_CLIENT_ID") or env.get(
+            "CATPOOP_PORTABILITY_CLIENT_SECRET"
+        )
+        client = "CATPOOP_PORTABILITY" if own else "GOOGLENESTCAM"
         values = {
-            "client id": env.get("CATPOOP_PORTABILITY_CLIENT_ID")
-            or env.get("GOOGLENESTCAM_CLIENT_ID"),
-            "client secret": env.get("CATPOOP_PORTABILITY_CLIENT_SECRET")
-            or env.get("GOOGLENESTCAM_CLIENT_SECRET"),
+            "client id": env.get(f"{client}_CLIENT_ID"),
+            "client secret": env.get(f"{client}_CLIENT_SECRET"),
             "refresh token": env.get("CATPOOP_PORTABILITY_REFRESH_TOKEN"),
         }
         missing = [name for name, value in values.items() if not value]

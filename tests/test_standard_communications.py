@@ -305,3 +305,14 @@ def test_end_of_quiet_hours_is_not_retried_when_announcing_it_fails(tmp_path):
     presence.broken = False
     setup.wait(60)
     assert setup.speaker.said == []
+
+
+def test_text_no_speaker_could_say_is_not_held_back_as_said(tmp_path, caplog):
+    setup = Setup(tmp_path, repeat_seconds=30)
+    setup.speaker.fails = True
+    setup.event("poop")
+    assert "said 'Cat left poop.'" not in caplog.text
+    setup.speaker.fails = False
+    setup.clock.advance(5)
+    setup.event("poop")
+    assert setup.speaker.said == ["Cat left poop."]

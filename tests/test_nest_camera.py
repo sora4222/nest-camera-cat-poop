@@ -134,3 +134,18 @@ def test_nest_camera_needs_a_device_name():
     with pytest.raises(ConfigError, match=r"camera\.device"):
         registry.create(CAMERA, "nest", config, {})
     assert isinstance(registry.create(CAMERA, "nest", config, {"device": "Box"}), NestCamera)
+
+
+@pytest.mark.parametrize("retry", ["30", 0, -1, True])
+def test_nest_camera_retry_seconds_must_be_a_positive_number(retry):
+    config = Config.model_validate(
+        {
+            "parts": dict.fromkeys(
+                ["camera", "detector", "event_rules", "event_log", "presence", "communications"],
+                "x",
+            ),
+            "paths": {"private_data_store": "/data"},
+        }
+    )
+    with pytest.raises(ConfigError, match=r"camera\.retry_seconds"):
+        default_registry().create(CAMERA, "nest", config, {"device": "Box", "retry_seconds": retry})
