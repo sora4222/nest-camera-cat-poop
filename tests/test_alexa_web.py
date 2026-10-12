@@ -23,6 +23,7 @@ class Amazon:
         self.requests: list[httpx.Request] = []
         self.logins = 0
         self.speak_status = [200]
+        self.csrf_from = "login"
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
@@ -30,10 +31,15 @@ class Amazon:
         if path == "/ap/exchangetoken/cookies":
             self.logins += 1
             cookies = [{"Name": "session-id", "Value": f"s{self.logins}"}]
-            cookies.append({"Name": "csrf", "Value": f"c{self.logins}"})
+            if self.csrf_from == "login":
+                cookies.append({"Name": "csrf", "Value": f"c{self.logins}"})
             return httpx.Response(
                 200, json={"response": {"tokens": {"cookies": {".amazon.com.au": cookies}}}}
             )
+        if path == self.csrf_from:
+            return httpx.Response(200, headers={"set-cookie": f"csrf=c{self.logins}; Path=/"})
+        if path == "/api/users/me":
+            return httpx.Response(200, json={"id": "ME1"})
         if path == "/api/devices-v2/device":
             return httpx.Response(200, json={"devices": DEVICES})
         if path == "/api/behaviors/preview":
@@ -49,10 +55,10 @@ def web(fake: Amazon) -> AlexaWeb:
 def test_speak_logs_in_with_the_refresh_token_then_speaks_on_the_named_device():
     fake = Amazon()
     web(fake).speak("Kitchen", "Poop in the litter box")
-    login, devices, speak = fake.requests
+    login, me, devices, speak = fake.requests
     assert str(login.url) == "https://api.amazon.com.au/ap/exchangetoken/cookies"
     assert f"source_token={TOKEN}".replace("|", "%7C") in login.content.decode()
-    assert devices.url.host == "alexa.amazon.com.au"
+    assert me.url.host == devices.url.host == "alexa.amazon.com.au"
     assert speak.headers["csrf"] == "c1"
     assert "session-id=s1" in speak.headers["cookie"]
     sequence = json.loads(json.loads(speak.content)["sequenceJson"])
@@ -61,7 +67,7 @@ def test_speak_logs_in_with_the_refresh_token_then_speaks_on_the_named_device():
     assert payload == {
         "deviceType": "TYPE1",
         "deviceSerialNumber": "SERIAL1",
-        "customerId": "CUSTOMER1",
+        "customerId": "ME1",
         "locale": "en-AU",
         "textToSpeak": "Poop in the litter box",
     }
@@ -73,7 +79,7 @@ def test_second_speak_reuses_the_login_and_device_list():
     alexa.speak("Kitchen", "one")
     alexa.speak("Kitchen", "two")
     assert fake.logins == 1
-    assert len(fake.requests) == 4
+    assert len(fake.requests) == 5
 
 
 def test_expired_login_logs_in_again_once():
@@ -84,6 +90,20 @@ def test_expired_login_logs_in_again_once():
     alexa.speak("Kitchen", "two")
     assert fake.logins == 2
     assert fake.requests[-1].headers["csrf"] == "c2"
+
+
+def test_csrf_cookie_comes_from_another_page_when_login_has_none():
+    fake = Amazon()
+    fake.csrf_from = "/spa/index.html"
+    web(fake).speak("Kitchen", "hi")
+    assert fake.requests[-1].headers["csrf"] == "c1"
+
+
+def test_no_csrf_cookie_anywhere_raises_a_login_error():
+    fake = Amazon()
+    fake.csrf_from = "nowhere"
+    with pytest.raises(AlexaWebError, match="csrf"):
+        web(fake).speak("Kitchen", "hi")
 
 
 def test_refused_twice_raises():

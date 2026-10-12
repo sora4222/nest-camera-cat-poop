@@ -9,6 +9,9 @@ from typing import Any
 
 import httpx
 
+# Pages that set the `csrf` cookie when the login exchange does not.
+CSRF_PAGES = ("/api/language", "/spa/index.html", "/templates/oobe/d-device-pick.handlebars")
+
 
 class AlexaWebError(Exception):
     """The Alexa web API refused or could not be reached."""
@@ -31,6 +34,7 @@ class AlexaWeb:
         self._http = http or httpx.Client(timeout=10)
         self._cookies: dict[str, str] = {}
         self._devices: dict[str, dict[str, Any]] = {}
+        self._customer = ""
 
     def __repr__(self) -> str:
         """Domain only, never the token."""
@@ -50,6 +54,7 @@ class AlexaWeb:
     def _speak(self, device: str, text: str) -> int:
         if not self._cookies:
             self._log_in()
+        customer = self._customer_id()
         found = self._device(device)
         node = {
             "@type": "com.amazon.alexa.behaviors.model.OpaquePayloadOperationNode",
@@ -57,7 +62,7 @@ class AlexaWeb:
             "operationPayload": {
                 "deviceType": found["deviceType"],
                 "deviceSerialNumber": found["serialNumber"],
-                "customerId": found["deviceOwnerCustomerId"],
+                "customerId": customer,
                 "locale": self._locale,
                 "textToSpeak": text,
             },
@@ -87,10 +92,21 @@ class AlexaWeb:
             raise AlexaWebError(f"Alexa: {response.status_code} logging in; renew the token")
         by_domain = response.json()["response"]["tokens"]["cookies"]
         self._cookies = {c["Name"]: c["Value"] for jar in by_domain.values() for c in jar}
+        for page in CSRF_PAGES:
+            if "csrf" in self._cookies:
+                return
+            self._cookies.update(self._http.get(self._url(page), headers=self._headers()).cookies)
         if "csrf" not in self._cookies:
-            self._cookies.update(
-                self._http.get(self._url("/api/language"), headers=self._headers()).cookies
-            )
+            raise AlexaWebError("Alexa: login gave no csrf cookie; renew the token")
+
+    def _customer_id(self) -> str:
+        # The logged-in account, which may not own a shared household device.
+        if not self._customer:
+            response = self._http.get(self._url("/api/users/me"), headers=self._headers())
+            if response.is_error:
+                raise AlexaWebError(f"Alexa: {response.status_code} reading the account")
+            self._customer = response.json()["id"]
+        return self._customer
 
     def _device(self, name: str) -> dict[str, Any]:
         if name not in self._devices:
