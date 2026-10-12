@@ -46,6 +46,9 @@ def _cloudflare(settings: AlexaSkillSettings) -> str:
 def _tailscale(settings: AlexaSkillSettings) -> str:
     return (
         "# Tailscale Funnel: run once; it stays on across restarts (see docs/alexa-skill.md).\n"
+        "# WARNING: Funnel makes EVERYTHING served on port 443 of this machine public, not\n"
+        "# just /alexa. First check that this shows nothing else on :443 (else move it away):\n"
+        "tailscale serve status\n"
         f"tailscale funnel --bg --set-path={PATH} {_local_url(settings)}{PATH}\n"
         f"# Alexa skill endpoint: https://<machine>.<tailnet>.ts.net{PATH}\n"
         "# (`tailscale funnel status` shows the name.)\n"

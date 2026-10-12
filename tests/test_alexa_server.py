@@ -1,4 +1,5 @@
 import threading
+import time
 
 import httpx
 import pytest
@@ -46,7 +47,14 @@ def test_get_and_other_methods_reach_the_endpoint_too(served):
     endpoint, client = served
     client.get("/")
     client.put("/alexa", content=b"x")
-    assert [(m, p) for m, p, _, _ in endpoint.calls] == [("GET", "/"), ("PUT", "/alexa")]
+    client.patch("/alexa", content=b"x")
+    client.options("/other")
+    assert [(m, p) for m, p, _, _ in endpoint.calls] == [
+        ("GET", "/"),
+        ("PUT", "/alexa"),
+        ("PATCH", "/alexa"),
+        ("OPTIONS", "/other"),
+    ]
 
 
 def test_a_body_over_the_limit_is_413_and_not_handed_on(served):
@@ -59,3 +67,31 @@ def test_a_body_over_the_limit_is_413_and_not_handed_on(served):
 def test_the_server_does_not_say_what_it_runs(served):
     _, client = served
     assert "Python" not in client.post("/alexa", content=b"{}").headers.get("server", "")
+
+
+def test_the_endpoint_answers_one_request_at_a_time(served):
+    endpoint, client = served
+    inside, most = [0], [0]
+    handle = endpoint.handle
+
+    def slow(*args) -> EndpointResponse:
+        inside[0] += 1
+        most[0] = max(most[0], inside[0])
+        time.sleep(0.05)
+        inside[0] -= 1
+        return handle(*args)
+
+    endpoint.handle = slow
+    port = client.base_url.port
+    posts = [
+        threading.Thread(
+            target=httpx.post, args=(f"http://127.0.0.1:{port}/alexa",), kwargs={"trust_env": False}
+        )
+        for _ in range(3)
+    ]
+    for post in posts:
+        post.start()
+    for post in posts:
+        post.join()
+    assert len(endpoint.calls) == 3
+    assert most[0] == 1
