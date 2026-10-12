@@ -78,7 +78,7 @@ cat_label = "cat"        # the detector label of the Cat
 litter_box = [0.0, 0.0, 1.0, 1.0]  # left, top, right, bottom as fractions of the picture
 end_gap_seconds = 3.0    # the Cat must be gone this long for a Visit to end
 min_seconds = 2.0        # shorter Visits are dropped
-padding_seconds = 1.0    # kept before and after each Visit
+padding_seconds = 1.0    # kept before and after each Visit (at least frame_seconds)
 max_store_gb = 500       # then the oldest clips with no labeled Visit are deleted
 
 # The Outcome model (`make train`, `make evaluate`, see docs/outcome-model.md).

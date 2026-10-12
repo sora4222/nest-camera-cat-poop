@@ -4,6 +4,7 @@ Needs no root: a refused or accepted connection proves the phone is there, and a
 that still answers ARP shows as REACHABLE in `ip neigh` (Linux, iproute2).
 """
 
+import errno
 import json
 import socket
 import subprocess
@@ -17,6 +18,7 @@ type RunCommand = Callable[[list[str]], str]
 
 _ANSWERED = {"REACHABLE"}
 _ASKING = {"DELAY", "PROBE", "INCOMPLETE"}  # the kernel is still waiting for the phone
+_NETWORK_DOWN = {errno.ENETUNREACH, errno.ENETDOWN}  # this machine is off the LAN
 
 
 def _connect(address: str, port: int, timeout: float) -> None:
@@ -48,19 +50,22 @@ class NeighbourTable:
         self._sleep = sleep
 
     def seen(self, address: str) -> bool:
-        """Whether the phone at `address` answers now. Raises if `ip neigh` cannot be read."""
+        """Whether the phone at `address` answers. Raises when off the LAN or without `ip neigh`."""
         try:
             self._connect(address, self._port, self._timeout)
             return True
         except ConnectionRefusedError:
             return True
-        except OSError:
-            pass  # no TCP answer; the phone may still have answered ARP
-        for _ in range(self._wait_seconds):
+        except OSError as error:
+            if error.errno in _NETWORK_DOWN:
+                raise
+            # no TCP answer; the phone may still have answered ARP
+        for waited in range(self._wait_seconds + 1):
             state = self._state(address)
             if state not in _ASKING:
                 return state in _ANSWERED
-            self._sleep(1.0)
+            if waited < self._wait_seconds:
+                self._sleep(1.0)
         return False
 
     def _state(self, address: str) -> str | None:

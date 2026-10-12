@@ -1,3 +1,4 @@
+import errno
 import json
 
 import pytest
@@ -81,3 +82,16 @@ def test_a_missing_ip_command_is_a_failure():
     table = NeighbourTable(connect=FakeLan().connect, run=no_ip, sleep=lambda s: None)
     with pytest.raises(FileNotFoundError):
         table.seen(PHONE)
+
+
+def test_reads_the_table_once_more_after_the_last_wait():
+    lan = FakeLan(states=["INCOMPLETE"] * 6 + ["REACHABLE"])
+    assert lan.table().seen(PHONE)
+    assert sum(lan.slept) == 6
+
+
+@pytest.mark.parametrize("code", [errno.ENETUNREACH, errno.ENETDOWN])
+def test_a_down_network_is_a_failure_not_an_absent_phone(code):
+    lan = FakeLan(knock=OSError(code, "network down"), states=[None])
+    with pytest.raises(OSError):
+        lan.table().seen(PHONE)
