@@ -15,7 +15,10 @@ def _as_time(key: str, value: Any) -> datetime | None:
     if key == "timestamp" and (
         isinstance(value, int) or (isinstance(value, str) and value.isdigit())
     ):
-        return datetime.fromtimestamp(int(value), UTC)
+        try:
+            return datetime.fromtimestamp(int(value), UTC)
+        except (ValueError, OverflowError, OSError):
+            return None
     if isinstance(value, str):
         try:
             parsed = datetime.fromisoformat(value)
