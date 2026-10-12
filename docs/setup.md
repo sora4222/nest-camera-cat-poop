@@ -21,6 +21,8 @@ make export-detector OUT=... SAVED_MODEL=path/to/saved_model    # or convert ano
 
 Then set `[detector] model` in `config.toml`. To try another detector, export it and change `model` (and `labels` if its class ids differ).
 
+New to ONNX? [notebooks/export_toy_model_to_onnx.ipynb](../notebooks/export_toy_model_to_onnx.ipynb) walks through the same steps on a tiny Keras model: export, look at the inputs and outputs, and check ONNX Runtime gives the same answers. Open it with `make notebook`.
+
 ## Private files
 
 Neither file is ever committed. Both are listed in `.worktreeinclude`, so Claude Code copies them into new worktrees.
