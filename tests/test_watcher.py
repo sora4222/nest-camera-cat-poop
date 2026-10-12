@@ -158,6 +158,18 @@ def test_each_visit_is_saved_for_labeling(tmp_path):
     assert visit.frames == 9
 
 
+def test_a_cat_coming_back_is_not_part_of_the_visit_that_ended(tmp_path):
+    model = FakeOutcomeModel()
+    run = Run(tmp_path, "CCC...CCC", model).step_through(9)
+    assert run.said() == [(2, "VisitStarted"), (6, "VisitEnded"), (8, "VisitStarted")]
+    ended = run.first(obs.VisitEnded)
+    assert isinstance(ended, obs.VisitEnded)
+    assert [(f.taken_at - START).total_seconds() for f in ended.frames] == [3, 4, 5]
+    assert model.decided == [ended.frames[-1]]
+    [visit] = VisitStore(run.store).unlabeled()
+    assert visit.frames == 6
+
+
 def test_no_outcome_model_means_no_scores(tmp_path):
     run = Run(tmp_path, "..CCCC.....").step_through(11)
     started, ended = run.first(obs.VisitStarted), run.first(obs.VisitEnded)
