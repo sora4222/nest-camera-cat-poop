@@ -30,16 +30,16 @@ def litter_box_status(event_log: EventLog, look_back: int = LOOK_BACK) -> Litter
     """The status from the newest `look_back` Events."""
     poop_since: datetime | None = None
     newest_poop: datetime | None = None
-    gone_found = False
+    is_poop_taken = False
     last_visit: datetime | None = None
     for event in event_log.recent(look_back):  # newest first
-        if not gone_found and event.kind == "poop":
+        if not is_poop_taken and event.kind == "poop":
             poop_since = event.at
             newest_poop = newest_poop or event.at
         elif event.kind == "poop_gone":
-            gone_found = True
+            is_poop_taken = True
         if last_visit is None and event.kind == "visit_ended":
             last_visit = event.at
-        if gone_found and last_visit is not None:
+        if is_poop_taken and last_visit is not None:
             break
     return LitterBoxStatus(poop_since, last_visit, newest_poop)
