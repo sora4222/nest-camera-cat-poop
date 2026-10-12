@@ -81,12 +81,15 @@ src/catpoop/
     skill.py            intents -> switches and spoken answers
     endpoint.py         POST /alexa only: verify, then answer
     server.py           serve the endpoint (stdlib http.server)
+    routes.py           each path to its endpoint (/alexa, /alexa/smart-home)
     run.py              run it in a thread beside the watcher
     tunnel.py           Cloudflare Tunnel or Tailscale Funnel setup for /alexa only
     command.py          `catpoop alexa-tunnel` (`make alexa-tunnel`)
   alexa_smart_home/ the Smart Home skill: virtual sensors that fire Alexa routines (docs/alexa-smart-home.md)
     sensors.py          one motion sensor per message kind; which kind a text is
+    directives.py       answer Discovery, AcceptGrant and ReportState
     grants.py           Login with Amazon tokens for sending events (state folder)
+    endpoint.py         POST /alexa/smart-home from our Lambda, with a shared secret
   service/          run the watcher as a systemd user service, `make install` (docs/service.md)
     settings.py         what the service runs: checkout, uv, op, extras, secrets file
     unit_file.py        the unit file text, escaped for systemd

@@ -15,14 +15,20 @@ from cryptography.x509.verification import Store
 from catpoop.alexa_skill.certificates import HttpCertificates
 from catpoop.alexa_skill.endpoint import PATH, AlexaEndpoint
 from catpoop.alexa_skill.request_verifier import RequestVerifier
-from catpoop.alexa_skill.server import make_server
+from catpoop.alexa_skill.routes import Routes
+from catpoop.alexa_skill.server import Endpoint, make_server
 from catpoop.alexa_skill.skill import AlexaSkill
+from catpoop.alexa_smart_home import endpoint as smart_home
+from catpoop.alexa_smart_home.directives import SmartHome
+from catpoop.alexa_smart_home.grants import Grants
+from catpoop.alexa_smart_home.sensors import sensors
 from catpoop.clock import Clock
 from catpoop.communications.switches import Switches
 from catpoop.config import Config, ConfigError
 from catpoop.interfaces import CertificateSource, EventLog
 
 SKILL_ID_ENV = "CATPOOP_ALEXA_SKILL_ID"
+SMART_HOME_SECRET_ENV = "CATPOOP_ALEXA_SMART_HOME_SECRET"
 log = logging.getLogger(__name__)
 
 
@@ -33,6 +39,7 @@ def alexa_skill_running(
     clock: Clock,
     environ: Mapping[str, str],
     *,
+    grants: Grants | None = None,
     certificates: CertificateSource | None = None,
     trusted: Store | None = None,
     switches: Switches | None = None,
@@ -53,8 +60,18 @@ def alexa_skill_running(
         ZoneInfo(config.outcome.timezone),
         cat=config.household.cat,
     )
+    routes: dict[str, Endpoint] = {PATH: AlexaEndpoint(verifier, skill)}
+    if settings.smart_home:
+        secret = environ.get(SMART_HOME_SECRET_ENV, "").strip()
+        if not secret:
+            raise ConfigError(
+                f"[alexa_skill] smart_home is on but {SMART_HOME_SECRET_ENV} is not set"
+            )
+        grants = grants or Grants.from_env(environ, clock)
+        home = SmartHome(sensors(config.messages), grants, clock)
+        routes[smart_home.PATH] = smart_home.SmartHomeEndpoint(secret, home)
     try:
-        server = make_server(AlexaEndpoint(verifier, skill), settings.host, settings.port)
+        server = make_server(Routes(routes), settings.host, settings.port)
     except OSError as error:
         where = f"{settings.host}:{settings.port}"
         raise ConfigError(f"[alexa_skill] cannot listen on {where}: {error}") from None

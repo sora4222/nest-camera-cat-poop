@@ -50,3 +50,8 @@ def test_the_command_prints_the_setup_for_the_configured_tunnel(tmp_path, capsys
 def test_the_command_reports_a_bad_config(tmp_path, capsys):
     assert main(["alexa-tunnel", "--config", str(tmp_path / "missing.toml")]) == 1
     assert "not found" in capsys.readouterr().err
+
+
+def test_cloudflare_also_routes_the_smart_home_path_when_it_is_on():
+    settings = AlexaSkillSettings(enabled=True, hostname="litter.example.com", smart_home=True)
+    assert "path: ^/alexa(/smart-home)?$" in tunnel_setup(settings)

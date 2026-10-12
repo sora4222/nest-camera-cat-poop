@@ -36,7 +36,7 @@ def _cloudflare(settings: AlexaSkillSettings) -> str:
         "credentials-file: <home>/.cloudflared/<tunnel id>.json\n"
         "ingress:\n"
         f"  - hostname: {hostname}\n"
-        f"    path: ^{PATH}$\n"
+        f"    path: ^{PATH}{'(/smart-home)?' if settings.smart_home else ''}$\n"
         f"    service: {_local_url(settings)}\n"
         "  - service: http_status:404\n"
         f"# Alexa skill endpoint: https://{hostname}{PATH}\n"
