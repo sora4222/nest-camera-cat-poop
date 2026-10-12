@@ -32,6 +32,14 @@ name = "Living room"
 kind = "log"
 # urgencies = ["normal", "urgent"]  # which Urgencies this Speaker says (default: all)
 
+# An Alexa device; the login is CATPOOP_ALEXA_REFRESH_TOKEN in .env.
+# [[speakers]]
+# name = "Kitchen"
+# kind = "alexa"
+# device = "Kitchen Echo"   # its name in the Alexa app (default: name)
+# domain = "amazon.com.au"  # your Amazon site (default: amazon.com)
+# locale = "en-AU"          # default: en-US
+
 # Spoken text, one template per Event kind; kinds with no template are not said.
 # {cat}, {dog} and event details (e.g. {guess} on visit_started) can be used.
 [messages]
