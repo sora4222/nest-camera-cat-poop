@@ -21,7 +21,7 @@ _TOKEN_URL = "https://oauth2.googleapis.com/token"
 _API = "https://dataportability.googleapis.com/v1"
 
 
-def _rfc3339(when: datetime) -> str:
+def _normalise_datetime(when: datetime) -> str:
     return when.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
@@ -100,9 +100,9 @@ class PortabilityHttpApi:
         """Start exporting `resources` and return the archive job id."""
         body: dict[str, Any] = {"resources": list(resources)}
         if start:
-            body["startTime"] = _rfc3339(start)
+            body["startTime"] = _normalise_datetime(start)
         if end:
-            body["endTime"] = _rfc3339(end)
+            body["endTime"] = _normalise_datetime(end)
         url = f"{_API}/portabilityArchive:initiate"
         response = _check(self._http.post(url, json=body, headers=self._headers()))
         return response.json()["archiveJobId"]
