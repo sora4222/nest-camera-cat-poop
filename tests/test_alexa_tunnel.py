@@ -55,3 +55,11 @@ def test_the_command_reports_a_bad_config(tmp_path, capsys):
 def test_cloudflare_also_routes_the_smart_home_path_when_it_is_on():
     settings = AlexaSkillSettings(enabled=True, hostname="litter.example.com", smart_home=True)
     assert "path: ^/alexa(/smart-home)?$" in tunnel_setup(settings)
+
+
+def test_tailscale_also_funnels_the_smart_home_path_when_it_is_on():
+    on = tunnel_setup(AlexaSkillSettings(tunnel="tailscale", port=9000, smart_home=True))
+    off = tunnel_setup(AlexaSkillSettings(tunnel="tailscale", port=9000))
+    route = "--set-path=/alexa/smart-home http://127.0.0.1:9000/alexa/smart-home"
+    assert route in on
+    assert route not in off

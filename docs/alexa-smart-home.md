@@ -4,7 +4,7 @@ Speaker kind `alexa` makes an Echo say each message for free, with Amazon's offi
 
 1. Our Smart Home skill shows one virtual motion sensor per message kind in `[messages]`, named "Litter box poop", "Litter box visit started" and so on.
 2. In the Alexa app you make one routine per sensor: *when "Litter box poop" detects motion, Alexa says "Lacey left poop in the litter box"*.
-3. When the watcher says a message, the `alexa` speaker finds its kind and tells Alexa that sensor saw motion. The routine runs.
+3. When the watcher says a message, the `alexa` speaker finds its kind and tells Alexa that sensor saw motion. The routine runs. 30 seconds later the sensor goes back to rest (Amazon's minimum), so the same message within 30 seconds is not said twice.
 
 The words are the ones you type into each routine, so keep them in step with `[messages]`. Messages with details (such as `{guess}`) still fire their sensor, but the routine says its fixed text.
 
@@ -23,7 +23,7 @@ Amazon only sends Smart Home directives (discovery, linking, state) to AWS Lambd
 
 ## Set up
 
-Use the Amazon account the Echo uses. "Region" is NA (US, Canada), EU (UK, Europe) or FE (Australia, Japan, India).
+Use the Amazon account the Echo uses. "Region" is NA (US, Canada), EU (UK, Europe, India) or FE (Australia, Japan).
 
 1. **Make the skill.** In the [Alexa developer console](https://developer.amazon.com/alexa/console/ask), **Create Skill**, model **Smart Home**. Copy its skill ID.
 2. **Make the Lambda.** In the AWS console, in us-east-1 (NA), eu-west-1 (EU) or us-west-2 (FE), create a Python 3.12 function and paste `alexa/smart_home_lambda.py`. Set its environment variables `CATPOOP_URL=https://<your tunnel host>/alexa/smart-home` and `CATPOOP_SECRET=<the secret>`. Add the trigger **Alexa Smart Home** with the skill ID. Copy the function's ARN into the skill's **Default endpoint**.

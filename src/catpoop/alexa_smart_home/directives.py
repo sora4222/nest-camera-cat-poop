@@ -75,13 +75,13 @@ def _property(namespace: str, name: str, value: Any, when: str) -> dict[str, Any
 
 
 def _endpoint(sensor: Sensor) -> dict[str, Any]:
-    def interface(name: str, prop: str, reported: bool) -> dict[str, Any]:
+    def interface(name: str, prop: str, version: str) -> dict[str, Any]:
         supported = {"supported": [{"name": prop}], "retrievable": True}
         return {
             "type": "AlexaInterface",
             "interface": name,
-            "version": "3",
-            "properties": {**supported, "proactivelyReported": reported},
+            "version": version,
+            "properties": {**supported, "proactivelyReported": True},
         }
 
     return {
@@ -91,8 +91,8 @@ def _endpoint(sensor: Sensor) -> dict[str, Any]:
         "description": f"Turns on when the {sensor.kind} message is said",
         "displayCategories": ["MOTION_SENSOR"],
         "capabilities": [
-            interface("Alexa.MotionSensor", "detectionState", True),
-            interface("Alexa.EndpointHealth", "connectivity", False),
+            interface("Alexa.MotionSensor", "detectionState", "3"),
+            interface("Alexa.EndpointHealth", "connectivity", "3.1"),
             {"type": "AlexaInterface", "interface": "Alexa", "version": "3"},
         ],
     }
