@@ -30,8 +30,13 @@ class ModelFiles:
 
     @classmethod
     def in_store(cls, private_data_store: Path, models: Path) -> "ModelFiles":
-        """The published files in `models`; a relative path is inside the Private Data Store."""
-        return cls(private_data_store / models / CURRENT)
+        """The published run in `models`; a relative path is inside the Private Data Store.
+
+        `current` is followed once, so every file comes from the same run even if a
+        new run is published while they are read.
+        """
+        current = private_data_store / models / CURRENT
+        return cls(current.parent / current.readlink() if current.is_symlink() else current)
 
     @property
     def outcome(self) -> Path:
