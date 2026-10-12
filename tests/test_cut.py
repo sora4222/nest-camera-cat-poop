@@ -86,3 +86,10 @@ def test_labeled_visits_are_not_cut_again(tmp_path):
     kept = store.get(visit.id)
     assert kept is not None
     assert kept.outcome is Outcome.POOP
+
+
+def test_visit_at_the_end_of_a_clip_runs_to_its_end(tmp_path):
+    add_clip(tmp_path, "a", [DARK] * 8 + [BRIGHT] * 8)
+    cut_clips(tmp_path, BrightIsCat(), SETTINGS)
+    (visit,) = VisitStore(tmp_path).unlabeled()
+    assert (visit.start, visit.end) == (1.5, 4.0)

@@ -103,3 +103,13 @@ def test_from_env_falls_back_to_the_camera_client(monkeypatch):
     monkeypatch.setenv("GOOGLENESTCAM_CLIENT_SECRET", "secret")
     monkeypatch.setenv("CATPOOP_PORTABILITY_REFRESH_TOKEN", "refresh")
     assert PortabilityHttpApi.from_env().client_id == "id"
+
+
+def test_from_env_rejects_half_a_dedicated_client(monkeypatch):
+    monkeypatch.setenv("CATPOOP_PORTABILITY_CLIENT_ID", "own-id")
+    monkeypatch.delenv("CATPOOP_PORTABILITY_CLIENT_SECRET", raising=False)
+    monkeypatch.setenv("GOOGLENESTCAM_CLIENT_ID", "id")
+    monkeypatch.setenv("GOOGLENESTCAM_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("CATPOOP_PORTABILITY_REFRESH_TOKEN", "refresh")
+    with pytest.raises(ConfigError, match="client secret"):
+        PortabilityHttpApi.from_env()

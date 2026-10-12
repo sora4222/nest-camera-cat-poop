@@ -71,7 +71,10 @@
       body: JSON.stringify({ visit_id: visit.id, outcome }),
     });
     busy = false;
-    if (!response.ok) { alert((await response.json()).error); return; }
+    if (!response.ok) {
+      alert((await response.json()).error);
+      if (response.status !== 409) return;
+    }
     await next();
   }
 

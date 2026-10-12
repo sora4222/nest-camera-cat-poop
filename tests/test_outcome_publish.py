@@ -17,7 +17,6 @@ def test_published_models_are_read_through_current(tmp_path):
     models = tmp_path / "models" / "outcome"
     publish(train_into(models, "first"), models)
     files = ModelFiles.in_store(tmp_path, models.relative_to(tmp_path))
-    assert files.folder == models / "current"
     assert files.info.read_text() == "first"
     assert [p.name for p in models.iterdir() if p.name.startswith(".")] == []
 
@@ -62,3 +61,12 @@ def test_other_folders_are_left_alone(tmp_path):
     for text in ("a", "b", "c"):
         publish(train_into(models, text), models)
     assert (models / "mine").is_dir()
+
+
+def test_loaded_files_stay_on_one_run_while_a_new_one_is_published(tmp_path):
+    models = tmp_path / "models"
+    first = publish(train_into(models, "first"), models)
+    files = ModelFiles.in_store(tmp_path, models.relative_to(tmp_path))
+    publish(train_into(models, "second"), models)
+    assert files.folder == first
+    assert files.outcome.read_text() == "first"

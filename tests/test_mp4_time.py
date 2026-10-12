@@ -32,3 +32,8 @@ def test_no_movie_header_means_unknown(tmp_path):
 
 def test_not_an_mp4_means_unknown(tmp_path):
     assert mp4_creation_time(write(tmp_path, b"hello")) is None
+
+
+def test_truncated_extended_size_means_unknown(tmp_path):
+    data = box(b"ftyp", b"isom") + (1).to_bytes(4, "big") + b"moov"
+    assert mp4_creation_time(write(tmp_path, data)) is None

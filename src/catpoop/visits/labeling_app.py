@@ -92,6 +92,9 @@ class LabelingApp:
             id, outcome = str(request["visit_id"]), Outcome(request["outcome"])
         except (ValueError, KeyError, TypeError):
             return _error(400, "send {visit_id, outcome} with outcome pee, poop or nothing")
+        existing = self._store.get(id)
+        if existing is not None and existing.outcome is not None:
+            return _error(409, "this Visit was already labeled; showing the next one")
         try:
             visit = self._store.label(id, outcome, self._now())
         except KeyError:
