@@ -11,7 +11,14 @@ from pathlib import Path
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from catpoop.domain import Urgency
 
@@ -107,6 +114,13 @@ class VisitSettings(_Strict):
     """Kept before and after each Visit."""
     max_store_gb: float = 500
     """Above this, the oldest clips with no labeled Visit are deleted."""
+
+    @model_validator(mode="after")
+    def _keep_a_frame_after_the_cat(self) -> "VisitSettings":
+        """The last frame of a Visit must show the litter surface after the Cat left."""
+        if self.padding_seconds < self.frame_seconds:
+            raise ValueError("padding_seconds must be at least frame_seconds")
+        return self
 
 
 class WatcherSettings(_Strict):
