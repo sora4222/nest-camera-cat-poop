@@ -74,6 +74,8 @@ select = ["D", "E", "F", "I", "UP", "RUF", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
+# Imported only to register the parts.
+"src/catpoop/parts/__init__.py" = ["F401"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
