@@ -27,4 +27,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v6
-      - run: uv run --no-project scripts/pr_size.py origin/${{ github.base_ref }}
+      # HEAD is the PR merged into its base; HEAD^1 is that base, so a re-run measures the
+      # same change even after the base branch moves.
+      - run: uv run --no-project scripts/pr_size.py HEAD^1
