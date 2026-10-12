@@ -5,7 +5,6 @@
 """
 
 import json
-import os
 import sqlite3
 from collections.abc import Mapping
 from datetime import datetime
@@ -17,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from catpoop.config import Config, ConfigError
 from catpoop.domain import Event, Urgency
 from catpoop.registry import DEFAULT, EVENT_LOG
+from catpoop.state_folder import state_folder
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -28,12 +28,6 @@ CREATE TABLE IF NOT EXISTS events (
     details TEXT NOT NULL
 )
 """
-
-
-def state_folder() -> Path:
-    """`$XDG_STATE_HOME/catpoop`, else `~/.local/state/catpoop`."""
-    base = os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state"
-    return Path(base) / "catpoop"
 
 
 def default_path() -> Path:

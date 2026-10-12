@@ -10,6 +10,7 @@ src/catpoop/
   config.py         load and check the private config.toml
   observations.py   what the live watcher hands the event rules
   clock.py          the time now and waiting (SystemClock; tests use a fake)
+  state_folder.py   $XDG_STATE_HOME/catpoop, for the server's small state files
   domain.py         glossary words as types: Urgency, Presence, Outcome, OutcomeScores, Frame, Detection, Event
   interfaces.py     small Protocols for every swappable part
   registry.py       slots, the registry, and build_parts (config names -> parts)
@@ -57,6 +58,10 @@ src/catpoop/
     onnx_export.py      Keras -> ONNX with tf2onnx (train extra)
     train.py            train, export and measure both models (train extra)
     command.py          `catpoop train`, `evaluate`
+  communications/   what may be said, and when (docs/watcher.md#announcements)
+    quiet_hours.py      which Quiet Hours are on at a moment
+    switches.py         Do Not Disturb and Pee announcements, in switches.json in the state folder
+    messages.py         spoken text from the Message templates
   watcher/          the live watcher, `make dev` (docs/watcher.md)
     watcher.py          camera -> detector -> Visits -> event rules, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
