@@ -6,6 +6,7 @@
 
 import json
 import sqlite3
+import threading
 from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
@@ -36,17 +37,22 @@ def default_path() -> Path:
 
 
 class SqliteEventLog:
-    """Keeps Events in one table, oldest first."""
+    """Keeps Events in one table, oldest first. Safe to share between threads (the Alexa skill)."""
 
     def __init__(self, path: Path) -> None:
         """Open (or create) the database at `path`, making its folder if needed."""
         path.parent.mkdir(parents=True, exist_ok=True)
-        self._db = sqlite3.connect(path)
+        self._db = sqlite3.connect(path, check_same_thread=False)
+        self._lock = threading.Lock()
         self._db.execute(_SCHEMA)
         self._db.commit()
 
     def record(self, event: Event) -> None:
         """Store `event`."""
+        with self._lock:
+            self._insert(event)
+
+    def _insert(self, event: Event) -> None:
         self._db.execute(
             "INSERT INTO events (at, kind, urgency, announce, details) VALUES (?, ?, ?, ?, ?)",
             (
@@ -61,10 +67,11 @@ class SqliteEventLog:
 
     def recent(self, limit: int) -> list[Event]:
         """Up to `limit` Events, newest first."""
-        rows = self._db.execute(
-            "SELECT at, kind, urgency, announce, details FROM events ORDER BY id DESC LIMIT ?",
-            (limit,),
-        )
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT at, kind, urgency, announce, details FROM events ORDER BY id DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
         return [
             Event(kind, Urgency(urgency), datetime.fromisoformat(at), json.loads(details), bool(a))
             for at, kind, urgency, a, details in rows
@@ -72,7 +79,8 @@ class SqliteEventLog:
 
     def close(self) -> None:
         """Close the database."""
-        self._db.close()
+        with self._lock:
+            self._db.close()
 
 
 class LogOptions(BaseModel):

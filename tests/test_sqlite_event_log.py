@@ -75,3 +75,21 @@ def test_unknown_event_log_options_are_a_config_error(tmp_path, monkeypatch):
     )
     with pytest.raises(ConfigError, match=r"event_log\.paths"):
         default_registry().create(EVENT_LOG, "sqlite", config, {"paths": "mine.sqlite"})
+
+
+def test_another_thread_can_read_and_write_it(tmp_path):
+    import threading
+
+    log = SqliteEventLog(tmp_path / "events.sqlite")
+    log.record(events()[0])
+    seen = []
+
+    def other() -> None:
+        seen.extend(log.recent(5))
+        log.record(events()[1])
+
+    thread = threading.Thread(target=other)
+    thread.start()
+    thread.join()
+    assert seen == events()[:1]
+    assert [e.kind for e in log.recent(5)] == ["visit_ended", "poop"]
