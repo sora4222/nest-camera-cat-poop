@@ -88,3 +88,17 @@ def test_path_comes_from_environment(tmp_path, monkeypatch):
     path = write(tmp_path, MINIMAL)
     monkeypatch.setenv("CATPOOP_CONFIG", str(path))
     assert load_config().paths.private_data_store == Path("/data/store")
+
+
+def test_visit_settings_have_defaults(tmp_path):
+    visits = load_config(write(tmp_path, MINIMAL)).visits
+    assert visits.max_store_gb == 500
+    assert visits.cat_label == "cat"
+    assert visits.litter_box == (0.0, 0.0, 1.0, 1.0)
+
+
+def test_visit_settings_are_read(tmp_path):
+    text = MINIMAL + "[visits]\nmax_store_gb = 2\nlitter_box = [0.1, 0.2, 0.9, 1.0]\n"
+    visits = load_config(write(tmp_path, text)).visits
+    assert visits.max_store_gb == 2
+    assert visits.litter_box == (0.1, 0.2, 0.9, 1.0)
