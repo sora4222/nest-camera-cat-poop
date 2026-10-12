@@ -48,7 +48,7 @@ kind = "log"
 # [[speakers]]
 # name = "Echo"
 # kind = "alexa"
-# region = "FE"  # NA, EU or FE (Australia, Japan, India)
+# region = "FE"  # NA, EU or FE (Australia, Japan)
 
 # An Alexa device through Voice Monkey; the token is CATPOOP_VOICE_MONKEY_TOKEN in .env.
 # [[speakers]]
