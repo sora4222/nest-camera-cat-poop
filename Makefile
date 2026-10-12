@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config export-detector import-history cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off
+.PHONY: help setup dev check format test config import-history export-detector notebook cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -23,8 +23,9 @@ help:
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
 	@echo "make config  load the private config and say if it is valid"
-	@echo "make export-detector OUT=x.onnx [SAVED_MODEL=dir]  TF detector to ONNX (train extra)"
 	@echo "make import-history ARGS=\"takeout|portability|folder [paths]\"  copy past clips to the NAS"
+	@echo "make export-detector OUT=x.onnx [SAVED_MODEL=dir]  TF detector to ONNX (train extra)"
+	@echo "make notebook  open JupyterLab on notebooks/ (train extra + notebook group)"
 	@echo "make cut-visits  cut new clips into Visits; delete old unlabeled clips over the limit"
 	@echo "make label [PORT=8765]  labeling page on http://localhost:PORT/"
 	@echo "make add-visit OUTCOME=poop|pee|nothing CLIPS=\"a.mp4 b.mp4\"  clips found by hand to the dataset"
@@ -58,13 +59,17 @@ test:
 config:
 	$(RUN) catpoop check-config
 
+import-history:
+	$(RUN) catpoop import-history $(ARGS)
+
 # Export the TF detector to ONNX. Downloads SSD MobileNet v2 FPNLite 320 unless SAVED_MODEL is set.
 export-detector:
 	@test -n "$(OUT)" || { echo "Set OUT, e.g. make export-detector OUT=/mnt/nas/cat-poop/models/pets.onnx"; exit 1; }
 	uv run --extra train python -m catpoop.export_detector --output "$(OUT)" $(if $(SAVED_MODEL),--saved-model "$(SAVED_MODEL)")
 
-import-history:
-	$(RUN) catpoop import-history $(ARGS)
+# JupyterLab for the notebooks in notebooks/ (e.g. exporting a toy model to ONNX).
+notebook:
+	$(UV_RUN) --extra train --group notebook jupyter lab notebooks
 
 cut-visits:
 	$(RUN) catpoop cut-visits
