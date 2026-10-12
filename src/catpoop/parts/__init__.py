@@ -4,7 +4,6 @@ Add a new implementation as its own module here and import it below.
 """
 
 from catpoop.parts import (
-    alexa_speaker,
     google_speaker,
     log_event_rules,
     log_speaker,
@@ -15,4 +14,5 @@ from catpoop.parts import (
     sqlite_event_log,
     standard_communications,
     standard_event_rules,
+    voice_monkey_speaker,
 )
