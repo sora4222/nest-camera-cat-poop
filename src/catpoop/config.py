@@ -89,6 +89,25 @@ class Timers(_Strict):
     login_expired_reminder_at: time = time(18, 0)
 
 
+class VisitSettings(_Strict):
+    """How clips are cut into Visits, and how much the Private Data Store may hold."""
+
+    frame_seconds: float = 0.5
+    """Time between the frames that are checked and kept."""
+    cat_label: str = "cat"
+    """The detector label of the Cat."""
+    litter_box: tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)
+    """Left, top, right, bottom of the Litter Box as fractions of the picture."""
+    end_gap_seconds: float = 3.0
+    """The Cat must be gone this long for a Visit to end."""
+    min_seconds: float = 2.0
+    """Shorter Visits are dropped."""
+    padding_seconds: float = 1.0
+    """Kept before and after each Visit."""
+    max_store_gb: float = 500
+    """Above this, the oldest clips with no labeled Visit are deleted."""
+
+
 class Config(_Strict):
     """The whole private config."""
 
@@ -100,6 +119,7 @@ class Config(_Strict):
     messages: dict[str, str] = {}
     quiet_hours: list[QuietHours] = []
     timers: Timers = Timers()
+    visits: VisitSettings = VisitSettings()
     # Options for the chosen implementation of each part.
     camera: dict[str, Any] = {}
     detector: dict[str, Any] = {}
