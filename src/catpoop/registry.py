@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from catpoop.config import Config, ConfigError, PartKind
+from catpoop.history.importer import HistoryImporter
 from catpoop.interfaces import (
     CameraSource,
     CommunicationsHandler,
@@ -37,6 +38,7 @@ EVENT_LOG = Slot[EventLog]("event_log")
 PRESENCE = Slot[PresenceCheck]("presence")
 COMMUNICATIONS = Slot[CommunicationsHandler]("communications")
 SPEAKER = Slot[Speaker]("speaker")
+HISTORY_IMPORTER = Slot[HistoryImporter]("history_importer")
 
 
 class UnknownPart(ConfigError):
@@ -85,6 +87,8 @@ DEFAULT = Registry()
 
 def default_registry() -> Registry:
     """`DEFAULT`, with every built-in part registered."""
+    import catpoop.history.folder
+    import catpoop.history.takeout
     import catpoop.parts  # noqa: F401  (registers the built-ins)
 
     return DEFAULT
