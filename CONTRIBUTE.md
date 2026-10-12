@@ -75,6 +75,7 @@ src/catpoop/
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
     standard_event_rules.py  event_rules "standard" (Visits, Poop Reminders, Dog at Poop, camera problems)
     sqlite_event_log.py   event_log "sqlite" (SQLite file in the user's state folder)
+    standard_communications.py  communications "standard" (the one gate for every Announcement)
     nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
 docs/               setup, configuration, ADRs

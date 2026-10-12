@@ -36,6 +36,7 @@ kind = "log"
 visit_started = "{cat} is in the litter box."
 poop = "{cat} left poop in the litter box."
 poop_reminder = "There is still poop in the litter box."
+poop_after_quiet_hours = "There is poop in the litter box from during quiet hours."
 dog_at_poop = "{dog} is at the litter box and there is poop in it."
 camera_offline = "The litter box camera is offline."
 login_expired = "The litter box camera needs you to log in again."
@@ -111,6 +112,11 @@ dog_gone_seconds = 60   # the Dog must be away this long before Dog at Poop is s
 [event_log]
 # A relative path is inside $XDG_STATE_HOME/catpoop (else ~/.local/state/catpoop).
 path = "events.sqlite"
+
+# Communications handler "standard" (see docs/watcher.md#announcements).
+[communications]
+dnd_allow = ["urgent"]  # Urgencies Do Not Disturb lets through (`make dnd` can say otherwise)
+repeat_seconds = 30     # the same text is not said again within this
 
 # Options for the chosen implementation of each other part, one table per part.
 

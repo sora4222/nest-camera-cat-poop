@@ -16,7 +16,7 @@ Each check, and each of these, is handed to the event rules:
 | `CameraOffline` | no picture for `timers.camera_offline_minutes` (once per outage) | when the last picture came |
 | `LoginExpired` | Google refuses the camera login (once until pictures come back) | |
 
-Camera Offline also ends a Visit going on. The Events the rules give back go in the event log. If the detector fails on a picture, the error is logged, that picture is skipped (`NoPicture`) and the watcher keeps going.
+Camera Offline also ends a Visit going on. The Events the rules give back go in the event log, then to the communications handler (see [Announcements](#announcements)). If the detector fails on a picture, the error is logged, that picture is skipped (`NoPicture`) and the watcher keeps going.
 
 ## Event rules
 
@@ -36,6 +36,33 @@ Event rules "standard" (the default) turn observations into Events. Each has an 
 Poop being "no longer seen" comes from the Outcome model scoring the empty litter surface: the watcher runs it every `watcher.surface_check_seconds` when nothing is in the Litter Box. With no Outcome model there is no Poop, so none of this happens.
 
 Event rules "log" are a simpler stand-in: one Event per Visit start and end and camera problem.
+
+## Announcements
+
+Communications handler "standard" (the default) is the one gate every Event goes through. It logs each Event with its Urgency (the Urgency is never spoken). Events marked log only stop there. Any other Event is not said when:
+
+1. it is a Visit start guessing Pee and Pee announcements are off (`make pee-off`; `make pee-on` turns them back on),
+2. Quiet Hours are on (`[[quiet_hours]]`, read in `outcome.timezone`) and its `allow` does not list the Urgency,
+3. Do Not Disturb is on and does not let the Urgency through (`[communications] dnd_allow`, or `ALLOW` given to `make dnd`),
+4. every Listener is Away (Unknown, as with presence "off", does not stop it),
+5. `[messages]` has no template for its kind, or
+6. the same text was said less than `[communications] repeat_seconds` ago.
+
+Otherwise each `[[speakers]]` entry whose `urgencies` (default: all) lists the Urgency says it. A Speaker that fails is logged and the others still speak. A failing handler is logged and the watcher keeps going.
+
+When Quiet Hours end and Poop is still in the Litter Box (a `poop` Event and no `poop_gone` since), the `poop_after_quiet_hours` message is said once, through the same gate (so Do Not Disturb can still hold it back).
+
+### Do Not Disturb and Pee announcements
+
+These are switched while the watcher runs and take effect at once; they are kept in `switches.json` in `$XDG_STATE_HOME/catpoop` (else `~/.local/state/catpoop`), not in the repo or config:
+
+| Command | Does |
+|---|---|
+| `make dnd FOR=2h` | Do Not Disturb for 2 hours (also `30m`, `1h30m`, `1d`). `ALLOW="urgent"` or `ALLOW=none` says which Urgencies still get through |
+| `make dnd-off` | Do Not Disturb off now |
+| `make pee-off` / `make pee-on` | Visit starts guessing Pee are not said / said again |
+
+`[event_rules] announce_pee = false` makes Pee guesses log only for good; the switch is for a while.
 
 ## Event log
 
