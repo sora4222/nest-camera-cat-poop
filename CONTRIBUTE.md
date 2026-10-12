@@ -70,6 +70,7 @@ src/catpoop/
   parts/            built-in implementations, one per file
     memory_event_log.py   event_log "memory"
     presence_off.py       presence "off" (always Unknown)
+    wifi_neighbours.py    is a phone on the Wi-Fi? (TCP knock, then `ip neigh`)
     onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
