@@ -62,6 +62,7 @@ src/catpoop/
     quiet_hours.py      which Quiet Hours are on at a moment
     switches.py         Do Not Disturb and Pee announcements, in switches.json in the state folder
     messages.py         spoken text from the Message templates
+    command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
   watcher/          the live watcher, `make dev` (docs/watcher.md)
     watcher.py          camera -> detector -> Visits -> event rules, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
