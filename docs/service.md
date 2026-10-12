@@ -28,10 +28,10 @@ The service gets secrets the same way `make dev` does, decided when you run `mak
   mkdir -p ~/.config/catpoop
   install -m 600 /dev/null ~/.config/catpoop/service.env
   $EDITOR ~/.config/catpoop/service.env   # add the line OP_SERVICE_ACCOUNT_TOKEN=ops_...
-  systemctl --user restart catpoop
+  make install
   ```
 
-  `make install` reminds you if this file is missing. The file is outside the repo and only the service reads it (`EnvironmentFile=`); any other variable the service alone should get can go there too.
+  `make install` stops before starting anything while this file is missing, so the service never fails over and over without it. The file is outside the repo and only the service reads it (`EnvironmentFile=`); any other variable the service alone should get can go there too.
 - **No `op`**: the service runs `uv run --env-file <checkout>/.env ...`, so `.env` must hold plain values. Keep it `chmod 600`.
 - **No `.env`**: the service gets no secrets beyond the service secrets file.
 
