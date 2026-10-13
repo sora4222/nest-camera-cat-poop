@@ -4,17 +4,17 @@ import argparse
 import importlib
 import sys
 from pathlib import Path
-from typing import Any
 
 from catpoop.config import Config, ConfigError, load_config
 from catpoop.outcome.evaluate import evaluate
 from catpoop.outcome.examples import read_labeled_visits
 from catpoop.outcome.model_files import ModelFiles, ModelInfoError
+from catpoop.outcome.onnx_outcome import load_outcome_model
 
 COMMANDS = ["train", "evaluate"]
 
 
-def add_commands(commands: Any) -> None:
+def add_commands(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add the Outcome model commands to the CLI's subparsers."""
     train = commands.add_parser(
         "train", help="train the Outcome model on the labeled dataset and export it to ONNX"
@@ -54,8 +54,6 @@ def _train(config: Config) -> int:
 
 
 def _evaluate(config: Config) -> int:
-    from catpoop.outcome.onnx_outcome import load_outcome_model
-
     store = config.paths.private_data_store
     settings = config.outcome
     model = load_outcome_model(ModelFiles.in_store(store, settings.models), settings.runtime)
