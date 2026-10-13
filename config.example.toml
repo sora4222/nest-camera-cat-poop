@@ -44,12 +44,6 @@ kind = "log"
 # volume = 0.6                       # 0.0-1.0; default: leave the speaker's volume as it is
 # known_hosts = ["..."]              # speaker addresses, if finding them by name (mDNS) fails
 
-# An Alexa device through our Smart Home skill and routines (docs/alexa-smart-home.md).
-# [[speakers]]
-# name = "Echo"
-# kind = "alexa"
-# region = "FE"  # NA, EU or FE (Australia, Japan)
-
 # An Alexa device through Voice Monkey; the token is CATPOOP_VOICE_MONKEY_TOKEN in .env.
 # [[speakers]]
 # name = "Kitchen"
@@ -57,6 +51,13 @@ kind = "log"
 # device = "kitchen-echo"  # the Speaker device id in the Voice Monkey console
 # voice = "Brian"          # optional Amazon Polly voice
 # chime = "soundbank://soundlibrary/alarms/beeps_and_bloops/bell_02"  # optional
+
+# Last resort: an Alexa device through our Smart Home skill and routines. Optional, and the
+# only thing here that needs an AWS Lambda (docs/alexa-smart-home.md). Prefer voice_monkey.
+# [[speakers]]
+# name = "Echo"
+# kind = "alexa"
+# region = "FE"  # NA, EU or FE (Australia, Japan)
 
 # Spoken text, one template per Event kind; kinds with no template are not said.
 # {cat}, {dog} and event details (e.g. {guess} on visit_started) can be used.
