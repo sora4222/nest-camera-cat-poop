@@ -10,6 +10,7 @@ from catpoop.config import Config, ConfigError, load_config
 from catpoop.outcome.evaluate import evaluate
 from catpoop.outcome.examples import read_labeled_visits
 from catpoop.outcome.model_files import ModelFiles, ModelInfoError
+from catpoop.outcome.onnx_outcome import load_outcome_model
 
 COMMANDS = ["train", "evaluate"]
 
@@ -54,8 +55,6 @@ def _train(config: Config) -> int:
 
 
 def _evaluate(config: Config) -> int:
-    from catpoop.outcome.onnx_outcome import load_outcome_model
-
     store = config.paths.private_data_store
     settings = config.outcome
     model = load_outcome_model(ModelFiles.in_store(store, settings.models), settings.runtime)
