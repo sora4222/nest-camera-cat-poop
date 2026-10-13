@@ -4,7 +4,10 @@ Each part is registered by name in `catpoop.registry`. Tests use fakes, never re
 cameras, speakers or the network.
 """
 
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from catpoop.domain import Detection, Event, Frame, OutcomeScores, Presence
@@ -153,4 +156,38 @@ class CommunicationsHandler(Protocol):
 
     def tick(self, at: datetime) -> None:
         """Called every watcher check, for Announcements due at a time (end of Quiet Hours)."""
+        ...
+
+
+class PortabilityError(Exception):
+    """Google's Data Portability API refused or failed (not offered in every country)."""
+
+
+@dataclass(frozen=True)
+class ArchiveState:
+    """An export job's state: `IN_PROGRESS`, `COMPLETE`, `FAILED` or `CANCELLED`."""
+
+    state: str
+    urls: list[str] = field(default_factory=list)
+    """Signed download links, once `COMPLETE`. They expire."""
+
+
+class PortabilityApi(Protocol):
+    """Google's Data Portability API for the `portability` history importer.
+
+    Starts an export job, checks on it and downloads its archives.
+    """
+
+    def initiate(
+        self, resources: Sequence[str], start: datetime | None, end: datetime | None
+    ) -> str:
+        """Start exporting `resources` and return the archive job id."""
+        ...
+
+    def state(self, job_id: str) -> ArchiveState:
+        """The job's current state."""
+        ...
+
+    def download(self, url: str, to: Path) -> None:
+        """Save the archive at `url` to the file `to`."""
         ...
