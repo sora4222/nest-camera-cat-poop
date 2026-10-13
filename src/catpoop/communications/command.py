@@ -8,7 +8,6 @@ import argparse
 import re
 import sys
 from datetime import timedelta
-from typing import Any
 
 from catpoop.clock import Clock, SystemClock
 from catpoop.communications.switches import Switches
@@ -31,7 +30,7 @@ def parse_duration(text: str) -> timedelta:
     return span
 
 
-def add_commands(commands: Any) -> None:
+def add_commands(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add `dnd` and `pee-announcements` to the CLI's subparsers."""
     dnd = commands.add_parser("dnd", help="Do Not Disturb: on for a while, off, or show it")
     group = dnd.add_mutually_exclusive_group()
