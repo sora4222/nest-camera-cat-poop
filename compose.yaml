@@ -1,0 +1,20 @@
+# PostgreSQL for the event log (`make db`). Listens on this machine only.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: catpoop
+      POSTGRES_PASSWORD: catpoop
+      POSTGRES_DB: catpoop
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - catpoop-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "catpoop"]
+      interval: 2s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  catpoop-db:
