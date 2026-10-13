@@ -97,6 +97,7 @@ src/catpoop/
     standard_communications.py  communications "standard" (the one gate for every Announcement)
     nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
+    alexa_requests/ one example Alexa request per skill command (test_alexa_requests.py)
 scripts/pr_size.py  CI check: at most 500 changed code lines per pull request
 notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
   export_toy_model_to_onnx.ipynb  a toy Keras model -> ONNX, step by step
