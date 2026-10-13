@@ -132,14 +132,15 @@ class VisitStore:
         self._write_manifest()
         return labeled
 
-    def remove_unlabeled(self, clip: str) -> int:
+    def remove_unlabeled(self, clip: str, unlabeled: Iterable[Visit] | None = None) -> int:
         """Forget the unlabeled Visits of `clip` and that it was cut; return bytes freed.
 
-        Labeled Visits stay.
+        Labeled Visits stay. `unlabeled`: the unlabeled Visits if already listed (each
+        listing reads every Visit).
         """
         freed = 0
-        for visit in self.unlabeled():
-            if visit.clip == clip:
+        for visit in self.unlabeled() if unlabeled is None else unlabeled:
+            if visit.clip == clip and visit.outcome is None:
                 record = self.visits / f"{visit.id}.json"
                 folder = self._frames_folder(visit)
                 freed += record.stat().st_size + sum(f.stat().st_size for f in folder.glob("*"))

@@ -129,6 +129,7 @@ announce_pee = true     # announce Visits whose Outcome Guess is Pee
 dog_label = "dog"       # detector labels of the Dog and of people
 person_label = "person"
 dog_gone_seconds = 60   # the Dog must be away this long before Dog at Poop is said again
+scoop_settle_seconds = 120  # Poop still scored this soon after a person was at the box is ignored
 
 # Event log "postgres": a PostgreSQL table. Its URL is CATPOOP_DATABASE_URL in .env.
 [event_log]

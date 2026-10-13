@@ -1,5 +1,8 @@
 import ipaddress
+import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from threading import Barrier
 
 import httpx
 import pytest
@@ -55,6 +58,34 @@ def test_clips_are_forgotten_after_keep_seconds(server, clock):
 
 def test_close_without_an_offer_is_fine(clock):
     AudioServer("127.0.0.1", port=0, clock=clock).close()
+
+
+def test_speakers_offering_at_once_start_one_server(clock, monkeypatch):
+    built = []
+
+    class SlowToBind(audio_server.ThreadingHTTPServer):
+        def __init__(self, *args, **kwargs):
+            built.append(self)
+            time.sleep(0.05)  # widen the gap between the check and the bind
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(audio_server, "ThreadingHTTPServer", SlowToBind)
+    server = AudioServer("127.0.0.1", port=0, clock=clock)
+    together = Barrier(4)
+
+    def offer(wav: bytes) -> str:
+        together.wait()
+        return server.offer(wav)
+
+    try:
+        with ThreadPoolExecutor(4) as pool:
+            urls = list(pool.map(offer, [b"a", b"b", b"c", b"d"]))
+        assert len(built) == 1
+        assert [get(url).content for url in urls] == [b"a", b"b", b"c", b"d"]
+    finally:
+        server.close()
+        for extra in built[1:]:
+            extra.server_close()
 
 
 def test_lan_address_follows_the_default_route_not_a_private_range(monkeypatch):

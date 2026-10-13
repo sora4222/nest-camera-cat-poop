@@ -68,6 +68,7 @@ src/catpoop/
     quiet_hours.py      which Quiet Hours are on at a moment
     switches.py         Do Not Disturb, Quiet Topics and Pee announcements, in switches.json in the state folder
     messages.py         spoken text from the Message templates
+    speaker_queue.py    say texts on one Speaker from its own thread, Urgent first
     command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
   speech/           speech for Google speakers (google extra)
     piper_speech.py     text -> wav on this machine with a Piper voice
@@ -76,6 +77,7 @@ src/catpoop/
   watcher/          the live watcher, `make dev`
     watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
+    background_task.py  run a slow task (pruning the store) off the watcher loop
     command.py          `catpoop watch`, behind the watcher lock
   alexa_skill/      the Alexa skill the watcher serves on /alexa (docs/alexa-skill.md)
     request_verifier.py is the request from Alexa, for our skill, just now (signature, cert chain, timestamp, skill ID)
@@ -89,6 +91,9 @@ src/catpoop/
     run.py              build the app; uvicorn runs it on a thread beside the watcher
     tunnel.py           Cloudflare Tunnel or Tailscale Funnel setup for /alexa only
     command.py          `catpoop alexa-tunnel` (`make alexa-tunnel`)
+  alexa_smart_home/ the Smart Home skill: virtual sensors that fire Alexa routines (docs/alexa-smart-home.md)
+    sensors.py          one motion sensor per message kind; which kind a text is
+    grants.py           Login with Amazon tokens for sending events (state folder)
   service/          run the watcher as a systemd user service, `make install` (docs/service.md)
     settings.py         what the service runs: checkout, uv, op, extras, secrets file
     unit_file.py        the unit file text, escaped for systemd

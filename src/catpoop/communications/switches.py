@@ -2,13 +2,18 @@
 
 Kept in a small JSON file in the state folder (`switches.json`), so `catpoop dnd`, the
 watcher and the Alexa skill all read and write the same state. Every read goes to the
-file, so a change is seen at once.
+file, so a change is seen at once. Changes hold a lock (between threads, and a lock file
+between processes), so two changes at once both stay.
 """
 
+import fcntl
 import json
 import logging
 import os
-from collections.abc import Iterable
+import tempfile
+import threading
+from collections.abc import Generator, Iterable
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +23,9 @@ from catpoop.domain import Urgency
 from catpoop.state_folder import state_folder
 
 log = logging.getLogger(__name__)
+
+_THREADS = threading.Lock()
+"""One change at a time in this process (the Alexa skill answers on several threads)."""
 
 type Topic = Literal["poop", "visits"]
 
@@ -54,10 +62,11 @@ class Switches:
             until = datetime.fromisoformat(dnd["until"])
             allow = dnd.get("allow")
             allowed = None if allow is None else tuple(map(Urgency, allow))
+            over = at >= until  # TypeError if `until` has no time zone
         except (KeyError, TypeError, ValueError) as error:
             log.warning("Do Not Disturb in the switches file %s is broken: %s", self.path, error)
             return None
-        return None if at >= until else DoNotDisturb(until, allowed)
+        return None if over else DoNotDisturb(until, allowed)
 
     def set_do_not_disturb(self, until: datetime, allow: Iterable[Urgency] | None = None) -> None:
         """Turn Do Not Disturb on until `until`, letting `allow` Urgencies through."""
@@ -108,8 +117,26 @@ class Switches:
 
     def _change(self, **values: Any) -> None:
         """Write the file with `values` changed, all at once (a reader never sees half)."""
-        data = self._read() | values
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        temp = self.path.with_name(f".{self.path.name}.{os.getpid()}")
-        temp.write_text(json.dumps(data))
-        os.replace(temp, self.path)
+        with self._locked():
+            data = self._read() | values
+            with tempfile.NamedTemporaryFile(
+                "w", dir=self.path.parent, prefix=f".{self.path.name}.", delete=False
+            ) as temp:
+                temp.write(json.dumps(data))
+            try:
+                os.replace(temp.name, self.path)
+            except OSError:
+                Path(temp.name).unlink(missing_ok=True)
+                raise
+
+    @contextmanager
+    def _locked(self) -> Generator[None]:
+        """Hold the thread lock and the lock file next to the switches file."""
+        lock_path = self.path.with_name(f".{self.path.name}.lock")
+        with _THREADS, lock_path.open("a") as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file, fcntl.LOCK_UN)
