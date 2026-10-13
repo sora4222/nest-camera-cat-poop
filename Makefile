@@ -59,7 +59,9 @@ migration:
 	uv run alembic revision -m "$(MSG)"
 	uv run ruff format src/catpoop/migrations
 
-dev: db
+# Starts the Docker database only when .env points at it.
+dev:
+	@if grep -q '^CATPOOP_DATABASE_URL=.*@127.0.0.1:5432/' .env 2>/dev/null; then $(MAKE) -s db; fi
 	$(RUN) catpoop watch
 
 # A systemd user service runs the watcher from this checkout (docs/service.md).
