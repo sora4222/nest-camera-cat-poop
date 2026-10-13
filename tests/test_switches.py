@@ -108,3 +108,23 @@ def test_a_change_waits_for_another_process_holding_the_lock_file(tmp_path):
     worker.join(5)
     assert done.is_set()
     assert Switches(path).pee_announcements() is False
+
+
+def test_poop_and_visits_go_quiet_separately_until_their_end(tmp_path):
+    path = tmp_path / "switches.json"
+    Switches(path).set_quiet("poop", NOW + timedelta(hours=2))
+    reader = Switches(path)
+    assert reader.quiet_until("poop", NOW) == NOW + timedelta(hours=2)
+    assert reader.quiet_until("visits", NOW) is None
+    assert reader.quiet_until("poop", NOW + timedelta(hours=2)) is None
+    reader.set_quiet("visits", NOW + timedelta(hours=1))
+    reader.clear_quiet("poop")
+    assert reader.quiet_until("poop", NOW) is None
+    assert reader.quiet_until("visits", NOW) == NOW + timedelta(hours=1)
+
+
+def test_a_broken_quiet_time_counts_as_not_quiet(tmp_path, caplog):
+    path = tmp_path / "switches.json"
+    path.write_text('{"quiet_poop": "soon"}')
+    assert Switches(path).quiet_until("poop", NOW) is None
+    assert "quiet" in caplog.text
