@@ -86,5 +86,3 @@ def test_each_command_gets_the_expected_answer(name, amazon, tmp_path, caplog):
         return
     assert answer["response"]["outputSpeech"]["text"].startswith(said)
     assert answer["response"]["shouldEndSession"] is ends
-
-
