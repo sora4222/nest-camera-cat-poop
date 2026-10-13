@@ -102,3 +102,9 @@ def test_visit_settings_are_read(tmp_path):
     visits = load_config(write(tmp_path, text)).visits
     assert visits.max_store_gb == 2
     assert visits.litter_box == (0.1, 0.2, 0.9, 1.0)
+
+
+def test_visit_padding_must_keep_a_frame_after_the_cat_leaves(tmp_path):
+    text = MINIMAL + "[visits]\nframe_seconds = 0.5\npadding_seconds = 0\n"
+    with pytest.raises(ConfigError, match="padding_seconds"):
+        load_config(write(tmp_path, text))

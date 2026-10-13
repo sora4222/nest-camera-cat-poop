@@ -31,6 +31,22 @@ class Outcome(StrEnum):
 
 
 @dataclass(frozen=True)
+class OutcomeScores:
+    """How likely each Outcome is, from the Outcome model. The scores add up to 1."""
+
+    scores: dict[Outcome, float]
+
+    def __getitem__(self, outcome: Outcome) -> float:
+        """The score of `outcome`."""
+        return self.scores[outcome]
+
+    @property
+    def best(self) -> Outcome:
+        """The most likely Outcome."""
+        return max(self.scores, key=self.scores.__getitem__)
+
+
+@dataclass(frozen=True)
 class Frame:
     """One picture from the camera. `image` is whatever the camera source gives (an array)."""
 
