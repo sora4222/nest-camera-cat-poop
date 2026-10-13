@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config import-history export-detector notebook cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off install uninstall
+.PHONY: help setup db dev check format test config import-history export-detector notebook cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off install uninstall
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -21,6 +21,7 @@ endif
 
 help:
 	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia, EXTRAS=google), create config.toml and .env if missing"
+	@echo "make db      start PostgreSQL in Docker (compose.yaml) for the event log and tests"
 	@echo "make dev     run the live watcher (Ctrl+C stops it)"
 	@echo "make install    run the watcher from this checkout as a systemd user service (same RUNTIME, EXTRAS as setup)"
 	@echo "make uninstall  stop and remove that service"
@@ -46,7 +47,13 @@ setup:
 	@test -f config.toml || { cp config.example.toml config.toml && echo "Created config.toml; edit it."; }
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 
-dev:
+# PostgreSQL in Docker, on this machine only. Tests use it when Docker is there.
+TEST_DATABASE_URL := postgresql://catpoop:catpoop@127.0.0.1:5432/catpoop
+
+db:
+	docker compose up --detach --wait db
+
+dev: db
 	$(RUN) catpoop watch
 
 # A systemd user service runs the watcher from this checkout (docs/service.md).
@@ -65,8 +72,11 @@ format:
 	uv run ruff format .
 	uv run ruff check --fix .
 
+# Database tests run when CATPOOP_TEST_DATABASE_URL is set (CI) or Docker can start `make db`.
 test:
-	$(UV_RUN) pytest
+	@if [ -z "$$CATPOOP_TEST_DATABASE_URL" ] && docker info >/dev/null 2>&1 && $(MAKE) -s db; then \
+		export CATPOOP_TEST_DATABASE_URL=$(TEST_DATABASE_URL); \
+	fi; $(UV_RUN) pytest
 
 config:
 	$(RUN) catpoop check-config
