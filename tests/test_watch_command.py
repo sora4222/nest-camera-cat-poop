@@ -1,4 +1,5 @@
 import logging
+import socket
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -105,8 +106,6 @@ def test_watch_reports_a_missing_config(tmp_path, capsys):
 
 
 def free_port() -> int:
-    import socket
-
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         return probe.getsockname()[1]
