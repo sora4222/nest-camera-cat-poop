@@ -1,0 +1,233 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "litter box",
+      "intents": [
+        {
+          "name": "QuietPoopIntent",
+          "slots": [
+            {
+              "name": "duration",
+              "type": "AMAZON.DURATION"
+            }
+          ],
+          "samples": [
+            "do not disturb cat poo for {duration}",
+            "no poo news for {duration}",
+            "be quiet about poo for {duration}",
+            "do not disturb cat poop for {duration}",
+            "no poop news for {duration}",
+            "be quiet about poop for {duration}",
+            "do not disturb cat shit for {duration}",
+            "no shit news for {duration}",
+            "be quiet about shit for {duration}",
+            "do not disturb cat crap for {duration}",
+            "no crap news for {duration}",
+            "be quiet about crap for {duration}",
+            "do not disturb about feces for {duration}",
+            "no feces news for {duration}",
+            "be quiet about feces for {duration}",
+            "do not disturb about faeces for {duration}",
+            "no faeces news for {duration}",
+            "be quiet about faeces for {duration}",
+            "do not disturb about number twos for {duration}",
+            "no number twos news for {duration}",
+            "be quiet about number twos for {duration}",
+            "do not disturb about the mess for {duration}",
+            "no news about the mess for {duration}",
+            "be quiet about mess for {duration}",
+            "do not disturb about droppings for {duration}",
+            "no droppings news for {duration}",
+            "be quiet about droppings for {duration}",
+            "do not disturb about turds for {duration}",
+            "no turds news for {duration}",
+            "be quiet about turds for {duration}",
+            "do not disturb cat poo",
+            "do not disturb cat poop",
+            "be quiet about poop",
+            "no poo news",
+            "shut up about the poop for {duration}",
+            "shut up about the shit for {duration}",
+            "shut up about the crap for {duration}",
+            "stop going on about the poo for {duration}",
+            "enough about the poop for {duration}",
+            "enough with the shit for {duration}",
+            "i don't care about the poop for {duration}",
+            "stop talking about poop for {duration}",
+            "stop talking crap for {duration}",
+            "shut up about the poop",
+            "shut up about the shit",
+            "enough about the poop",
+            "i'm sick of hearing about poop",
+            "i don't want to hear about poop",
+            "stop talking about poop"
+          ]
+        },
+        {
+          "name": "QuietVisitsIntent",
+          "slots": [
+            {
+              "name": "duration",
+              "type": "AMAZON.DURATION"
+            }
+          ],
+          "samples": [
+            "do not disturb cat pooing for {duration}",
+            "be quiet about pooing for {duration}",
+            "do not disturb cat pee for {duration}",
+            "be quiet about pee for {duration}",
+            "do not disturb cat peeing for {duration}",
+            "be quiet about peeing for {duration}",
+            "do not disturb cat wee for {duration}",
+            "be quiet about wee for {duration}",
+            "do not disturb cat piss for {duration}",
+            "be quiet about piss for {duration}",
+            "do not disturb cat pissing for {duration}",
+            "be quiet about pissing for {duration}",
+            "do not disturb number ones for {duration}",
+            "be quiet about number ones for {duration}",
+            "do not disturb cat visits for {duration}",
+            "be quiet about visits for {duration}",
+            "do not disturb cat pooing",
+            "do not disturb cat pee",
+            "do not disturb cat peeing",
+            "be quiet about pee",
+            "no pee news for {duration}",
+            "no wee news for {duration}",
+            "no visit news for {duration}",
+            "shut up about the pee for {duration}",
+            "shut up about the cat pissing for {duration}",
+            "enough about the wee for {duration}",
+            "i don't care that the cat is peeing for {duration}",
+            "stop telling me the cat is pooing for {duration}",
+            "stop telling me when the cat goes for {duration}",
+            "stop talking about pee for {duration}",
+            "shut up about the pee",
+            "shut up about the piss",
+            "enough about the wee",
+            "i don't care that the cat is peeing",
+            "stop telling me the cat is pooing",
+            "i'm sick of hearing about pee",
+            "stop talking about pee"
+          ]
+        },
+        {
+          "name": "DurationIntent",
+          "slots": [
+            {
+              "name": "duration",
+              "type": "AMAZON.DURATION"
+            }
+          ],
+          "samples": [
+            "{duration}"
+          ]
+        },
+        {
+          "name": "StopQuietPoopIntent",
+          "slots": [],
+          "samples": [
+            "you can talk about poop again",
+            "you can talk about poo again",
+            "you can talk about shit again",
+            "you can talk about crap again",
+            "you can talk about feces again",
+            "tell me about poo again",
+            "tell me about poop again",
+            "turn off do not disturb cat poo",
+            "turn off do not disturb cat poop",
+            "end do not disturb cat poo",
+            "cancel do not disturb cat poo",
+            "stop do not disturb cat poo",
+            "poop news back on",
+            "poo news on again",
+            "i want to hear about poop again",
+            "start talking about the poop again"
+          ]
+        },
+        {
+          "name": "StopQuietVisitsIntent",
+          "slots": [],
+          "samples": [
+            "you can talk about pee again",
+            "you can talk about wee again",
+            "you can talk about piss again",
+            "you can talk about the cat pooing again",
+            "you can talk about cat visits again",
+            "tell me about wee again",
+            "tell me when the cat goes again",
+            "turn off do not disturb cat pooing",
+            "turn off do not disturb cat pee",
+            "end do not disturb cat pee",
+            "cancel do not disturb cat pee",
+            "stop do not disturb cat pee",
+            "pee news back on",
+            "visit news back on",
+            "i want to hear about pee again"
+          ]
+        },
+        {
+          "name": "PeeAnnouncementsOnIntent",
+          "slots": [],
+          "samples": [
+            "turn on pee announcements",
+            "turn pee announcements on",
+            "announce pee",
+            "start announcing pee",
+            "tell me about pee"
+          ]
+        },
+        {
+          "name": "PeeAnnouncementsOffIntent",
+          "slots": [],
+          "samples": [
+            "turn off pee announcements",
+            "turn pee announcements off",
+            "stop announcing pee",
+            "don't announce pee",
+            "don't tell me about pee"
+          ]
+        },
+        {
+          "name": "StatusIntent",
+          "slots": [],
+          "samples": [
+            "is there poop in the box",
+            "is there poop in the litter box",
+            "is there poop",
+            "if there is poop",
+            "if there is poop in the box",
+            "whether there is poop in the box",
+            "is the box clean",
+            "is the litter box clean",
+            "does the box need cleaning",
+            "does the litter box need cleaning",
+            "what is the status",
+            "status"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        }
+      ],
+      "types": []
+    }
+  }
+}
