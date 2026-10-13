@@ -26,6 +26,7 @@ Words used in code, docs and tickets. Real names never appear in this repo; they
 - **Announcement**: a message a Speaker says to the Partner about an event.
 - **Quiet Hours**: a repeating time, such as weeknights 10pm to 7am, when Announcements are held back. There can be many.
 - **Do Not Disturb**: a one-off quiet time switched on now until a set end time.
+- **Quiet Topic**: a Do Not Disturb for one topic only, until a set end time: **poop** (Poop and its reminders) or **visits** (the Cat going into the Litter Box, Pee included). Switched from the Alexa skill.
 - **Urgency**: how important an Announcement is: **Info**, **Normal** or **Urgent**. Quiet Hours and Do Not Disturb say which Urgencies may still be spoken. Urgency is never spoken aloud.
 
 ## Problems

@@ -16,6 +16,7 @@ All settings live in `config.toml` (git-ignored); `config.example.toml` lists ev
 | Quiet Hours and which Urgencies still get through | `[[quiet_hours]]` |
 | Which Urgencies Do Not Disturb lets through, how soon the same text may be said again | `[communications]` |
 | Do Not Disturb now, Pee announcements on or off | not config: `make dnd FOR=2h`, `make dnd-off`, `make pee-on`, `make pee-off` |
+| Quiet poop or quiet visits for a while | not config: ask the Alexa skill |
 | Camera Offline delay, Poop Reminder timing, Login Expired reminder time | `[timers]` |
 | Where past clips are imported from | `[history.takeout]`, `[history.portability]`, `[history.folder]` (see [history-import.md](history-import.md)) |
 | How clips are cut into Visits, where the Litter Box is in the picture, the store size limit | `[visits]` (see [visits.md](visits.md)) |
