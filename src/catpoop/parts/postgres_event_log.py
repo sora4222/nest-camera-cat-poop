@@ -5,7 +5,6 @@ Docker for development.
 """
 
 import os
-import threading
 from collections.abc import Mapping
 from typing import Any
 
@@ -32,30 +31,26 @@ CREATE TABLE IF NOT EXISTS events (
 
 
 class PostgresEventLog:
-    """Keeps Events in one table, oldest first. Safe to share between threads."""
+    """Keeps Events in one table, oldest first."""
 
     def __init__(self, url: str) -> None:
         """Connect to the database at `url` and make the table if it is missing."""
         self._db = psycopg.connect(url, autocommit=True)
-        self._lock = threading.Lock()
         self._db.execute(_SCHEMA)
 
     def record(self, event: Event) -> None:
         """Store `event`."""
-        with self._lock:
-            self._db.execute(
-                "INSERT INTO events (at, kind, urgency, announce, details) "
-                "VALUES (%s, %s, %s, %s, %s)",
-                (event.at, event.kind, event.urgency.value, event.announce, Jsonb(event.details)),
-            )
+        self._db.execute(
+            "INSERT INTO events (at, kind, urgency, announce, details) VALUES (%s, %s, %s, %s, %s)",
+            (event.at, event.kind, event.urgency.value, event.announce, Jsonb(event.details)),
+        )
 
     def recent(self, limit: int) -> list[Event]:
         """Up to `limit` Events, newest first."""
-        with self._lock:
-            rows = self._db.execute(
-                "SELECT at, kind, urgency, announce, details FROM events ORDER BY id DESC LIMIT %s",
-                (limit,),
-            ).fetchall()
+        rows = self._db.execute(
+            "SELECT at, kind, urgency, announce, details FROM events ORDER BY id DESC LIMIT %s",
+            (limit,),
+        ).fetchall()
         return [
             Event(kind, Urgency(urgency), at, details, announce)
             for at, kind, urgency, announce, details in rows
@@ -63,8 +58,7 @@ class PostgresEventLog:
 
     def close(self) -> None:
         """Close the connection."""
-        with self._lock:
-            self._db.close()
+        self._db.close()
 
 
 class LogOptions(BaseModel):
