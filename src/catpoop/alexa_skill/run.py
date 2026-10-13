@@ -5,21 +5,20 @@ Disturb and Pee announcements). Off unless `[alexa_skill] enabled = true`.
 """
 
 import logging
-import threading
 from collections.abc import Generator, Mapping
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from zoneinfo import ZoneInfo
 
 from cryptography.x509.verification import Store
+from fastapi import FastAPI
 
 from catpoop.alexa_skill.certificates import HttpCertificates
-from catpoop.alexa_skill.endpoint import PATH, AlexaEndpoint
+from catpoop.alexa_skill.endpoint import PATH, alexa_router
 from catpoop.alexa_skill.request_verifier import RequestVerifier
-from catpoop.alexa_skill.routes import Routes
-from catpoop.alexa_skill.server import Endpoint, make_server
+from catpoop.alexa_skill.server import serving
 from catpoop.alexa_skill.skill import AlexaSkill
-from catpoop.alexa_smart_home import endpoint as smart_home
 from catpoop.alexa_smart_home.directives import SmartHome
+from catpoop.alexa_smart_home.endpoint import smart_home_router
 from catpoop.alexa_smart_home.grants import Grants
 from catpoop.alexa_smart_home.sensors import sensors
 from catpoop.clock import Clock
@@ -60,7 +59,8 @@ def alexa_skill_running(
         ZoneInfo(config.outcome.timezone),
         cat=config.household.cat,
     )
-    routes: dict[str, Endpoint] = {PATH: AlexaEndpoint(verifier, skill)}
+    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+    app.include_router(alexa_router(verifier, skill))
     if settings.smart_home:
         secret = environ.get(SMART_HOME_SECRET_ENV, "").strip()
         if not secret:
@@ -69,19 +69,13 @@ def alexa_skill_running(
             )
         grants = grants or Grants.from_env(environ, clock)
         home = SmartHome(sensors(config.messages), grants, clock)
-        routes[smart_home.PATH] = smart_home.SmartHomeEndpoint(secret, home)
-    try:
-        server = make_server(Routes(routes), settings.host, settings.port)
-    except OSError as error:
-        where = f"{settings.host}:{settings.port}"
-        raise ConfigError(f"[alexa_skill] cannot listen on {where}: {error}") from None
-    host, port = server.server_address[:2]
-    url = f"http://{host}:{port}{PATH}"
-    thread = threading.Thread(target=server.serve_forever, name="alexa-skill", daemon=True)
-    thread.start()
-    log.info("Alexa skill endpoint at %s (tunnel: %s)", url, settings.tunnel)
-    try:
+        app.include_router(smart_home_router(secret, home))
+    with ExitStack() as stack:
+        try:
+            host, port = stack.enter_context(serving(app, settings.host, settings.port))
+        except OSError as error:
+            where = f"{settings.host}:{settings.port}"
+            raise ConfigError(f"[alexa_skill] cannot listen on {where}: {error}") from None
+        url = f"http://{host}:{port}{PATH}"
+        log.info("Alexa skill endpoint at %s (tunnel: %s)", url, settings.tunnel)
         yield url
-    finally:
-        server.shutdown()
-        server.server_close()

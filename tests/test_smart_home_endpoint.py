@@ -1,8 +1,9 @@
-import json
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
-from catpoop.alexa_skill.endpoint import EndpointResponse
-from catpoop.alexa_skill.routes import Routes
-from catpoop.alexa_smart_home.endpoint import PATH, SmartHomeEndpoint
+from catpoop.alexa_smart_home.endpoint import PATH, smart_home_router
+
+SECRET = {"authorization": "Bearer s3cret"}
 
 
 class Skill:
@@ -10,36 +11,36 @@ class Skill:
         return {"echo": request}
 
 
-def endpoint() -> SmartHomeEndpoint:
-    return SmartHomeEndpoint("s3cret", Skill())
+def client() -> TestClient:
+    app = FastAPI()
+    app.include_router(smart_home_router("s3cret", Skill()))
+    return TestClient(app)
 
 
 def test_with_the_secret_the_skill_answers():
-    answer = endpoint().handle("POST", PATH, {"authorization": "Bearer s3cret"}, b'{"a": 1}')
-    assert answer.status == 200
-    assert json.loads(answer.body) == {"echo": {"a": 1}}
+    answer = client().post(PATH, content=b'{"a": 1}', headers=SECRET)
+    assert answer.status_code == 200
+    assert answer.json() == {"echo": {"a": 1}}
 
 
 def test_without_the_secret_it_is_401():
-    assert endpoint().handle("POST", PATH, {}, b"{}").status == 401
-    assert endpoint().handle("POST", PATH, {"Authorization": "Bearer no"}, b"{}").status == 401
+    assert client().post(PATH, content=b"{}").status_code == 401
+    assert (
+        client().post(PATH, content=b"{}", headers={"Authorization": "Bearer no"}).status_code
+        == 401
+    )
 
 
 def test_other_methods_and_paths_are_refused():
-    assert endpoint().handle("GET", PATH, {"authorization": "Bearer s3cret"}, b"").status == 405
-    assert endpoint().handle("POST", "/x", {}, b"").status == 404
+    assert client().get(PATH, headers=SECRET).status_code == 405
+    assert client().post("/x", headers=SECRET).status_code == 404
 
 
-def test_secret_is_not_in_repr():
-    assert "s3cret" not in repr(endpoint())
+def test_a_failing_skill_is_500():
+    class Broken:
+        def answer(self, request: dict) -> dict:
+            raise RuntimeError("boom")
 
-
-class Fixed:
-    def handle(self, method, path, headers, body) -> EndpointResponse:
-        return EndpointResponse(200, path.encode())
-
-
-def test_routes_send_each_path_to_its_endpoint():
-    routes = Routes({"/a": Fixed(), "/b": Fixed()})
-    assert routes.handle("POST", "/b", {}, b"").body == b"/b"
-    assert routes.handle("POST", "/c", {}, b"").status == 404
+    app = FastAPI()
+    app.include_router(smart_home_router("s3cret", Broken()))
+    assert TestClient(app).post(PATH, content=b"{}", headers=SECRET).status_code == 500

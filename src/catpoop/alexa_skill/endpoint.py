@@ -1,23 +1,24 @@
 """The one public HTTP endpoint, `POST /alexa`: verify the request, then let the skill answer.
 
-Every other path is 404 and every other method 405, before anything is checked. A request
-that fails verification is 400 (as Amazon's certification tests expect) and never reaches
-the skill.
+A request that fails verification is 400 (as Amazon's certification tests expect) and never
+reaches the skill. FastAPI answers 404 for other paths and 405 for other methods.
 """
 
 import json
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass
 from typing import Any, Protocol
 
+from fastapi import APIRouter, Request, Response
+from fastapi.responses import PlainTextResponse
+
+from catpoop.alexa_skill.body_limit import read_body
 from catpoop.alexa_skill.request_verifier import RequestRejected
 
 log = logging.getLogger(__name__)
 
 PATH = "/alexa"
 MAX_BODY = 64 * 1024
-"""Alexa requests are a few KB; bigger bodies are refused unread."""
 
 
 class Verifier(Protocol):
@@ -36,39 +37,27 @@ class Skill(Protocol):
         ...
 
 
-@dataclass(frozen=True)
-class EndpointResponse:
-    """What to send back."""
+def alexa_router(verifier: Verifier, skill: Skill) -> APIRouter:
+    """`POST /alexa` for `skill`, each request checked by `verifier` first.
 
-    status: int
-    body: bytes = b""
-    content_type: str = "text/plain; charset=utf-8"
+    The handler is async, so it runs on the server's one event loop: the skill answers one
+    request at a time and two intents never change the switches together.
+    """
+    router = APIRouter()
 
-
-class AlexaEndpoint:
-    """Turns one HTTP request into one HTTP response."""
-
-    def __init__(self, verifier: Verifier, skill: Skill) -> None:
-        """Check every request with `verifier` before `skill` sees it."""
-        self._verifier = verifier
-        self._skill = skill
-
-    def handle(
-        self, method: str, path: str, headers: Mapping[str, str], body: bytes
-    ) -> EndpointResponse:
-        """The response to `method path` with `headers` and `body`."""
-        if path != PATH:
-            return EndpointResponse(404, b"not found")
-        if method != "POST":
-            return EndpointResponse(405, b"method not allowed")
+    @router.post(PATH)
+    async def alexa(request: Request) -> Response:
+        body = await read_body(request, MAX_BODY)
         try:
-            request = self._verifier.verify(headers, body)
+            payload = verifier.verify(request.headers, body)
         except RequestRejected as error:
             log.warning("Alexa request rejected: %s", error)
-            return EndpointResponse(400, b"bad request")
+            return PlainTextResponse("bad request", 400)
         try:
-            answer = self._skill.respond(request)
+            answer = skill.respond(payload)
         except Exception:
             log.exception("the Alexa skill failed")
-            return EndpointResponse(500, b"error")
-        return EndpointResponse(200, json.dumps(answer).encode(), "application/json;charset=UTF-8")
+            return PlainTextResponse("error", 500)
+        return Response(json.dumps(answer), media_type="application/json;charset=UTF-8")
+
+    return router
