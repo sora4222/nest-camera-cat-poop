@@ -30,7 +30,7 @@ Neither file is ever committed. Both are listed in `.worktreeinclude`, so Claude
 - `config.toml`: names, Listeners, Speakers, Message templates, Quiet Hours, timers and the Private Data Store path. Copied from `config.example.toml`. Another file can be used with `CATPOOP_CONFIG=/path/to/config.toml`. See [configuration.md](configuration.md).
 - `.env`: secrets. Copied from `.env.example`. Use 1Password references (`op://vault/item/field`) where possible; with the 1Password CLI (`op`) installed, Make targets run through `op run` to fill them in.
 
-Check the config with `make config`. Run the live watcher with `make dev` (see [CONTRIBUTE.md](../CONTRIBUTE.md#running-the-live-watcher)); on the server, `make install` runs it as a service (see [service.md](service.md)).
+The event log is PostgreSQL: `make db` starts it in Docker (needs Docker with Compose) and keeps it running across restarts, or point `CATPOOP_DATABASE_URL` in .env at your own. Check the config with `make config`. Run the live watcher with `make dev` (see [CONTRIBUTE.md](../CONTRIBUTE.md#running-the-live-watcher)); on the server, `make install` runs it as a service (see [service.md](service.md)).
 
 ## Camera login
 
