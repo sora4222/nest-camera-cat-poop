@@ -4,7 +4,9 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
+from tiny_outcome_onnx import publish_tiny_models
 
+import catpoop.outcome.command as command
 from catpoop.cli import main
 from catpoop.domain import Outcome
 from catpoop.outcome.accuracy import Accuracy
@@ -46,8 +48,6 @@ def add_visits(store, count=12):
 
 def test_evaluate_reports_accuracy_per_class_of_the_exported_models(tmp_path, capsys):
     pytest.importorskip("onnxruntime")
-    from tiny_outcome_onnx import publish_tiny_models
-
     publish_tiny_models(tmp_path / "store" / "models" / "outcome")
     add_visits(tmp_path / "store")
     assert main(["evaluate", "--config", str(write_config(tmp_path))]) == 0
@@ -59,10 +59,6 @@ def test_evaluate_reports_accuracy_per_class_of_the_exported_models(tmp_path, ca
 
 def test_evaluate_holds_out_the_visits_the_models_were_trained_without(tmp_path, monkeypatch):
     pytest.importorskip("onnxruntime")
-    from tiny_outcome_onnx import publish_tiny_models
-
-    import catpoop.outcome.command as command
-
     fractions = []
 
     def evaluate(model, visits, validation_fraction, guess_frames_per_visit):

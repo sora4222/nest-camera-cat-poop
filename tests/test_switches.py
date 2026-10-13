@@ -54,3 +54,23 @@ def test_a_broken_file_counts_as_nothing_switched(tmp_path, caplog):
 def test_default_file_is_in_the_users_state_folder(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
     assert Switches.default().path == tmp_path / "catpoop" / "switches.json"
+
+
+def test_poop_and_visits_go_quiet_separately_until_their_end(tmp_path):
+    path = tmp_path / "switches.json"
+    Switches(path).set_quiet("poop", NOW + timedelta(hours=2))
+    reader = Switches(path)
+    assert reader.quiet_until("poop", NOW) == NOW + timedelta(hours=2)
+    assert reader.quiet_until("visits", NOW) is None
+    assert reader.quiet_until("poop", NOW + timedelta(hours=2)) is None
+    reader.set_quiet("visits", NOW + timedelta(hours=1))
+    reader.clear_quiet("poop")
+    assert reader.quiet_until("poop", NOW) is None
+    assert reader.quiet_until("visits", NOW) == NOW + timedelta(hours=1)
+
+
+def test_a_broken_quiet_time_counts_as_not_quiet(tmp_path, caplog):
+    path = tmp_path / "switches.json"
+    path.write_text('{"quiet_poop": "soon"}')
+    assert Switches(path).quiet_until("poop", NOW) is None
+    assert "quiet" in caplog.text
