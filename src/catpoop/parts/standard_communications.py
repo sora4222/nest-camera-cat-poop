@@ -21,13 +21,20 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from catpoop.communications.messages import message_text
 from catpoop.communications.quiet_hours import active_quiet_hours
-from catpoop.communications.switches import Switches
+from catpoop.communications.switches import Switches, Topic
 from catpoop.config import Config, ConfigError, Household, QuietHours
 from catpoop.domain import Event, Presence, Urgency
 from catpoop.interfaces import PresenceCheck, Speaker
 from catpoop.registry import COMMUNICATIONS, DEFAULT, PRESENCE, SPEAKER
 
 log = logging.getLogger(__name__)
+
+QUIET_TOPICS: dict[str, Topic] = {
+    "poop": "poop",
+    "poop_reminder": "poop",
+    "poop_after_quiet_hours": "poop",
+    "visit_started": "visits",
+}
 
 
 class CommunicationOptions(BaseModel):
@@ -125,6 +132,9 @@ class StandardCommunications:
             and not self._switches.pee_announcements()
         ):
             return "Pee announcements are off"
+        topic = QUIET_TOPICS.get(event.kind)
+        if topic and self._switches.quiet_until(topic, event.at):
+            return f"{topic} switched to quiet"
         for period in active_quiet_hours(self._quiet_hours, event.at, self._zone):
             if event.urgency not in period.allow:
                 return "Quiet Hours"

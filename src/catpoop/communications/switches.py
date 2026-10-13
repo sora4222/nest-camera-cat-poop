@@ -1,4 +1,4 @@
-"""Switches people flip while the watcher runs: Do Not Disturb and Pee announcements.
+"""Switches people flip while the watcher runs: Do Not Disturb, quiet topics and Pee announcements.
 
 Kept in a small JSON file in the state folder (`switches.json`), so `catpoop dnd`, the
 watcher and later the Alexa skill all read and write the same state. Every read goes to the
@@ -12,12 +12,14 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from catpoop.domain import Urgency
 from catpoop.state_folder import state_folder
 
 log = logging.getLogger(__name__)
+
+type Topic = Literal["poop", "visits"]
 
 
 @dataclass(frozen=True)
@@ -65,6 +67,28 @@ class Switches:
     def clear_do_not_disturb(self) -> None:
         """Turn Do Not Disturb off."""
         self._change(dnd=None)
+
+    def quiet_until(self, topic: Topic, at: datetime) -> datetime | None:
+        """When `topic` stops being quiet, if it is quiet at `at`, else None."""
+        value = (self._read().get("quiet") or {}).get(topic)
+        if not value:
+            return None
+        try:
+            until = datetime.fromisoformat(value)
+        except (TypeError, ValueError) as error:
+            log.warning("quiet %s in the switches file %s is broken: %s", topic, self.path, error)
+            return None
+        return None if at >= until else until
+
+    def set_quiet(self, topic: Topic, until: datetime) -> None:
+        """Keep `topic` quiet until `until`."""
+        self._change(quiet=(self._read().get("quiet") or {}) | {topic: until.isoformat()})
+
+    def clear_quiet(self, topic: Topic) -> None:
+        """Let `topic` be announced again."""
+        quiet = dict(self._read().get("quiet") or {})
+        quiet.pop(topic, None)
+        self._change(quiet=quiet)
 
     def pee_announcements(self) -> bool:
         """Whether Pee announcements are on (the default)."""
