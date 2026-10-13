@@ -7,6 +7,7 @@ from catpoop.visits.finder import (
     cat_in_litter_box,
     find_visits,
     labels_in_litter_box,
+    labels_over_litter_box,
 )
 
 SETTINGS = VisitSettings(end_gap_seconds=3, min_seconds=2, padding_seconds=1)
@@ -59,6 +60,16 @@ def test_labels_in_litter_box_lists_whatever_is_inside():
     settings = VisitSettings(litter_box=(0.5, 0.5, 1.0, 1.0))
     found = [cat((0.6, 0.6, 0.8, 0.8), "dog"), cat((0.0, 0.0, 0.3, 0.3), "person")]
     assert labels_in_litter_box(found, settings) == {"dog"}
+
+
+def test_labels_over_litter_box_lists_whatever_reaches_into_it():
+    settings = VisitSettings(litter_box=(0.5, 0.5, 1.0, 1.0))
+    found = [
+        cat((0.3, 0.0, 0.7, 0.6), "person"),  # middle outside, reaching in
+        cat((0.0, 0.0, 0.5, 0.5), "dog"),  # only touches a corner
+        cat((0.0, 0.0, 0.3, 0.3), "cat"),
+    ]
+    assert labels_over_litter_box(found, settings) == {"person"}
 
 
 def changes(seen: str) -> list[tuple[float, str]]:
