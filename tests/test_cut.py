@@ -1,10 +1,11 @@
 import json
+from datetime import UTC, datetime
 
 import numpy as np
 from fake_video import write_clip
 
 from catpoop.config import VisitSettings
-from catpoop.domain import Detection, Frame
+from catpoop.domain import Detection, Frame, Outcome
 from catpoop.visits.cut import cut_clips
 from catpoop.visits.store import VisitStore
 
@@ -72,10 +73,6 @@ def test_broken_clip_is_skipped(tmp_path):
 
 
 def test_labeled_visits_are_not_cut_again(tmp_path):
-    from datetime import UTC, datetime
-
-    from catpoop.domain import Outcome
-
     sha = add_clip(tmp_path, "a", [BRIGHT] * 8)
     cut_clips(tmp_path, BrightIsCat(), SETTINGS)
     store = VisitStore(tmp_path)
