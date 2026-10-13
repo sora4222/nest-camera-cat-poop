@@ -29,7 +29,7 @@ Afterwards, if the Private Data Store is bigger than `visits.max_store_gb` (defa
 Under `paths.private_data_store`:
 
 - `dataset/<pee|poop|nothing>/<visit id>/frame_0001.jpg`, ...: frames of labeled Visits, one folder per Visit, ready for `tf.keras.utils.image_dataset_from_directory` or `tf.data`.
-- `dataset/manifest.csv`: one row per labeled Visit: `visit_id`, `outcome`, `frames_dir` (relative to `dataset/`), `frame_count`, `clip` (the original MP4, relative to the store), `start_seconds`, `end_seconds`, `recorded_at`, `source` (`detector`, `manual` or `live` from the [watcher](watcher.md)), `labeled_at`.
+- `dataset/manifest.csv`: one row per labeled Visit: `visit_id`, `outcome`, `frames_dir` (relative to `dataset/`), `frame_count`, `clip` (the original MP4, relative to the store), `start_seconds`, `end_seconds`, `recorded_at`, `source` (`detector`, `manual` or `live` from the live watcher), `labeled_at`.
 - `visits/<visit id>.json`: every Visit, labeled or not.
 - `visits/frames/<visit id>/`: frames of Visits waiting to be labeled.
 - `visits/scanned/<clip sha256>`: the clip has been cut.
