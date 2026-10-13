@@ -1,5 +1,6 @@
 import json
 
+import httpx
 import pytest
 from cryptography.x509.verification import Store
 from fake_amazon_certs import NOW, make_fake_amazon
@@ -7,6 +8,7 @@ from fake_clock import FakeClock
 from fastapi.testclient import TestClient
 
 from catpoop.alexa_skill.run import SKILL_ID_ENV, alexa_app
+from catpoop.alexa_smart_home.grants import Grants
 from catpoop.communications.switches import Switches
 from catpoop.config import Config, ConfigError
 from catpoop.domain import Event, Urgency
@@ -87,3 +89,30 @@ def test_a_signed_status_request_is_answered_end_to_end(tmp_path):
     assert forged.status_code == 400
     assert other.status_code == 404
     assert docs.status_code == 404
+
+
+def test_smart_home_needs_its_secret():
+    on = config().model_copy(
+        update={"alexa_skill": config().alexa_skill.model_copy(update={"smart_home": True})}
+    )
+    with pytest.raises(ConfigError, match="CATPOOP_ALEXA_SMART_HOME_SECRET"):
+        alexa_app(on, MemoryEventLog(), FakeClock(NOW), {SKILL_ID_ENV: "x"})
+
+
+def test_smart_home_is_served_next_to_the_skill(tmp_path):
+    on = config().model_copy(
+        update={
+            "alexa_skill": config().alexa_skill.model_copy(update={"smart_home": True}),
+            "messages": {"poop": "{cat} pooped."},
+        }
+    )
+    env = {SKILL_ID_ENV: "x", "CATPOOP_ALEXA_SMART_HOME_SECRET": "s3cret"}
+    grants = Grants("id", "secret", tmp_path / "grant.json", FakeClock(NOW), httpx.Client())
+    discover = {"directive": {"header": {"namespace": "Alexa.Discovery", "name": "Discover"}}}
+    app = alexa_app(on, MemoryEventLog(), FakeClock(NOW), env, grants=grants)
+    assert app is not None
+    answer = TestClient(app).post(
+        "/alexa/smart-home", json=discover, headers={"Authorization": "Bearer s3cret"}
+    )
+    [sensor] = answer.json()["event"]["payload"]["endpoints"]
+    assert sensor["friendlyName"] == "Litter box poop"

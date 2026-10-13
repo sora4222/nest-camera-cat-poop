@@ -36,7 +36,7 @@ def _cloudflare(settings: AlexaSkillSettings) -> str:
         "credentials-file: <home>/.cloudflared/<tunnel id>.json\n"
         "ingress:\n"
         f"  - hostname: {hostname}\n"
-        f"    path: ^{PATH}$\n"
+        f"    path: ^{PATH}{'(/smart-home)?' if settings.smart_home else ''}$\n"
         f"    service: {_local_url(settings)}\n"
         "  - service: http_status:404\n"
         f"# Alexa skill endpoint: https://{hostname}{PATH}\n"
@@ -50,6 +50,14 @@ def _tailscale(settings: AlexaSkillSettings) -> str:
         "# just /alexa. First check that this shows nothing else on :443 (else move it away):\n"
         "tailscale serve status\n"
         f"tailscale funnel --bg --set-path={PATH} {_local_url(settings)}{PATH}\n"
+        f"{_tailscale_smart_home(settings)}"
         f"# Alexa skill endpoint: https://<machine>.<tailnet>.ts.net{PATH}\n"
         "# (`tailscale funnel status` shows the name.)\n"
     )
+
+
+def _tailscale_smart_home(settings: AlexaSkillSettings) -> str:
+    if not settings.smart_home:
+        return ""
+    path = f"{PATH}/smart-home"
+    return f"tailscale funnel --bg --set-path={path} {_local_url(settings)}{path}\n"

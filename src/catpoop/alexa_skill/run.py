@@ -17,12 +17,17 @@ from catpoop.alexa_skill.certificates import HttpCertificates
 from catpoop.alexa_skill.endpoint import PATH, router
 from catpoop.alexa_skill.request_verifier import RequestVerifier
 from catpoop.alexa_skill.skill import AlexaSkill
+from catpoop.alexa_smart_home.directives import SmartHome
+from catpoop.alexa_smart_home.endpoint import router as smart_home_router
+from catpoop.alexa_smart_home.grants import Grants
+from catpoop.alexa_smart_home.sensors import sensors
 from catpoop.clock import Clock
 from catpoop.communications.switches import Switches
 from catpoop.config import AlexaSkillSettings, Config, ConfigError
 from catpoop.interfaces import CertificateSource, EventLog
 
 SKILL_ID_ENV = "CATPOOP_ALEXA_SKILL_ID"
+SMART_HOME_SECRET_ENV = "CATPOOP_ALEXA_SMART_HOME_SECRET"
 log = logging.getLogger(__name__)
 
 
@@ -32,6 +37,7 @@ def alexa_app(
     clock: Clock,
     environ: Mapping[str, str],
     *,
+    grants: Grants | None = None,
     certificates: CertificateSource | None = None,
     trusted: Store | None = None,
     switches: Switches | None = None,
@@ -53,6 +59,16 @@ def alexa_app(
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.state.verifier, app.state.skill = verifier, skill
     app.include_router(router)
+    if config.alexa_skill.smart_home:
+        secret = environ.get(SMART_HOME_SECRET_ENV, "").strip()
+        if not secret:
+            raise ConfigError(
+                f"[alexa_skill] smart_home is on but {SMART_HOME_SECRET_ENV} is not set"
+            )
+        grants = grants or Grants.from_env(environ, clock)
+        app.state.smart_home_secret = secret
+        app.state.smart_home = SmartHome(sensors(config.messages), grants, clock)
+        app.include_router(smart_home_router)
     return app
 
 

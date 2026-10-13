@@ -179,6 +179,8 @@ class AlexaSkillSettings(_Strict):
     """What brings `/alexa` from the internet: Cloudflare Tunnel or Tailscale Funnel."""
     hostname: str | None = None
     """The public host name of a Cloudflare Tunnel, e.g. `litter.example.com`."""
+    smart_home: bool = False
+    """Also serve the Smart Home skill on /alexa/smart-home (docs/alexa-smart-home.md)."""
 
 
 class Config(_Strict):
