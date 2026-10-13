@@ -9,6 +9,7 @@ from catpoop.alexa_skill.request_verifier import (
     RequestRejected,
     RequestVerifier,
     check_cert_url,
+    default_trust_store,
 )
 
 SKILL_ID = "amzn1.ask.skill.00000000-0000-0000-0000-000000000000"
@@ -71,8 +72,6 @@ def test_the_skill_id_must_be_set():
 
 
 def test_the_default_trust_store_is_read_from_certifi():
-    from catpoop.alexa_skill.request_verifier import default_trust_store
-
     assert isinstance(default_trust_store(), Store)
 
 
