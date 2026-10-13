@@ -1,6 +1,5 @@
 """One example Alexa request per command, signed and sent through the real endpoint."""
 
-import json
 import logging
 from datetime import timedelta
 from pathlib import Path
@@ -21,7 +20,6 @@ from catpoop.domain import Event, Urgency
 from catpoop.parts.memory_event_log import MemoryEventLog
 
 REQUESTS = Path(__file__).parent / "alexa_requests"
-MODEL = Path(__file__).parents[1] / "alexa" / "interactionModels" / "custom" / "en-US.json"
 SKILL_ID = "amzn1.ask.skill.00000000-0000-0000-0000-000000000000"
 CERT_URL = "https://s3.amazonaws.com/echo.api/echo-api-cert.pem"
 HELP = "You can ask"
@@ -88,5 +86,3 @@ def test_each_command_gets_the_expected_answer(name, amazon, tmp_path, caplog):
         return
     assert answer["response"]["outputSpeech"]["text"].startswith(said)
     assert answer["response"]["shouldEndSession"] is ends
-
-
