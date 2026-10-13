@@ -3,6 +3,12 @@
 Dev rules are in [CLAUDE.md](CLAUDE.md). Run `make check` and `make test` before each commit.
 CI (`.github/workflows/ci.yml`) runs `make check`, `make test` and `scripts/pr_size.py` on every pull request push. A pull request may change at most 500 lines of code; docs, notebooks and `uv.lock` do not count.
 
+## Running the live watcher
+
+`make dev` runs the live watcher on this machine until Ctrl+C. Only one runs per user (see [setup](docs/setup.md#one-watcher-per-machine)).
+
+It keeps taking the newest picture from the camera and runs the pet detector on it. When the Cat has stayed in the Litter Box for a moment a Visit starts, and it ends once the Cat has been gone for a while. Each Visit is recorded as a clip and saved for labeling, and the Outcome model guesses what it left behind. The event rules turn all of this, and camera problems, into Events in the event log.
+
 ## Code layout
 
 ```
@@ -60,7 +66,7 @@ src/catpoop/
     onnx_export.py      Keras -> ONNX with tf2onnx (train extra)
     train.py            train, export and measure both models (train extra)
     command.py          `catpoop train`, `evaluate`
-  communications/   what may be said, and when (docs/watcher.md#announcements)
+  communications/   what may be said, and when
     quiet_hours.py      which Quiet Hours are on at a moment
     switches.py         Do Not Disturb and Pee announcements, in switches.json in the state folder
     messages.py         spoken text from the Message templates
@@ -69,7 +75,7 @@ src/catpoop/
     piper_speech.py     text -> wav on this machine with a Piper voice
     audio_server.py     serve wav clips on the LAN at random URLs (stdlib http.server)
     cast_player.py      play a URL on a Google speaker found by name (pychromecast)
-  watcher/          the live watcher, `make dev` (docs/watcher.md)
+  watcher/          the live watcher, `make dev`
     watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
     command.py          `catpoop watch`, behind the watcher lock
