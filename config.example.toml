@@ -95,7 +95,7 @@ device = "Litter box"   # the camera's name in the Google Home app
 size = 720              # picture height in pixels
 retry_seconds = 30      # wait before reconnecting after the stream fails
 
-# The live watcher (`make dev`, see docs/watcher.md).
+# The live watcher (`make dev`, see CONTRIBUTE.md).
 [watcher]
 check_seconds = 0.25    # time between detector runs on the newest picture
 
