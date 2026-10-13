@@ -14,8 +14,8 @@ from typing import Any
 from catpoop.config import Config, ConfigError
 from catpoop.history.archive import archive_clips
 from catpoop.history.importer import HistoryClip
-from catpoop.history.portability_api import PortabilityApi, PortabilityError
 from catpoop.history.portability_http import PortabilityHttpApi
+from catpoop.interfaces import PortabilityApi, PortabilityError
 from catpoop.registry import DEFAULT, HISTORY_IMPORTER
 
 log = logging.getLogger(__name__)

@@ -15,7 +15,7 @@ from typing import Any, Self
 import httpx
 
 from catpoop.config import ConfigError
-from catpoop.history.portability_api import ArchiveState, PortabilityError
+from catpoop.interfaces import ArchiveState, PortabilityError
 
 _TOKEN_URL = "https://oauth2.googleapis.com/token"
 _API = "https://dataportability.googleapis.com/v1"
