@@ -1,5 +1,7 @@
 # Alexa Smart Home skill
 
+**Optional, and a last resort.** This is the only part of the project that needs AWS Lambda. Nothing else uses it: the [custom skill](alexa-skill.md) talks to the watcher directly, and speaker kind `voice_monkey` makes an Echo talk without Lambda. Use this only if Voice Monkey will not do. It stays off unless you add a `kind = "alexa"` speaker and set `[alexa_skill] smart_home = true`.
+
 Speaker kind `alexa` makes an Echo say each message for free, with Amazon's official APIs and no third party. It works through routines:
 
 1. Our Smart Home skill shows one virtual motion sensor per message kind in `[messages]`, named "Litter box poop", "Litter box visit started" and so on.

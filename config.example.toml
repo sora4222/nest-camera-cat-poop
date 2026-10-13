@@ -66,6 +66,13 @@ kind = "log"
 # voice = "Brian"          # optional Amazon Polly voice
 # chime = "soundbank://soundlibrary/alarms/beeps_and_bloops/bell_02"  # optional
 
+# Last resort: an Alexa device through our Smart Home skill and routines. Optional, and the
+# only thing here that needs an AWS Lambda (docs/alexa-smart-home.md). Prefer voice_monkey.
+# [[speakers]]
+# name = "Echo"
+# kind = "alexa"
+# region = "FE"  # NA, EU or FE (Australia, Japan)
+
 # Spoken text, one template per Event kind; kinds with no template are not said.
 # {cat}, {dog} and event details (e.g. {guess} on visit_started) can be used.
 [messages]
