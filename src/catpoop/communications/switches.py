@@ -70,7 +70,7 @@ class Switches:
 
     def quiet_until(self, topic: Topic, at: datetime) -> datetime | None:
         """When `topic` stops being quiet, if it is quiet at `at`, else None."""
-        value = (self._read().get("quiet") or {}).get(topic)
+        value = self._read().get(f"quiet_{topic}")
         if not value:
             return None
         try:
@@ -82,13 +82,11 @@ class Switches:
 
     def set_quiet(self, topic: Topic, until: datetime) -> None:
         """Keep `topic` quiet until `until`."""
-        self._change(quiet=(self._read().get("quiet") or {}) | {topic: until.isoformat()})
+        self._change(**{f"quiet_{topic}": until.isoformat()})
 
     def clear_quiet(self, topic: Topic) -> None:
         """Let `topic` be announced again."""
-        quiet = dict(self._read().get("quiet") or {})
-        quiet.pop(topic, None)
-        self._change(quiet=quiet)
+        self._change(**{f"quiet_{topic}": None})
 
     def pee_announcements(self) -> bool:
         """Whether Pee announcements are on (the default)."""
