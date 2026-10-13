@@ -8,10 +8,13 @@ the secret get 401 and never reach the skill.
 import hmac
 import json
 import logging
-from collections.abc import Mapping
 from typing import Any, Protocol
 
-from catpoop.alexa_skill.endpoint import EndpointResponse
+from fastapi import APIRouter, Request, Response
+from fastapi.responses import JSONResponse, PlainTextResponse
+
+from catpoop.alexa_skill.body_limit import read_body
+from catpoop.alexa_skill.endpoint import MAX_BODY
 
 log = logging.getLogger(__name__)
 
@@ -26,33 +29,26 @@ class Skill(Protocol):
         ...
 
 
-class SmartHomeEndpoint:
-    """Checks the shared secret, then lets the skill answer."""
+def smart_home_router(secret: str, skill: Skill) -> APIRouter:
+    """`POST /alexa/smart-home` for `skill`, when `Authorization` is `Bearer <secret>`.
 
-    def __init__(self, secret: str, skill: Skill) -> None:
-        """Accept requests whose `Authorization` is `Bearer <secret>`."""
-        self._expected = f"Bearer {secret}".encode()
-        self._skill = skill
+    Async like the Alexa endpoint, so it answers one request at a time on the same loop.
+    """
+    expected = f"Bearer {secret}".encode()
+    router = APIRouter()
 
-    def __repr__(self) -> str:
-        """Never the secret."""
-        return "SmartHomeEndpoint()"
-
-    def handle(
-        self, method: str, path: str, headers: Mapping[str, str], body: bytes
-    ) -> EndpointResponse:
-        """The response to one forwarded directive."""
-        if path != PATH:
-            return EndpointResponse(404, b"not found")
-        if method != "POST":
-            return EndpointResponse(405, b"method not allowed")
-        given = {k.lower(): v for k, v in headers.items()}.get("authorization", "")
-        if not hmac.compare_digest(given.encode(), self._expected):
+    @router.post(PATH)
+    async def smart_home(request: Request) -> Response:
+        given = request.headers.get("authorization", "")
+        if not hmac.compare_digest(given.encode(), expected):
             log.warning("Smart Home request without the right secret")
-            return EndpointResponse(401, b"unauthorized")
+            return PlainTextResponse("unauthorized", 401)
+        body = await read_body(request, MAX_BODY)
         try:
-            answer = self._skill.answer(json.loads(body))
+            answer = skill.answer(json.loads(body))
         except Exception:
             log.exception("the Smart Home skill failed")
-            return EndpointResponse(500, b"error")
-        return EndpointResponse(200, json.dumps(answer).encode(), "application/json")
+            return PlainTextResponse("error", 500)
+        return JSONResponse(answer)
+
+    return router
