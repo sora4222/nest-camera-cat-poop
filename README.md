@@ -5,6 +5,7 @@ Watches the Litter Box through a Nest camera, works out the Outcome of each Visi
 - [Setup](docs/setup.md): install, private config and secrets
 - [Where to change things](docs/configuration.md)
 - [Importing camera history](docs/history-import.md) for training
+- [Cutting clips into Visits and labeling them](docs/visits.md)
 - [Code layout and dev rules](CONTRIBUTE.md)
 - [Glossary](GLOSSARY.md): the words used in code and docs
 - [Decisions](docs/adr/)

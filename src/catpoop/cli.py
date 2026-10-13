@@ -16,6 +16,7 @@ from catpoop.registry import (
     SPEAKER,
     default_registry,
 )
+from catpoop.visits import command as visits_command
 
 
 def _check_config(path: Path | None) -> int:
@@ -49,11 +50,14 @@ def main(argv: list[str] | None = None) -> int:
     check = commands.add_parser("check-config", help="load the private config and check it")
     check.add_argument("--config", type=Path, help="config file (default: $CATPOOP_CONFIG)")
     history_command.add_command(commands)
+    visits_command.add_commands(commands)
     args = parser.parse_args(argv)
     if args.command == "check-config":
         return _check_config(args.config)
     if args.command == "import-history":
         return history_command.run(args)
+    if args.command in visits_command.COMMANDS:
+        return visits_command.run(args)
     return 2
 
 

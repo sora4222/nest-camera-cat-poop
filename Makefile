@@ -1,4 +1,4 @@
-.PHONY: help setup dev check format test config import-history export-detector notebook
+.PHONY: help setup dev check format test config import-history export-detector notebook cut-visits label add-visit
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -26,6 +26,9 @@ help:
 	@echo "make import-history ARGS=\"takeout|portability|folder [paths]\"  copy past clips to the NAS"
 	@echo "make export-detector OUT=x.onnx [SAVED_MODEL=dir]  TF detector to ONNX (train extra)"
 	@echo "make notebook  open JupyterLab on notebooks/ (train extra + notebook group)"
+	@echo "make cut-visits  cut new clips into Visits; delete old unlabeled clips over the limit"
+	@echo "make label [PORT=8765]  labeling page on http://localhost:PORT/"
+	@echo "make add-visit OUTCOME=poop|pee|nothing CLIPS=\"a.mp4 b.mp4\"  clips found by hand to the dataset"
 
 # Copy the example files only if the private ones do not exist yet.
 setup:
@@ -62,3 +65,13 @@ export-detector:
 # JupyterLab for the notebooks in notebooks/ (e.g. exporting a toy model to ONNX).
 notebook:
 	$(UV_RUN) --extra train --group notebook jupyter lab notebooks
+
+cut-visits:
+	$(RUN) catpoop cut-visits
+
+label:
+	$(RUN) catpoop label --port $(or $(PORT),8765)
+
+add-visit:
+	@test -n "$(OUTCOME)" -a -n "$(CLIPS)" || { echo "Set OUTCOME and CLIPS, e.g. make add-visit OUTCOME=poop CLIPS=clip.mp4"; exit 1; }
+	$(RUN) catpoop add-visit $(OUTCOME) $(CLIPS)
