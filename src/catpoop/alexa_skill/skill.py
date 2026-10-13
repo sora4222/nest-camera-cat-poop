@@ -28,7 +28,7 @@ _HOW_LONG = "For how long should I be quiet? For example: two hours."
 type Answer = dict[str, Any]
 
 
-def _say(text: str, *, listen: str | None = None) -> Answer:
+def _alexa_announce(text: str, *, listen: str | None = None) -> Answer:
     """A response that says `text`; with `listen`, the session stays open and reprompts."""
     response: dict[str, Any] = {
         "outputSpeech": {"type": "PlainText", "text": text},
@@ -47,22 +47,22 @@ class AlexaSkill:
         switches: Switches,
         event_log: EventLog,
         clock: Clock,
-        zone: ZoneInfo,
+        timezone: ZoneInfo,
         cat: str = "the cat",
     ) -> None:
-        """`zone` is the Litter Box's time zone, which times are said in."""
+        """`timezone` is the Litter Box's time zone, which times are said in."""
         self._switches = switches
         self._event_log = event_log
         self._clock = clock
-        self._zone = zone
+        self._timezone = timezone
         self._cat = cat
 
-    def answer(self, request: dict[str, Any]) -> Answer:
+    def respond(self, request: dict[str, Any]) -> Answer:
         """The response envelope for one Alexa request."""
         inner = request.get("request") or {}
         kind = inner.get("type")
         if kind == "LaunchRequest":
-            return _say("Litter box here. " + _HELP, listen=_REPROMPT)
+            return _alexa_announce("Litter box here. " + _HELP, listen=_REPROMPT)
         if kind == "IntentRequest":
             intent = inner.get("intent") or {}
             handler = INTENTS.get(intent.get("name", ""), AlexaSkill._help)
@@ -72,53 +72,61 @@ class AlexaSkill:
     def _do_not_disturb(self, slots: dict[str, str]) -> Answer:
         value = slots.get("duration")
         if not value:
-            return _say(_HOW_LONG, listen=_HOW_LONG)
+            return _alexa_announce(_HOW_LONG, listen=_HOW_LONG)
         try:
             span = parse_alexa_duration(value)
         except ValueError:
-            return _say("Sorry, I didn't get how long. " + _HOW_LONG, listen=_HOW_LONG)
+            return _alexa_announce("Sorry, I didn't get how long. " + _HOW_LONG, listen=_HOW_LONG)
         if span > MAX_QUIET:
-            return _say("I can be quiet for up to a week. " + _HOW_LONG, listen=_HOW_LONG)
+            return _alexa_announce(
+                "I can be quiet for up to a week. " + _HOW_LONG, listen=_HOW_LONG
+            )
         now = self._clock.now()
         self._switches.set_do_not_disturb(now + span)
-        return _say(f"OK, I'll be quiet until {spoken_time(now + span, now, self._zone)}.")
+        return _alexa_announce(
+            f"OK, I'll be quiet until {spoken_time(now + span, now, self._timezone)}."
+        )
 
     def _stop_do_not_disturb(self, slots: dict[str, str]) -> Answer:
         was_on = self._switches.do_not_disturb(self._clock.now()) is not None
         self._switches.clear_do_not_disturb()
-        return _say("OK, Do Not Disturb is off." if was_on else "Do Not Disturb was not on.")
+        return _alexa_announce(
+            "OK, Do Not Disturb is off." if was_on else "Do Not Disturb was not on."
+        )
 
     def _pee_on(self, slots: dict[str, str]) -> Answer:
         self._switches.set_pee_announcements(True)
-        return _say("OK, I'll announce pee again.")
+        return _alexa_announce("OK, I'll announce pee again.")
 
     def _pee_off(self, slots: dict[str, str]) -> Answer:
         self._switches.set_pee_announcements(False)
-        return _say("OK, I won't announce pee.")
+        return _alexa_announce("OK, I won't announce pee.")
 
     def _status(self, slots: dict[str, str]) -> Answer:
         now = self._clock.now()
         status = litter_box_status(self._event_log)
         if status.poop_since is not None:
-            when = spoken_time(status.poop_since, now, self._zone)
+            when = spoken_time(status.poop_since, now, self._timezone)
             parts = [f"Yes, there has been poop in the litter box since {when}."]
         else:
             parts = ["No, there is no poop in the litter box."]
             if status.last_visit is not None:
-                when = spoken_time(status.last_visit, now, self._zone)
+                when = spoken_time(status.last_visit, now, self._timezone)
                 parts.append(f"{self._cat[:1].upper()}{self._cat[1:]} last visited at {when}.")
         dnd = self._switches.do_not_disturb(now)
         if dnd is not None:
-            parts.append(f"Do Not Disturb is on until {spoken_time(dnd.until, now, self._zone)}.")
+            parts.append(
+                f"Do Not Disturb is on until {spoken_time(dnd.until, now, self._timezone)}."
+            )
         if not self._switches.pee_announcements():
             parts.append("Pee announcements are off.")
-        return _say(" ".join(parts))
+        return _alexa_announce(" ".join(parts))
 
     def _help(self, slots: dict[str, str]) -> Answer:
-        return _say(_HELP, listen=_REPROMPT)
+        return _alexa_announce(_HELP, listen=_REPROMPT)
 
     def _goodbye(self, slots: dict[str, str]) -> Answer:
-        return _say("Bye.")
+        return _alexa_announce("Bye.")
 
 
 INTENTS: dict[str, Callable[[AlexaSkill, dict[str, str]], Answer]] = {
