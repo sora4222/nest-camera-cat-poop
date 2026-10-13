@@ -9,11 +9,13 @@ dependencies = [
     "av>=14",
     "certifi>=2024.2.2",
     "cryptography>=44",
+    "fastapi>=0.115",
     "googlenestcam[images]",
     "httpx>=0.28.1",
     "numpy>=2",
     "pillow>=11",
     "pydantic>=2.14.0",
+    "uvicorn>=0.32",
 ]
 
 [project.optional-dependencies]
