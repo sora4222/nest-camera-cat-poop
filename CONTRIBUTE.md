@@ -19,7 +19,7 @@ src/catpoop/
   clock.py          the time now and waiting (SystemClock; tests use a fake)
   state_folder.py   $XDG_STATE_HOME/catpoop, for the server's small state files
   domain.py         glossary words as types: Urgency, Presence, Outcome, OutcomeScores, Frame, Detection, Event
-  interfaces.py     small Protocols for every swappable part
+  interfaces.py     small Protocols for every swappable part and external service (with their errors)
   registry.py       slots, the registry, and build_parts (config names -> parts)
   watcher_lock.py   one live watcher per machine
   poop_reminders.py when Poop Reminders are due (1, 2, 4, 8... minutes)
@@ -36,7 +36,6 @@ src/catpoop/
     options.py          read importer options
     takeout.py          importer "takeout" (Google Takeout archives)
     portability.py      importer "portability" (Data Portability API export)
-    portability_api.py  PortabilityApi interface, ArchiveState, PortabilityError
     portability_http.py the real Data Portability API client (httpx)
     folder.py           importer "folder" (clips saved by hand)
   visits/           cut clips into Visits, label them, keep the dataset (docs/visits.md)
