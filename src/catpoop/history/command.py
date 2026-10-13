@@ -18,7 +18,7 @@ IMPORTERS = ["takeout", "portability", "folder"]
 """In the order to try them (see ADR 0001)."""
 
 
-def add_command(commands: Any) -> None:
+def add_command(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add the `import-history` command to the CLI's subparsers."""
     command = commands.add_parser(
         "import-history", help="copy past camera clips into the Private Data Store"
