@@ -3,13 +3,12 @@
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
 
 from catpoop.alexa_skill.tunnel import tunnel_setup
 from catpoop.config import ConfigError, load_config
 
 
-def add_command(commands: Any) -> None:
+def add_command(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add `alexa-tunnel` to the CLI's subparsers."""
     tunnel = commands.add_parser(
         "alexa-tunnel", help="show how to open only /alexa with the configured tunnel"
