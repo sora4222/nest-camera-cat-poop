@@ -31,7 +31,7 @@ class Verifier(Protocol):
 class Skill(Protocol):
     """Answers a verified request (`AlexaSkill`)."""
 
-    def answer(self, request: dict[str, Any]) -> dict[str, Any]:
+    def respond(self, request: dict[str, Any]) -> dict[str, Any]:
         """The response envelope."""
         ...
 
@@ -67,7 +67,7 @@ class AlexaEndpoint:
             log.warning("Alexa request rejected: %s", error)
             return EndpointResponse(400, b"bad request")
         try:
-            answer = self._skill.answer(request)
+            answer = self._skill.respond(request)
         except Exception:
             log.exception("the Alexa skill failed")
             return EndpointResponse(500, b"error")
