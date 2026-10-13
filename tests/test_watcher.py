@@ -399,6 +399,75 @@ def test_poop_seen_on_the_first_check_after_quiet_hours_is_said_once(tmp_path):
     assert speaker.said == ["Poop."]
 
 
+class GuessBlowsUp(FakeOutcomeModel):
+    def guess(self, stance: Frame) -> OutcomeScores:
+        raise RuntimeError("guess blew up")
+
+
+class OutcomeBlowsUp(FakeOutcomeModel):
+    def outcome(self, surface: Frame) -> OutcomeScores:
+        raise RuntimeError("outcome blew up")
+
+
+def test_a_failed_outcome_guess_is_logged_and_the_visit_goes_on(tmp_path, caplog):
+    run = Run(tmp_path, "..CCCC.....", GuessBlowsUp()).step_through(11)
+    assert "guess blew up" in caplog.text
+    assert run.said() == [(4, "VisitStarted"), (9, "VisitEnded")]
+    started, ended = run.first(obs.VisitStarted), run.first(obs.VisitEnded)
+    assert isinstance(started, obs.VisitStarted) and isinstance(ended, obs.VisitEnded)
+    assert (started.guess, ended.outcome) == (None, scores(Outcome.PEE))
+
+
+def test_a_failed_outcome_is_logged_and_the_visit_still_ends(tmp_path, caplog):
+    run = Run(tmp_path, "..CCCC.....", OutcomeBlowsUp()).step_through(11)
+    assert "outcome blew up" in caplog.text
+    ended = run.first(obs.VisitEnded)
+    assert isinstance(ended, obs.VisitEnded)
+    assert ended.outcome is None
+    assert ended.saved_visit is not None
+
+
+class StartBlowsUp(LiveVisitRecorder):
+    def start(self, frames):
+        raise RuntimeError("no room for the clip")
+
+
+def test_a_recording_that_cannot_start_is_logged_and_the_visit_goes_on(tmp_path, caplog):
+    recorder = StartBlowsUp(tmp_path / "store", SETTINGS, tmp_path / "temp")
+    run = Run(tmp_path, "..CCCC.....CCCC.....", recorder=recorder).step_through(20)
+    assert "no room for the clip" in caplog.text
+    assert [name for _, name in run.said()] == ["VisitStarted", "VisitEnded"] * 2
+    ended = run.first(obs.VisitEnded)
+    assert isinstance(ended, obs.VisitEnded)
+    assert ended.saved_visit is None
+
+
+class AddBlowsUp(LiveVisitRecorder):
+    """Records the frames from before the Visit, then fails on the next one."""
+
+    adding_later = False
+
+    def start(self, frames):
+        super().start(frames)
+        self.adding_later = True
+
+    def add(self, frame):
+        if self.adding_later and self.recording:
+            raise OSError("disk full")
+        super().add(frame)
+
+
+def test_a_recording_that_fails_midway_is_dropped_and_the_visit_goes_on(tmp_path, caplog):
+    recorder = AddBlowsUp(tmp_path / "store", SETTINGS, tmp_path / "temp")
+    run = Run(tmp_path, "..CCCC.....", recorder=recorder).step_through(11)
+    assert "disk full" in caplog.text
+    assert run.said() == [(4, "VisitStarted"), (9, "VisitEnded")]
+    ended = run.first(obs.VisitEnded)
+    assert isinstance(ended, obs.VisitEnded)
+    assert ended.saved_visit is None
+    assert list((tmp_path / "temp").iterdir()) == []
+
+
 class PruneWatchingRecorder(LiveVisitRecorder):
     def __init__(self, *args) -> None:
         super().__init__(*args)

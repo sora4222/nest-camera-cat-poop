@@ -1,7 +1,7 @@
 """Event log "postgres": every Event in a PostgreSQL table.
 
 The database URL comes from `CATPOOP_DATABASE_URL` (in .env); `make db` starts one in
-Docker for development.
+Docker for development. The table is made by the Alembic migrations, run on start.
 """
 
 import os
@@ -13,30 +13,19 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from catpoop.config import Config, ConfigError
+from catpoop.database import upgrade
 from catpoop.domain import Event, Urgency
 from catpoop.registry import DEFAULT, EVENT_LOG
 
 URL_ENV = "CATPOOP_DATABASE_URL"
-
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS events (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    at TIMESTAMPTZ NOT NULL,
-    kind TEXT NOT NULL,
-    urgency TEXT NOT NULL,
-    announce BOOLEAN NOT NULL,
-    details JSONB NOT NULL
-)
-"""
 
 
 class PostgresEventLog:
     """Keeps Events in one table, oldest first."""
 
     def __init__(self, url: str) -> None:
-        """Connect to the database at `url` and make the table if it is missing."""
+        """Connect to the database at `url`, already upgraded (`catpoop.database.upgrade`)."""
         self._db = psycopg.connect(url, autocommit=True)
-        self._db.execute(_SCHEMA)
 
     def record(self, event: Event) -> None:
         """Store `event`."""
@@ -78,9 +67,11 @@ def _create(config: Config, options: Mapping[str, Any]) -> PostgresEventLog:
     if not url:
         raise ConfigError(f"event log 'postgres': set {URL_ENV} in .env (`make db` starts one)")
     try:
-        return PostgresEventLog(url)
+        event_log = PostgresEventLog(url)
     except psycopg.OperationalError as error:
         raise ConfigError(f"event log 'postgres': cannot connect: {error}") from None
+    upgrade(url)
+    return event_log
 
 
 @DEFAULT.part(EVENT_LOG, "sqlite")
