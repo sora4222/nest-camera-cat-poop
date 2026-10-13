@@ -87,8 +87,7 @@ src/catpoop/
     skill.py            intents -> switches and spoken answers
     body_limit.py       refuse request bodies over a limit (413)
     endpoint.py         POST /alexa only: verify, then answer (FastAPI router)
-    server.py           serve a FastAPI app with uvicorn on a thread
-    run.py              run it in a thread beside the watcher
+    run.py              build the app; uvicorn runs it on a thread beside the watcher
     tunnel.py           Cloudflare Tunnel or Tailscale Funnel setup for /alexa only
     command.py          `catpoop alexa-tunnel` (`make alexa-tunnel`)
   alexa_smart_home/ the Smart Home skill: virtual sensors that fire Alexa routines (docs/alexa-smart-home.md)
