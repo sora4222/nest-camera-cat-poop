@@ -196,6 +196,29 @@ def test_pee_announcements_switch_holds_back_pee_guesses_only(tmp_path):
     assert len(setup.speaker.said) == 2
 
 
+def test_quiet_poop_holds_back_poop_and_its_reminders_only(tmp_path):
+    setup = Setup(tmp_path)
+    setup.switches.set_quiet("poop", START + timedelta(hours=2))
+    setup.event("poop")
+    setup.event("poop_reminder")
+    setup.event("poop_after_quiet_hours")
+    setup.event("visit_started", Urgency.INFO, guess="poop")
+    setup.event("dog_at_poop", Urgency.URGENT)
+    assert setup.speaker.said == ["Cat is in the box.", "Dog is at the poop."]
+
+
+def test_quiet_visits_hold_back_the_cat_going_in_but_not_poop(tmp_path):
+    setup = Setup(tmp_path)
+    setup.switches.set_quiet("visits", START + timedelta(hours=2))
+    setup.event("visit_started", Urgency.INFO, guess="pee")
+    setup.event("visit_started", Urgency.INFO, guess="poop")
+    setup.event("poop")
+    assert setup.speaker.said == ["Cat left poop."]
+    setup.clock.advance(2 * 3600)
+    setup.event("visit_started", Urgency.INFO)
+    assert setup.speaker.said[-1] == "Cat is in the box."
+
+
 def test_nothing_is_said_while_every_listener_is_away(tmp_path):
     setup = Setup(tmp_path, presence=FakePresence(Presence.AWAY))
     setup.event("dog_at_poop", Urgency.URGENT)
