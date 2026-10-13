@@ -1,3 +1,4 @@
+import threading
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -78,8 +79,6 @@ def test_unknown_event_log_options_are_a_config_error(tmp_path, monkeypatch):
 
 
 def test_another_thread_can_read_and_write_it(tmp_path):
-    import threading
-
     log = SqliteEventLog(tmp_path / "events.sqlite")
     log.record(events()[0])
     seen = []

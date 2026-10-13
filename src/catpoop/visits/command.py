@@ -5,7 +5,6 @@ import logging
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from catpoop.config import Config, ConfigError, load_config
 from catpoop.domain import Outcome
@@ -21,7 +20,7 @@ from catpoop.visits.video import VideoError
 COMMANDS = ["cut-visits", "label", "add-visit"]
 
 
-def add_commands(commands: Any) -> None:
+def add_commands(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add the Visit commands to the CLI's subparsers."""
     cut = commands.add_parser(
         "cut-visits", help="cut new history clips into Visits, then keep the store under its limit"
