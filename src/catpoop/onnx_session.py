@@ -33,7 +33,7 @@ def pick_providers(runtime: str, available: Sequence[str]) -> list[str]:
 
 def open_session(model: Path, runtime: str) -> Any:
     """An `onnxruntime.InferenceSession` for `model` on the providers `runtime` asks for."""
-    import onnxruntime
+    import onnxruntime  # noqa: PLC0415  (only the cpu, amd or nvidia extra installs it)
 
     providers = pick_providers(runtime, onnxruntime.get_available_providers())
     return onnxruntime.InferenceSession(str(model), providers=providers)
