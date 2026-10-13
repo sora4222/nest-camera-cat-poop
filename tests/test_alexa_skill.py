@@ -51,51 +51,76 @@ def test_launch_says_what_it_can_do_and_listens(parts):
     assert answer["response"]["reprompt"]["outputSpeech"]["text"]
 
 
-def test_do_not_disturb_for_a_while(parts):
+def test_quiet_poop_for_a_while(parts):
     skill, switches, _, _ = parts
-    answer = skill.respond(intent("DoNotDisturbIntent", duration="PT2H"))
-    dnd = switches.do_not_disturb(NOW)
-    assert dnd is not None
-    assert dnd.until == NOW + timedelta(hours=2)
-    assert dnd.allow is None  # the [communications] dnd_allow default, as `make dnd`
-    assert speech(answer) == "OK, I'll be quiet until 4 PM."
+    answer = skill.respond(intent("QuietPoopIntent", duration="PT2H"))
+    assert switches.quiet_until("poop", NOW) == NOW + timedelta(hours=2)
+    assert switches.quiet_until("visits", NOW) is None
+    assert speech(answer) == "OK, no poop news until 4 PM."
     assert ends(answer)
 
 
-def test_do_not_disturb_with_no_duration_asks_how_long(parts):
+def test_quiet_visits_for_a_while(parts):
     skill, switches, _, _ = parts
-    answer = skill.respond(intent("DoNotDisturbIntent"))
+    answer = skill.respond(intent("QuietVisitsIntent", duration="PT1H"))
+    assert switches.quiet_until("visits", NOW) == NOW + timedelta(hours=1)
+    assert switches.quiet_until("poop", NOW) is None
+    assert speech(answer) == "OK, no news about visits or pee until 3 PM."
+
+
+def test_quiet_with_no_duration_asks_how_long_and_remembers_what_for(parts):
+    skill, switches, _, _ = parts
+    answer = skill.respond(intent("QuietVisitsIntent"))
     assert "how long" in speech(answer).lower()
     assert not ends(answer)
-    assert switches.do_not_disturb(NOW) is None
+    assert answer["sessionAttributes"] == {"quiet": "visits"}
+    assert switches.quiet_until("visits", NOW) is None
+    reply = intent("DurationIntent", duration="PT2H") | {"session": answer_session(answer)}
+    skill.respond(reply)
+    assert switches.quiet_until("visits", NOW) == NOW + timedelta(hours=2)
+
+
+def answer_session(answer: dict) -> dict:
+    return {"attributes": answer["sessionAttributes"]}
+
+
+def test_a_bare_duration_without_a_question_gets_help(parts):
+    skill, switches, _, _ = parts
+    answer = skill.respond(intent("DurationIntent", duration="PT2H"))
+    assert "poop" in speech(answer).lower()
+    assert switches.quiet_until("poop", NOW) is None
 
 
 @pytest.mark.parametrize("value", ["?", "P1M", "nonsense"])
-def test_do_not_disturb_with_a_duration_it_cannot_use_asks_again(parts, value):
+def test_quiet_with_a_duration_it_cannot_use_asks_again(parts, value):
     skill, switches, _, _ = parts
-    answer = skill.respond(intent("DoNotDisturbIntent", duration=value))
+    answer = skill.respond(intent("QuietPoopIntent", duration=value))
     assert not ends(answer)
-    assert switches.do_not_disturb(NOW) is None
+    assert answer["sessionAttributes"] == {"quiet": "poop"}
+    assert switches.quiet_until("poop", NOW) is None
 
 
-def test_do_not_disturb_is_at_most_a_week(parts):
+def test_quiet_is_at_most_a_week(parts):
     skill, switches, _, _ = parts
-    answer = skill.respond(intent("DoNotDisturbIntent", duration="P8D"))
+    answer = skill.respond(intent("QuietPoopIntent", duration="P8D"))
     assert "week" in speech(answer)
-    assert switches.do_not_disturb(NOW) is None
+    assert switches.quiet_until("poop", NOW) is None
 
 
-def test_stop_do_not_disturb(parts):
+def test_stop_quiet_poop_leaves_visits_quiet(parts):
     skill, switches, _, _ = parts
-    switches.set_do_not_disturb(NOW + timedelta(hours=1))
-    answer = skill.respond(intent("StopDoNotDisturbIntent"))
-    assert switches.do_not_disturb(NOW) is None
-    assert speech(answer) == "OK, Do Not Disturb is off."
+    switches.set_quiet("poop", NOW + timedelta(hours=1))
+    switches.set_quiet("visits", NOW + timedelta(hours=1))
+    answer = skill.respond(intent("StopQuietPoopIntent"))
+    assert switches.quiet_until("poop", NOW) is None
+    assert switches.quiet_until("visits", NOW) is not None
+    assert speech(answer) == "OK, I'll tell you about poop again."
 
 
-def test_stop_do_not_disturb_when_it_was_not_on(parts):
+def test_stop_quiet_visits_when_it_was_not_on(parts):
     skill, *_ = parts
-    assert speech(skill.respond(intent("StopDoNotDisturbIntent"))) == "Do Not Disturb was not on."
+    answer = skill.respond(intent("StopQuietVisitsIntent"))
+    assert speech(answer) == "I wasn't being quiet about visits or pee."
 
 
 def test_pee_announcements_off_and_on(parts):
@@ -135,12 +160,16 @@ def test_status_with_nothing_in_the_log(parts):
     )
 
 
-def test_status_mentions_do_not_disturb_and_pee_announcements_off(parts):
+def test_status_mentions_quiet_switches_and_pee_announcements_off(parts):
     skill, switches, _, _ = parts
     switches.set_do_not_disturb(NOW + timedelta(minutes=30))
+    switches.set_quiet("poop", NOW + timedelta(hours=1))
+    switches.set_quiet("visits", NOW + timedelta(hours=2))
     switches.set_pee_announcements(False)
     said = speech(skill.respond(intent("StatusIntent")))
     assert "Do Not Disturb is on until 2:30 PM." in said
+    assert "No poop news until 3 PM." in said
+    assert "No news about visits or pee until 4 PM." in said
     assert "Pee announcements are off." in said
 
 
@@ -166,8 +195,11 @@ def test_session_ended_gets_an_empty_response(parts):
 
 def test_the_intents_it_knows(parts):
     assert set(INTENTS) >= {
-        "DoNotDisturbIntent",
-        "StopDoNotDisturbIntent",
+        "QuietPoopIntent",
+        "QuietVisitsIntent",
+        "StopQuietPoopIntent",
+        "StopQuietVisitsIntent",
+        "DurationIntent",
         "PeeAnnouncementsOnIntent",
         "PeeAnnouncementsOffIntent",
         "StatusIntent",

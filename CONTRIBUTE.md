@@ -66,7 +66,7 @@ src/catpoop/
     command.py          `catpoop train`, `evaluate`
   communications/   what may be said, and when
     quiet_hours.py      which Quiet Hours are on at a moment
-    switches.py         Do Not Disturb and Pee announcements, in switches.json in the state folder
+    switches.py         Do Not Disturb, Quiet Topics and Pee announcements, in switches.json in the state folder
     messages.py         spoken text from the Message templates
     command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
   speech/           speech for Google speakers (google extra)
