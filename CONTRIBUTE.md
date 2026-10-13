@@ -78,6 +78,18 @@ src/catpoop/
     watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
     command.py          `catpoop watch`, behind the watcher lock
+  alexa_skill/      the Alexa skill the watcher serves on /alexa (docs/alexa-skill.md)
+    request_verifier.py is the request from Alexa, for our skill, just now (signature, cert chain, timestamp, skill ID)
+    certificates.py     fetch Alexa's signing chain from Amazon's S3 (httpx)
+    durations.py        read AMAZON.DURATION values such as PT2H
+    spoken_time.py      a time as Alexa should say it ("tomorrow at 7 AM")
+    poop_status.py      is there Poop in the Litter Box, from the event log
+    skill.py            intents -> switches and spoken answers
+    body_limit.py       refuse request bodies over a limit (413)
+    endpoint.py         POST /alexa only: verify, then answer (FastAPI router)
+    run.py              build the app; uvicorn runs it on a thread beside the watcher
+    tunnel.py           Cloudflare Tunnel or Tailscale Funnel setup for /alexa only
+    command.py          `catpoop alexa-tunnel` (`make alexa-tunnel`)
   service/          run the watcher as a systemd user service, `make install` (docs/service.md)
     settings.py         what the service runs: checkout, uv, op, extras, secrets file
     unit_file.py        the unit file text, escaped for systemd
@@ -101,6 +113,7 @@ scripts/pr_size.py  CI check: at most 500 changed code lines per pull request
 notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
   export_toy_model_to_onnx.ipynb  a toy Keras model -> ONNX, step by step
 docs/               setup, configuration, ADRs
+alexa/              the Alexa skill's interaction model (paste into the developer console)
 ```
 
 ## Swappable parts

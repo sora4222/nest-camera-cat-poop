@@ -1,12 +1,16 @@
 import logging
-from datetime import UTC, datetime
+import socket
+import time
+from datetime import UTC, datetime, timedelta
 
+import httpx
 import numpy as np
+import pytest
 from fake_clock import FakeClock
 
 from catpoop.cli import main
-from catpoop.config import Config
-from catpoop.domain import Detection, Event, Frame
+from catpoop.config import Config, ConfigError
+from catpoop.domain import Detection, Event, Frame, Urgency
 from catpoop.parts.memory_event_log import MemoryEventLog
 from catpoop.registry import CAMERA, COMMUNICATIONS, DETECTOR, EVENT_LOG, EVENT_RULES, Registry
 from catpoop.watcher.command import start_watcher
@@ -46,15 +50,15 @@ class CountingCommunications:
         self.ticks += 1
 
 
-def setup(tmp_path):
+def setup(tmp_path, event_log=None, rules=None, communications=None):
     clock = FakeClock(START)
     camera = EmptyBox(clock)
     registry = Registry()
     registry.add(CAMERA, "fake", lambda config, options: camera)
     registry.add(DETECTOR, "fake", lambda config, options: NothingFound())
-    registry.add(EVENT_RULES, "fake", lambda config, options: NoEvents())
-    registry.add(EVENT_LOG, "fake", lambda config, options: MemoryEventLog())
-    communications = CountingCommunications()
+    registry.add(EVENT_RULES, "fake", lambda config, options: rules or NoEvents())
+    registry.add(EVENT_LOG, "fake", lambda config, options: event_log or MemoryEventLog())
+    communications = communications or CountingCommunications()
     registry.add(COMMUNICATIONS, "fake", lambda config, options: communications)
     config = Config.model_validate(
         {
@@ -100,3 +104,76 @@ def test_a_second_watcher_refuses_to_start(tmp_path, capsys):
 def test_watch_reports_a_missing_config(tmp_path, capsys):
     assert main(["watch", "--config", str(tmp_path / "missing.toml")]) == 1
     assert "not found" in capsys.readouterr().err
+
+
+def free_port() -> int:
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return probe.getsockname()[1]
+
+
+def with_skill(config: Config, port: int) -> Config:
+    skill = config.alexa_skill.model_copy(update={"enabled": True, "port": port})
+    return config.model_copy(update={"alexa_skill": skill})
+
+
+def test_the_alexa_skill_is_served_while_the_watcher_runs(tmp_path):
+    config, registry, clock, _, _ = setup(tmp_path)
+    port = free_port()
+    statuses = []
+
+    def stop() -> bool:
+        with httpx.Client(trust_env=False) as client:
+            try:
+                statuses.append(client.get(f"http://127.0.0.1:{port}/alexa").status_code)
+            except httpx.ConnectError:
+                time.sleep(0.01)
+        return len(statuses) >= 2
+
+    environ = {"CATPOOP_ALEXA_SKILL_ID": "amzn1.ask.skill.test"}
+    assert start_watcher(with_skill(config, port), registry, clock, stop, environ) == 0
+    assert statuses == [405, 405]
+
+
+def test_an_enabled_alexa_skill_without_its_id_stops_the_watcher(tmp_path):
+    config, registry, clock, camera, _ = setup(tmp_path)
+    with pytest.raises(ConfigError, match="CATPOOP_ALEXA_SKILL_ID"):
+        start_watcher(with_skill(config, free_port()), registry, clock, stop_after(3), {})
+    assert camera.reads == 0
+
+
+class PoopKeeper:
+    def __init__(self) -> None:
+        self.resumed: list[tuple[datetime, datetime]] = []
+
+    def update(self, observation: object) -> list[Event]:
+        return []
+
+    def handle(self, event: Event) -> None:
+        pass
+
+    def tick(self, at: datetime) -> None:
+        pass
+
+    def resume_poop(self, since: datetime, now: datetime) -> None:
+        self.resumed.append((since, now))
+
+
+def test_poop_in_the_event_log_is_resumed_by_the_rules_and_communications(tmp_path):
+    event_log = MemoryEventLog()
+    poop_at = START - timedelta(hours=1)
+    event_log.record(Event("poop", Urgency.NORMAL, poop_at))
+    rules, communications = PoopKeeper(), PoopKeeper()
+    config, registry, clock, _, _ = setup(tmp_path, event_log, rules, communications)
+    assert start_watcher(config, registry, clock, stop_after(1)) == 0
+    assert rules.resumed == communications.resumed == [(poop_at, START)]
+
+
+def test_no_poop_in_the_event_log_resumes_nothing(tmp_path):
+    event_log = MemoryEventLog()
+    event_log.record(Event("poop", Urgency.NORMAL, START - timedelta(hours=2)))
+    event_log.record(Event("poop_gone", Urgency.INFO, START - timedelta(hours=1)))
+    rules = PoopKeeper()
+    config, registry, clock, _, _ = setup(tmp_path, event_log, rules)
+    assert start_watcher(config, registry, clock, stop_after(1)) == 0
+    assert rules.resumed == []

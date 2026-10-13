@@ -164,6 +164,23 @@ class OutcomeSettings(_Strict):
         return name
 
 
+class AlexaSkillSettings(_Strict):
+    """The Alexa skill endpoint the watcher serves (docs/alexa-skill.md).
+
+    The skill ID is not here: it comes from `CATPOOP_ALEXA_SKILL_ID` in `.env`.
+    """
+
+    enabled: bool = False
+    host: str = "127.0.0.1"
+    """Where the endpoint listens; the tunnel connects to it on this machine."""
+    port: int = Field(8767, ge=0, le=65535)
+    """0 picks any free port (for tests; a tunnel needs a fixed one)."""
+    tunnel: Literal["cloudflare", "tailscale"] = "cloudflare"
+    """What brings `/alexa` from the internet: Cloudflare Tunnel or Tailscale Funnel."""
+    hostname: str | None = None
+    """The public host name of a Cloudflare Tunnel, e.g. `litter.example.com`."""
+
+
 class Config(_Strict):
     """The whole private config."""
 
@@ -178,6 +195,7 @@ class Config(_Strict):
     visits: VisitSettings = VisitSettings()
     outcome: OutcomeSettings = OutcomeSettings()
     watcher: WatcherSettings = WatcherSettings()
+    alexa_skill: AlexaSkillSettings = AlexaSkillSettings()
     # Options for the chosen implementation of each part.
     camera: dict[str, Any] = {}
     detector: dict[str, Any] = {}

@@ -138,6 +138,16 @@ dog_gone_seconds = 60   # the Dog must be away this long before Dog at Poop is s
 dnd_allow = ["urgent"]  # Urgencies Do Not Disturb lets through (`make dnd` can say otherwise)
 repeat_seconds = 30     # the same text is not said again within this
 
+# The Alexa skill (see docs/alexa-skill.md): "Alexa, ask litter box is there poop in the box?",
+# Do Not Disturb and Pee announcements by voice. The watcher serves it; the skill ID is
+# CATPOOP_ALEXA_SKILL_ID in .env. Only /alexa is answered, and only for signed requests.
+[alexa_skill]
+enabled = false
+host = "127.0.0.1"      # the tunnel reaches the endpoint on this machine
+port = 8767
+tunnel = "cloudflare"   # cloudflare (Cloudflare Tunnel) or tailscale (Tailscale Funnel)
+# hostname = "litter.example.com"  # Cloudflare only: the tunnel's public host name
+
 # Options for the chosen implementation of each other part, one table per part.
 
 # History importers (`make import-history`, see docs/history-import.md).

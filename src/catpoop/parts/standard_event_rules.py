@@ -73,6 +73,17 @@ class StandardEventRules:
         self._dog_said_at: datetime | None = None
         self._login_reminder_at: datetime | None = None
 
+    def resume_poop(self, since: datetime, now: datetime) -> None:
+        """Poop found at `since` is still in the Litter Box, as the event log says at a restart.
+
+        Poop Reminders carry on from `since`; ones already due by `now` are skipped.
+        """
+        self._poop_in_box = True
+        self._person_was_there = False
+        self._dog_said_at = None
+        self._reminders.start(since)
+        self._reminders.due(now)
+
     def update(self, observation: obs.Observation) -> list[Event]:
         """New Events now that the watcher has seen `observation`."""
         match observation:

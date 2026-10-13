@@ -1,4 +1,4 @@
-.PHONY: help setup db dev check format test config import-history export-detector notebook cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off install uninstall
+.PHONY: help setup db dev check format test config import-history export-detector notebook cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off install uninstall alexa-tunnel
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -40,6 +40,7 @@ help:
 	@echo "make dnd FOR=2h [ALLOW=\"urgent\"]  Do Not Disturb for a while (ALLOW: Urgencies still spoken, or none)"
 	@echo "make dnd-off   turn Do Not Disturb off"
 	@echo "make pee-on / make pee-off  turn Pee announcements on or off"
+	@echo "make alexa-tunnel  how to open only /alexa with the [alexa_skill] tunnel (cloudflare or tailscale)"
 
 # Copy the example files only if the private ones do not exist yet.
 setup:
@@ -125,3 +126,7 @@ pee-on:
 
 pee-off:
 	$(UV_RUN) catpoop pee-announcements off
+
+# The Alexa skill runs inside the watcher ([alexa_skill]); this prints its tunnel setup.
+alexa-tunnel:
+	@$(UV_RUN) catpoop alexa-tunnel
