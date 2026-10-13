@@ -7,7 +7,6 @@ Watches the Litter Box through a Nest camera, works out the Outcome of each Visi
 - [Importing camera history](docs/history-import.md) for training
 - [Cutting clips into Visits and labeling them](docs/visits.md)
 - [Training the Outcome model](docs/outcome-model.md)
-- [The live watcher](docs/watcher.md): `make dev`
 - [Code layout and dev rules](CONTRIBUTE.md)
 - [Glossary](GLOSSARY.md): the words used in code and docs
 - [Decisions](docs/adr/)
