@@ -4,18 +4,25 @@ Each part is registered by name in `catpoop.registry`. Tests use fakes, never re
 cameras, speakers or the network.
 """
 
-from collections.abc import Sequence
 from datetime import datetime
 from typing import Protocol
 
 from catpoop.domain import Detection, Event, Frame, OutcomeScores, Presence
+from catpoop.observations import Observation
+
+
+class CameraLoginExpired(Exception):
+    """The camera service refused the login; a person must log in again."""
 
 
 class CameraSource(Protocol):
     """Gives pictures of the Litter Box."""
 
     def read(self) -> Frame | None:
-        """The next Frame, or None if there is no picture right now."""
+        """The next new Frame, or None if there is no new picture right now.
+
+        Raises `CameraLoginExpired` while the camera cannot be reached without a new login.
+        """
         ...
 
 
@@ -40,10 +47,10 @@ class OutcomeModel(Protocol):
 
 
 class EventRules(Protocol):
-    """Turns what the camera sees over time into Events."""
+    """Turns what the live watcher sees over time into Events."""
 
-    def update(self, now: datetime, detections: Sequence[Detection] | None) -> list[Event]:
-        """New Events at `now`. `detections` is None when there was no picture."""
+    def update(self, observation: Observation) -> list[Event]:
+        """New Events now that the watcher has seen `observation`."""
         ...
 
 
@@ -77,9 +84,61 @@ class Speaker(Protocol):
         ...
 
 
+class SpeechMaker(Protocol):
+    """Turns text into speech on this machine (Piper)."""
+
+    def wav(self, text: str) -> bytes:
+        """`text` spoken, as the bytes of a wav file."""
+        ...
+
+
+class AudioHost(Protocol):
+    """Makes audio reachable by speakers on the home network."""
+
+    def offer(self, wav: bytes) -> str:
+        """The URL `wav` can be fetched from for a while."""
+        ...
+
+
+class AudioPlayer(Protocol):
+    """One network speaker that plays audio from a URL (a Google speaker)."""
+
+    def play(self, url: str) -> None:
+        """Start playing `url`."""
+        ...
+
+
+class ServiceManager(Protocol):
+    """The user's systemd (`systemctl --user`), for installing the watcher service."""
+
+    def reload(self) -> None:
+        """Read unit files again after one was added, changed or removed."""
+        ...
+
+    def enable_and_restart(self, unit: str) -> None:
+        """Start `unit` at every start of the user's systemd, and (re)start it now."""
+        ...
+
+    def disable_now(self, unit: str) -> None:
+        """Stop `unit` now and no longer start it."""
+        ...
+
+
+class CertificateSource(Protocol):
+    """Fetches the certificate chain Alexa signs skill requests with (from Amazon's S3)."""
+
+    def fetch(self, url: str) -> bytes:
+        """The PEM chain at `url`; raises OSError (or a subclass) if it cannot be fetched."""
+        ...
+
+
 class CommunicationsHandler(Protocol):
     """The one gate every Announcement goes through (Quiet Hours, presence, Speakers)."""
 
     def handle(self, event: Event) -> None:
-        """Announce `event` if the rules allow it."""
+        """Log `event`; announce it if it is not log only and the rules allow it."""
+        ...
+
+    def tick(self, at: datetime) -> None:
+        """Called every watcher check, for Announcements due at a time (end of Quiet Hours)."""
         ...

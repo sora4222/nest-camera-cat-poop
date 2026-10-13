@@ -48,7 +48,7 @@ class Visit:
     recorded_at: str | None
     """When the clip was recorded (ISO 8601), if known."""
     source: str = "detector"
-    """`detector` when cut by `cut-visits`, `manual` when added by hand."""
+    """`detector` when cut by `cut-visits`, `manual` when added by hand, `live` from the watcher."""
     frames: int = 0
     outcome: Outcome | None = None
     labeled_at: str | None = None

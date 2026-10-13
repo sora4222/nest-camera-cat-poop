@@ -42,6 +42,13 @@ def test_minimal_config_gets_defaults(tmp_path):
     assert config.timers.camera_offline_minutes == 10
     assert config.timers.poop_reminder_max_count == 6
     assert config.speakers == []
+    assert config.watcher.check_seconds == 0.25
+    assert config.watcher.surface_check_seconds == 10
+
+
+def test_watcher_must_check_a_positive_number_of_seconds(tmp_path):
+    with pytest.raises(ConfigError, match="check_seconds"):
+        load_config(write(tmp_path, MINIMAL + "\n[watcher]\ncheck_seconds = 0\n"))
 
 
 def test_quiet_hours_are_parsed(tmp_path):
@@ -102,6 +109,33 @@ def test_visit_settings_are_read(tmp_path):
     visits = load_config(write(tmp_path, text)).visits
     assert visits.max_store_gb == 2
     assert visits.litter_box == (0.1, 0.2, 0.9, 1.0)
+
+
+def test_outcome_settings_have_defaults(tmp_path):
+    outcome = load_config(write(tmp_path, MINIMAL)).outcome
+    assert outcome.models == Path("models/outcome")
+    assert outcome.runtime == "auto"
+    assert outcome.backbone == "mobilenet"
+    assert 0 < outcome.validation_fraction < 1
+    assert outcome.timezone == "UTC"
+
+
+def test_outcome_settings_are_read_and_checked(tmp_path):
+    text = MINIMAL + '[outcome]\nimage_size = 64\nbackbone = "small"\n'
+    outcome = load_config(write(tmp_path, text)).outcome
+    assert outcome.image_size == 64
+    assert outcome.backbone == "small"
+    with pytest.raises(ConfigError, match=r"outcome\.backbone"):
+        load_config(write(tmp_path, MINIMAL + '[outcome]\nbackbone = "huge"\n'))
+    with pytest.raises(ConfigError, match=r"outcome\.runtime"):
+        load_config(write(tmp_path, MINIMAL + '[outcome]\nruntime = "tpu"\n'))
+
+
+def test_outcome_timezone_must_be_a_known_zone(tmp_path):
+    text = MINIMAL + '[outcome]\ntimezone = "Australia/Melbourne"\n'
+    assert load_config(write(tmp_path, text)).outcome.timezone == "Australia/Melbourne"
+    with pytest.raises(ConfigError, match=r"outcome\.timezone"):
+        load_config(write(tmp_path, MINIMAL + '[outcome]\ntimezone = "Mars/Olympus"\n'))
 
 
 def test_visit_padding_must_keep_a_frame_after_the_cat_leaves(tmp_path):

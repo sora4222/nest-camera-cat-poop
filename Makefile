@@ -1,8 +1,11 @@
-.PHONY: help setup dev check format test config import-history export-detector notebook cut-visits label add-visit
+.PHONY: help setup dev check format test config import-history export-detector notebook cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off install uninstall
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
-UV_RUN := uv run --extra $(RUNTIME)
+# More extras, e.g. `make setup EXTRAS=google` for Google speakers (needs RUNTIME=cpu).
+EXTRAS ?=
+UV_EXTRAS := --extra $(RUNTIME) $(addprefix --extra ,$(EXTRAS))
+UV_RUN := uv run $(UV_EXTRAS)
 
 # Commands that need secrets run through $(RUN). With the 1Password CLI (`op`)
 # installed, `op://` references in .env are filled in; otherwise .env is read as is.
@@ -17,8 +20,10 @@ else
 endif
 
 help:
-	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia), create config.toml and .env if missing"
-	@echo "make dev     run the application locally"
+	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia, EXTRAS=google), create config.toml and .env if missing"
+	@echo "make dev     run the live watcher (Ctrl+C stops it)"
+	@echo "make install    run the watcher from this checkout as a systemd user service (same RUNTIME, EXTRAS as setup)"
+	@echo "make uninstall  stop and remove that service"
 	@echo "make check   format check, lint and type check"
 	@echo "make format  format and auto-fix lint"
 	@echo "make test    run the tests"
@@ -29,15 +34,27 @@ help:
 	@echo "make cut-visits  cut new clips into Visits; delete old unlabeled clips over the limit"
 	@echo "make label [PORT=8765]  labeling page on http://localhost:PORT/"
 	@echo "make add-visit OUTCOME=poop|pee|nothing CLIPS=\"a.mp4 b.mp4\"  clips found by hand to the dataset"
+	@echo "make train     train the Outcome model on the dataset, export it to ONNX (train extra)"
+	@echo "make evaluate  accuracy per class of the exported Outcome model on held-out Visits"
+	@echo "make dnd FOR=2h [ALLOW=\"urgent\"]  Do Not Disturb for a while (ALLOW: Urgencies still spoken, or none)"
+	@echo "make dnd-off   turn Do Not Disturb off"
+	@echo "make pee-on / make pee-off  turn Pee announcements on or off"
 
 # Copy the example files only if the private ones do not exist yet.
 setup:
-	uv sync --extra $(RUNTIME)
+	uv sync $(UV_EXTRAS)
 	@test -f config.toml || { cp config.example.toml config.toml && echo "Created config.toml; edit it."; }
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 
 dev:
-	$(RUN) catpoop check-config
+	$(RUN) catpoop watch
+
+# A systemd user service runs the watcher from this checkout (docs/service.md).
+install:
+	$(UV_RUN) catpoop service install --checkout "$(CURDIR)" --runtime $(RUNTIME) $(addprefix --extra ,$(EXTRAS))
+
+uninstall:
+	$(UV_RUN) catpoop service uninstall
 
 check:
 	$(UV_RUN) ruff format --check .
@@ -75,3 +92,24 @@ label:
 add-visit:
 	@test -n "$(OUTCOME)" -a -n "$(CLIPS)" || { echo "Set OUTCOME and CLIPS, e.g. make add-visit OUTCOME=poop CLIPS=clip.mp4"; exit 1; }
 	$(RUN) catpoop add-visit $(OUTCOME) $(CLIPS)
+
+# Training needs TensorFlow (train extra); evaluating runs the exported ONNX files only.
+train:
+	$(UV_RUN) --extra train catpoop train
+
+evaluate:
+	$(UV_RUN) catpoop evaluate
+
+# Switches a running watcher reads at once (kept in $XDG_STATE_HOME/catpoop/switches.json).
+dnd:
+	@test -n "$(FOR)" || { echo "Set FOR, e.g. make dnd FOR=2h"; exit 1; }
+	$(UV_RUN) catpoop dnd --for "$(FOR)" $(if $(ALLOW),--allow $(ALLOW))
+
+dnd-off:
+	$(UV_RUN) catpoop dnd --off
+
+pee-on:
+	$(UV_RUN) catpoop pee-announcements on
+
+pee-off:
+	$(UV_RUN) catpoop pee-announcements off

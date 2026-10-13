@@ -3,16 +3,26 @@
 Dev rules are in [CLAUDE.md](CLAUDE.md). Run `make check` and `make test` before each commit.
 CI (`.github/workflows/ci.yml`) runs `make check`, `make test` and `scripts/pr_size.py` on every pull request push. A pull request may change at most 500 lines of code; docs, notebooks and `uv.lock` do not count.
 
+## Running the live watcher
+
+`make dev` runs the live watcher on this machine until Ctrl+C. Only one runs per user (see [setup](docs/setup.md#one-watcher-per-machine)).
+
+It keeps taking the newest picture from the camera and runs the pet detector on it. When the Cat has stayed in the Litter Box for a moment a Visit starts, and it ends once the Cat has been gone for a while. Each Visit is recorded as a clip and saved for labeling, and the Outcome model guesses what it left behind. The event rules turn all of this, and camera problems, into Events in the event log.
+
 ## Code layout
 
 ```
 src/catpoop/
   cli.py            `catpoop <command>`; Make targets call it
   config.py         load and check the private config.toml
-  domain.py         glossary words as types: Urgency, Presence, Outcome, Frame, Detection, Event
+  observations.py   what the live watcher hands the event rules
+  clock.py          the time now and waiting (SystemClock; tests use a fake)
+  state_folder.py   $XDG_STATE_HOME/catpoop, for the server's small state files
+  domain.py         glossary words as types: Urgency, Presence, Outcome, OutcomeScores, Frame, Detection, Event
   interfaces.py     small Protocols for every swappable part
   registry.py       slots, the registry, and build_parts (config names -> parts)
   watcher_lock.py   one live watcher per machine
+  poop_reminders.py when Poop Reminders are due (1, 2, 4, 8... minutes)
   onnx_session.py   open an ONNX model on the CPU or a GPU (cpu/amd/nvidia extras)
   export_detector.py  TF detector SavedModel -> ONNX (`make export-detector`, train extra)
   history/          import past clips into the Private Data Store (docs/history-import.md)
@@ -30,22 +40,62 @@ src/catpoop/
     portability_http.py the real Data Portability API client (httpx)
     folder.py           importer "folder" (clips saved by hand)
   visits/           cut clips into Visits, label them, keep the dataset (docs/visits.md)
-    finder.py           find Visits from where the Cat is seen
+    finder.py           find Visits from where the Cat is seen (VisitTracker, find_visits)
+    clip_writer.py      write an MP4 frame by frame (PyAV)
     video.py            read clip frames (PyAV), save JPEGs (Pillow)
     cut.py              cut new history clips into Visits with the detector
     store.py            Visit records, their frames and the dataset folders
     manifest.py         dataset/manifest.csv
     retention.py        delete the oldest unlabeled clips over the size limit
-    add_visit.py        add a clip found by hand straight to the dataset
+    add_visit.py        save a whole clip as one Visit (found by hand, or live)
     labeling_app.py     the labeling page's requests and answers
     labeling_server.py  serve it on localhost (stdlib http.server)
     labeling.html       the labeling page
     command.py          `catpoop cut-visits`, `label`, `add-visit`
+  outcome/          the Outcome model: train in TF, run with ONNX Runtime (docs/outcome-model.md)
+    features.py         pictures and time of day as model inputs (no TF)
+    examples.py         examples from dataset/manifest.csv; split by Visit
+    accuracy.py         accuracy overall and per class
+    model_files.py      outcome.onnx, outcome_guess.onnx and outcome.json
+    publish.py          swap in a training run all at once (`current` symlink)
+    onnx_outcome.py     OutcomeModel on the server (ONNX Runtime, no TF)
+    evaluate.py         measure an OutcomeModel on held-out Visits
+    tf_data.py          examples as a tf.data pipeline (train extra)
+    network.py          the Keras network (train extra)
+    onnx_export.py      Keras -> ONNX with tf2onnx (train extra)
+    train.py            train, export and measure both models (train extra)
+    command.py          `catpoop train`, `evaluate`
+  communications/   what may be said, and when
+    quiet_hours.py      which Quiet Hours are on at a moment
+    switches.py         Do Not Disturb and Pee announcements, in switches.json in the state folder
+    messages.py         spoken text from the Message templates
+    command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
+  speech/           speech for Google speakers (google extra)
+    piper_speech.py     text -> wav on this machine with a Piper voice
+    audio_server.py     serve wav clips on the LAN at random URLs (stdlib http.server)
+    cast_player.py      play a URL on a Google speaker found by name (pychromecast)
+  watcher/          the live watcher, `make dev`
+    watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
+    recorder.py         record each live Visit and save it for labeling
+    command.py          `catpoop watch`, behind the watcher lock
+  service/          run the watcher as a systemd user service, `make install` (docs/service.md)
+    settings.py         what the service runs: checkout, uv, op, extras, secrets file
+    unit_file.py        the unit file text, escaped for systemd
+    installer.py        write the unit to ~/.config/systemd/user and start it, or remove it
+    systemd_user.py     ServiceManager that runs `systemctl --user`
+    command.py          `catpoop service install|uninstall|show`
   parts/            built-in implementations, one per file
     memory_event_log.py   event_log "memory"
     presence_off.py       presence "off" (always Unknown)
     onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
+    google_speaker.py     speaker kind "google" (Piper speech on a Google Home / Nest speaker)
+    voice_monkey_speaker.py  speaker kind "voice_monkey" (Alexa through the Voice Monkey announce API)
+    log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
+    standard_event_rules.py  event_rules "standard" (Visits, Poop Reminders, Dog at Poop, camera problems)
+    sqlite_event_log.py   event_log "sqlite" (SQLite file in the user's state folder)
+    standard_communications.py  communications "standard" (the one gate for every Announcement)
+    nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
 scripts/pr_size.py  CI check: at most 500 changed code lines per pull request
 notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)

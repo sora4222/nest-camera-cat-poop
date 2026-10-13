@@ -7,6 +7,8 @@ license = "Unlicense"
 requires-python = ">=3.12"
 dependencies = [
     "av>=14",
+    "certifi>=2024.2.2",
+    "cryptography>=44",
     "googlenestcam[images]",
     "httpx>=0.28.1",
     "numpy>=2",
@@ -23,6 +25,8 @@ amd = ["onnxruntime-migraphx>=1.27"]
 nvidia = ["onnxruntime-gpu[cuda,cudnn]>=1.20"]
 # TensorFlow for training and exporting to ONNX; never needed on the always-on server.
 train = ["tensorflow>=2.16", "tf2onnx>=1.16"]
+# Speaker kind "google": Piper speech and Google Home casting. Piper needs the CPU onnxruntime.
+google = ["piper-tts==1.8.0", "pychromecast==14.0.10"]
 
 [project.scripts]
 catpoop = "catpoop.cli:main"
@@ -36,7 +40,11 @@ module-name = "catpoop"
 
 [tool.uv]
 # Every onnxruntime wheel installs the same `onnxruntime` package, so only one may be used.
-conflicts = [[{ extra = "cpu" }, { extra = "amd" }, { extra = "nvidia" }]]
+conflicts = [
+    [{ extra = "cpu" }, { extra = "amd" }, { extra = "nvidia" }],
+    [{ extra = "google" }, { extra = "amd" }],
+    [{ extra = "google" }, { extra = "nvidia" }],
+]
 
 [tool.uv.sources]
 googlenestcam = { git = "https://github.com/sora4222/nest-camera-access-python", rev = "9f5f0af" }
@@ -76,7 +84,11 @@ convention = "google"
 
 [tool.ty.analysis]
 # The train extra (TensorFlow) is only installed on the machine that trains.
-allowed-unresolved-imports = ["tensorflow", "tensorflow.**", "keras", "keras.**", "tf2onnx", "tf2onnx.**"]
+allowed-unresolved-imports = [
+    "tensorflow", "tensorflow.**", "keras", "keras.**", "tf2onnx", "tf2onnx.**",
+    # The google extra (Speaker kind "google") is only installed where it is used.
+    "piper", "piper.**", "pychromecast", "pychromecast.**",
+]
 
 [tool.ty.src]
 # Notebooks import TensorFlow, which only the train extra installs.

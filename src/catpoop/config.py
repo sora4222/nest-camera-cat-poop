@@ -9,8 +9,16 @@ import tomllib
 from datetime import time
 from pathlib import Path
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from catpoop.domain import Urgency
 
@@ -115,6 +123,47 @@ class VisitSettings(_Strict):
         return self
 
 
+class WatcherSettings(_Strict):
+    """How often the live watcher checks the camera (`make dev`)."""
+
+    check_seconds: float = Field(0.25, gt=0)
+    """Time between detector runs on the newest picture."""
+    surface_check_seconds: float = Field(10, gt=0)
+    """Time between Outcome model checks of the empty Litter Box (is Poop still there?)."""
+
+
+class OutcomeSettings(_Strict):
+    """Where the Outcome model lives and how `make train` trains it."""
+
+    models: Path = Path("models/outcome")
+    """Folder of the exported models; a relative path is inside the Private Data Store."""
+    runtime: Literal["auto", "cpu", "amd", "nvidia"] = "auto"
+    """ONNX Runtime providers to run the models on (see onnx_session)."""
+    backbone: Literal["mobilenet", "small"] = "mobilenet"
+    """`mobilenet`: MobileNetV3 Small pretrained on ImageNet (downloaded once); `small`: a
+    tiny network learned from scratch."""
+    image_size: int = Field(128, ge=32)
+    """Pictures are resized to this many pixels square."""
+    epochs: int = Field(20, ge=1)
+    batch_size: int = Field(16, ge=1)
+    validation_fraction: float = Field(0.2, ge=0, lt=1)
+    """Share of Visits held out to measure accuracy."""
+    guess_frames_per_visit: int = Field(5, ge=1)
+    """Frames from the middle of each Visit used to learn the Outcome Guess."""
+    timezone: str = "UTC"
+    """IANA time zone of the Litter Box, e.g. `Australia/Melbourne`; the time of day is
+    read in it. Saved with the models, so the server uses the zone they were trained in."""
+
+    @field_validator("timezone")
+    @classmethod
+    def _known_zone(cls, name: str) -> str:
+        try:
+            ZoneInfo(name)
+        except (ValueError, KeyError, OSError):  # ZoneInfoNotFoundError is a KeyError
+            raise ValueError(f"unknown time zone {name!r}") from None
+        return name
+
+
 class Config(_Strict):
     """The whole private config."""
 
@@ -127,6 +176,8 @@ class Config(_Strict):
     quiet_hours: list[QuietHours] = []
     timers: Timers = Timers()
     visits: VisitSettings = VisitSettings()
+    outcome: OutcomeSettings = OutcomeSettings()
+    watcher: WatcherSettings = WatcherSettings()
     # Options for the chosen implementation of each part.
     camera: dict[str, Any] = {}
     detector: dict[str, Any] = {}

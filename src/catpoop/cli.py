@@ -4,8 +4,10 @@ import argparse
 import sys
 from pathlib import Path
 
+from catpoop.communications import command as switches_command
 from catpoop.config import ConfigError, load_config
 from catpoop.history import command as history_command
+from catpoop.outcome import command as outcome_command
 from catpoop.registry import (
     CAMERA,
     COMMUNICATIONS,
@@ -16,7 +18,9 @@ from catpoop.registry import (
     SPEAKER,
     default_registry,
 )
+from catpoop.service import command as service_command
 from catpoop.visits import command as visits_command
+from catpoop.watcher import command as watch_command
 
 
 def _check_config(path: Path | None) -> int:
@@ -51,6 +55,10 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--config", type=Path, help="config file (default: $CATPOOP_CONFIG)")
     history_command.add_command(commands)
     visits_command.add_commands(commands)
+    outcome_command.add_commands(commands)
+    watch_command.add_command(commands)
+    switches_command.add_commands(commands)
+    service_command.add_command(commands)
     args = parser.parse_args(argv)
     if args.command == "check-config":
         return _check_config(args.config)
@@ -58,6 +66,14 @@ def main(argv: list[str] | None = None) -> int:
         return history_command.run(args)
     if args.command in visits_command.COMMANDS:
         return visits_command.run(args)
+    if args.command in outcome_command.COMMANDS:
+        return outcome_command.run(args)
+    if args.command == "watch":
+        return watch_command.run(args)
+    if args.command in switches_command.COMMANDS:
+        return switches_command.run(args)
+    if args.command == "service":
+        return service_command.run(args)
     return 2
 
 
