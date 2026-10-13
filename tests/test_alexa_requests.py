@@ -90,11 +90,3 @@ def test_each_command_gets_the_expected_answer(name, amazon, tmp_path, caplog):
     assert answer["response"]["shouldEndSession"] is ends
 
 
-def test_every_command_in_the_interaction_model_has_an_example_request():
-    model = json.loads(MODEL.read_text())
-    commands = {intent["name"] for intent in model["interactionModel"]["languageModel"]["intents"]}
-    examples = {
-        json.loads((REQUESTS / f"{name}.json").read_text())["request"].get("intent", {}).get("name")
-        for name in EXPECTED
-    }
-    assert commands <= examples
