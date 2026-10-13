@@ -4,9 +4,10 @@ A custom Alexa skill lets the Partner ask about the Litter Box and flip the swit
 
 | Say | Does |
 |---|---|
-| "Alexa, ask litter box is there poop in the box?" | Says whether Poop is in the Litter Box and since when (else when the Cat last visited), and whether Do Not Disturb is on or Pee announcements are off |
-| "Alexa, tell litter box to be quiet for two hours" | Do Not Disturb until then (at most a week), letting through the Urgencies in `[communications] dnd_allow`, like `make dnd FOR=2h` |
-| "Alexa, tell litter box to stop being quiet" | Do Not Disturb off, like `make dnd-off` |
+| "Alexa, ask litter box is there poop in the box?" | Says whether Poop is in the Litter Box and since when (else when the Cat last visited), and whether Do Not Disturb or a quiet switch is on or Pee announcements are off |
+| "Alexa, tell litter box do not disturb cat poo for two hours" (or "no poop news", "shut up about the shit", ...) | Quiet poop until then (at most a week): no Poop, reminders or Poop after Quiet Hours. The Dog at the Poop is still said |
+| "Alexa, tell litter box do not disturb cat pee for an hour" (or "cat pooing", "no wee news", ...) | Quiet visits until then: the Cat going in is not said, Pee included |
+| "Alexa, tell litter box you can talk about poop again" (or "... about pee again") | That quiet switch off |
 | "Alexa, tell litter box to turn off pee announcements" / "...turn on pee announcements" | like `make pee-off` / `make pee-on` |
 
 "Alexa, open litter box" lists these. The sample sentences are in [`alexa/interactionModels/custom/en-US.json`](../alexa/interactionModels/custom/en-US.json); add more there and paste it into the console again.
