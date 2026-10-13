@@ -152,7 +152,11 @@ class Watcher:
         # A Cat coming back after the gap belongs to the next Visit, not the one ending.
         returned = seen and any(isinstance(c, VisitEnded) for c in changes)
         if not returned:
-            self._recorder.add(frame)
+            try:
+                self._recorder.add(frame)
+            except Exception:
+                log.exception("could not record the Visit; it will not be saved")
+                self._discard_recording()
         for change in changes:
             match change:
                 case VisitStarted(first_seen=first):
@@ -182,23 +186,42 @@ class Watcher:
 
     def _start_visit(self, now: datetime, first_seen: float) -> None:
         self._visit_started_at = now
-        self._recorder.start(self._frames_since(first_seen - self._visits.padding_seconds))
+        try:
+            self._recorder.start(self._frames_since(first_seen - self._visits.padding_seconds))
+        except Exception:
+            log.exception("could not start recording the Visit; it will not be saved")
+            self._discard_recording()
         frames = self._frames_since(first_seen)
-        guess = self._outcome_model.guess(frames[-1]) if self._outcome_model else None
+        guess = None
+        if self._outcome_model and frames:
+            try:
+                guess = self._outcome_model.guess(frames[-1])
+            except Exception:
+                log.exception("the Outcome model failed on the Outcome Guess")
         self._tell(obs.VisitStarted(now, frames, guess))
 
     def _end_visit(self, now: datetime, frames: tuple[Frame, ...]) -> None:
         outcome = None
         if self._outcome_model and frames:
-            outcome = self._outcome_model.outcome(frames[-1])
+            try:
+                outcome = self._outcome_model.outcome(frames[-1])
+            except Exception:
+                log.exception("the Outcome model failed on the Visit's Outcome")
         saved = None
         try:
-            saved = self._recorder.save(now).id
+            if self._recorder.recording:
+                saved = self._recorder.save(now).id
         except (OSError, VideoError) as error:
             log.error("could not save the Visit: %s", error)
-            self._recorder.discard()
+            self._discard_recording()
         self._tell(obs.VisitEnded(now, self._visit_started_at or now, frames, outcome, saved))
         self._visit_started_at = None
+
+    def _discard_recording(self) -> None:
+        try:
+            self._recorder.discard()
+        except Exception:
+            log.exception("could not discard the Visit's recording")
 
     def _frames_since(self, seconds: float, after: bool = False) -> tuple[Frame, ...]:
         """Recent frames from `seconds` on (or only later ones with `after`)."""
