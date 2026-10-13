@@ -69,6 +69,7 @@ src/catpoop/
     quiet_hours.py      which Quiet Hours are on at a moment
     switches.py         Do Not Disturb, Quiet Topics and Pee announcements, in switches.json in the state folder
     messages.py         spoken text from the Message templates
+    speaker_queue.py    say texts on one Speaker from its own thread, Urgent first
     command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
   speech/           speech for Google speakers (google extra)
     piper_speech.py     text -> wav on this machine with a Piper voice
@@ -77,6 +78,7 @@ src/catpoop/
   watcher/          the live watcher, `make dev`
     watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
+    background_task.py  run a slow task (pruning the store) off the watcher loop
     command.py          `catpoop watch`, behind the watcher lock
   alexa_skill/      the Alexa skill the watcher serves on /alexa (docs/alexa-skill.md)
     request_verifier.py is the request from Alexa, for our skill, just now (signature, cert chain, timestamp, skill ID)
