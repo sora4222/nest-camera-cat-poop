@@ -85,10 +85,12 @@ def test_a_signed_status_request_is_answered_end_to_end(tmp_path):
             answer = client.post(url, content=body, headers=headers)
             forged = client.post(url, content=body.replace(b"Status", b"Statux"), headers=headers)
             other = client.get(url.removesuffix("/alexa") + "/")
+            docs = client.get(url.removesuffix("/alexa") + "/docs")
     assert answer.status_code == 200
     assert answer.json()["response"]["outputSpeech"]["text"].startswith("Yes, there has been poop")
     assert forged.status_code == 400
     assert other.status_code == 404
+    assert docs.status_code == 404
 
 
 def test_a_port_in_use_is_a_config_error():
