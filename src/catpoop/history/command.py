@@ -12,22 +12,13 @@ from catpoop.config import ConfigError, load_config
 from catpoop.history.clip_store import HistoryClipStore
 from catpoop.history.run import import_history
 from catpoop.interfaces import PortabilityError
-from catpoop.registry import HISTORY_IMPORTER, Registry, default_registry
+from catpoop.registry import HISTORY_IMPORTER, default_registry
 
 IMPORTERS = ["takeout", "portability", "folder"]
 """In the order to try them (see ADR 0001)."""
 
 
-def _registry() -> Registry:
-    """The default registry with the history importers added."""
-    import catpoop.history.folder
-    import catpoop.history.portability
-    import catpoop.history.takeout  # noqa: F401  (registers the importers)
-
-    return default_registry()
-
-
-def add_command(commands: Any) -> None:
+def add_command(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add the `import-history` command to the CLI's subparsers."""
     command = commands.add_parser(
         "import-history", help="copy past camera clips into the Private Data Store"
@@ -50,7 +41,7 @@ def run(args: argparse.Namespace) -> int:
             options["paths"] = [str(path) for path in args.paths]
         if args.job_id:
             options["job_id"] = args.job_id
-        importer = _registry().create(HISTORY_IMPORTER, args.importer, config, options)
+        importer = default_registry().create(HISTORY_IMPORTER, args.importer, config, options)
         counts = import_history(importer, HistoryClipStore(config.paths.private_data_store))
     except (
         ConfigError,
