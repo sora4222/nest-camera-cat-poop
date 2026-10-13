@@ -6,7 +6,9 @@ import pytest
 
 from catpoop.config import VisitSettings
 from catpoop.domain import Frame
+from catpoop.visits.clip_writer import ClipWriter
 from catpoop.visits.store import VisitStore
+from catpoop.visits.video import VideoError
 from catpoop.watcher import recorder as recorder_module
 from catpoop.watcher.recorder import LiveVisitRecorder
 
@@ -57,6 +59,21 @@ def test_saving_a_live_visit_keeps_the_store_under_its_size_limit(tmp_path):
     recorder.save(START + timedelta(minutes=1))
     assert recorder.wait_for_prune(5)
     assert not old.exists()
+
+
+def test_a_writer_that_fails_to_close_is_still_dropped(tmp_path, monkeypatch):
+    temp = tmp_path / "temp"
+    recorder = LiveVisitRecorder(tmp_path / "store", VisitSettings(), temp)
+    recorder.start([frame(0)])
+
+    def broken_close(self):
+        raise VideoError("the encoder broke")
+
+    monkeypatch.setattr(ClipWriter, "close", broken_close)
+    with pytest.raises(VideoError):
+        recorder.discard()
+    assert not recorder.recording
+    assert list(temp.iterdir()) == []
 
 
 def test_saving_returns_without_waiting_for_the_prune(tmp_path, monkeypatch):
