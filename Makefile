@@ -1,4 +1,4 @@
-.PHONY: help setup db dev check format test config import-history export-detector notebook cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off install uninstall
+.PHONY: help setup db migration dev check format test config import-history export-detector notebook cut-visits label add-visit train evaluate dnd dnd-off pee-on pee-off install uninstall
 
 # ONNX Runtime for the detector: cpu (default), amd or nvidia. E.g. `make setup RUNTIME=nvidia`.
 RUNTIME ?= cpu
@@ -22,6 +22,7 @@ endif
 help:
 	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia, EXTRAS=google), create config.toml and .env if missing"
 	@echo "make db      start PostgreSQL in Docker (compose.yaml) for the event log and tests"
+	@echo "make migration MSG=\"...\"  new empty Alembic migration in src/catpoop/migrations/versions"
 	@echo "make dev     run the live watcher (Ctrl+C stops it)"
 	@echo "make install    run the watcher from this checkout as a systemd user service (same RUNTIME, EXTRAS as setup)"
 	@echo "make uninstall  stop and remove that service"
@@ -52,6 +53,11 @@ TEST_DATABASE_URL := postgresql://catpoop:catpoop@127.0.0.1:5432/catpoop
 
 db:
 	docker compose up --detach --wait db
+
+migration:
+	@test -n "$(MSG)" || { echo "Set MSG, e.g. make migration MSG=\"add visits table\""; exit 1; }
+	uv run alembic revision -m "$(MSG)"
+	uv run ruff format src/catpoop/migrations
 
 dev: db
 	$(RUN) catpoop watch

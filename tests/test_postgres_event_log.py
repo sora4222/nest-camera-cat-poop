@@ -1,34 +1,23 @@
-import os
-import uuid
 from datetime import UTC, datetime, timedelta
 
-import psycopg
 import pytest
-from psycopg import sql
-from psycopg.conninfo import make_conninfo
+from postgres_schema import empty_schema, needs_postgres
 
 from catpoop.config import Config, ConfigError
+from catpoop.database import upgrade
 from catpoop.domain import Event, Urgency
 from catpoop.parts.postgres_event_log import URL_ENV, PostgresEventLog
 from catpoop.registry import EVENT_LOG, default_registry
 
 AT = datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
-TEST_URL = os.environ.get("CATPOOP_TEST_DATABASE_URL")
-needs_postgres = pytest.mark.skipif(not TEST_URL, reason="CATPOOP_TEST_DATABASE_URL is not set")
 
 
 @pytest.fixture
 def url():
-    """A database URL whose tables go in a new, empty schema, dropped afterwards."""
-    assert TEST_URL
-    schema = f"test_{uuid.uuid4().hex}"
-    with psycopg.connect(TEST_URL, autocommit=True) as db:
-        db.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
-    try:
-        yield make_conninfo(TEST_URL, options=f"-c search_path={schema}")
-    finally:
-        with psycopg.connect(TEST_URL, autocommit=True) as db:
-            db.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
+    """An empty schema with the migrations applied."""
+    for conninfo in empty_schema():
+        upgrade(conninfo)
+        yield conninfo
 
 
 def events() -> list[Event]:
