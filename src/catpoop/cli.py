@@ -4,6 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from catpoop.alexa_skill import command as alexa_command
 from catpoop.communications import command as switches_command
 from catpoop.config import ConfigError, load_config
 from catpoop.history import command as history_command
@@ -59,6 +60,7 @@ def main(argv: list[str] | None = None) -> int:
     watch_command.add_command(commands)
     switches_command.add_commands(commands)
     service_command.add_command(commands)
+    alexa_command.add_command(commands)
     args = parser.parse_args(argv)
     if args.command == "check-config":
         return _check_config(args.config)
@@ -74,6 +76,8 @@ def main(argv: list[str] | None = None) -> int:
         return switches_command.run(args)
     if args.command == "service":
         return service_command.run(args)
+    if args.command == "alexa-tunnel":
+        return alexa_command.run(args)
     return 2
 
 

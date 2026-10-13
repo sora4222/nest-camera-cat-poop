@@ -21,7 +21,7 @@ src/catpoop/
   database.py       run the Alembic migrations on the PostgreSQL database
   migrations/       Alembic migrations, one file per change in versions/ (`make migration MSG=...`)
   domain.py         glossary words as types: Urgency, Presence, Outcome, OutcomeScores, Frame, Detection, Event
-  interfaces.py     small Protocols for every swappable part
+  interfaces.py     small Protocols for every swappable part and external service (with their errors)
   registry.py       slots, the registry, and build_parts (config names -> parts)
   watcher_lock.py   one live watcher per machine
   poop_reminders.py when Poop Reminders are due (1, 2, 4, 8... minutes)
@@ -38,7 +38,6 @@ src/catpoop/
     options.py          read importer options
     takeout.py          importer "takeout" (Google Takeout archives)
     portability.py      importer "portability" (Data Portability API export)
-    portability_api.py  PortabilityApi interface, ArchiveState, PortabilityError
     portability_http.py the real Data Portability API client (httpx)
     folder.py           importer "folder" (clips saved by hand)
   visits/           cut clips into Visits, label them, keep the dataset (docs/visits.md)
@@ -71,6 +70,7 @@ src/catpoop/
     quiet_hours.py      which Quiet Hours are on at a moment
     switches.py         Do Not Disturb, Quiet Topics and Pee announcements, in switches.json in the state folder
     messages.py         spoken text from the Message templates
+    speaker_queue.py    say texts on one Speaker from its own thread, Urgent first
     command.py          `catpoop dnd`, `pee-announcements` (`make dnd`, `dnd-off`, `pee-on`, `pee-off`)
   speech/           speech for Google speakers (google extra)
     piper_speech.py     text -> wav on this machine with a Piper voice
@@ -79,7 +79,25 @@ src/catpoop/
   watcher/          the live watcher, `make dev`
     watcher.py          camera -> detector -> Visits -> event rules -> communications, Camera Offline, Login Expired
     recorder.py         record each live Visit and save it for labeling
+    background_task.py  run a slow task (pruning the store) off the watcher loop
     command.py          `catpoop watch`, behind the watcher lock
+  alexa_skill/      the Alexa skill the watcher serves on /alexa (docs/alexa-skill.md)
+    request_verifier.py is the request from Alexa, for our skill, just now (signature, cert chain, timestamp, skill ID)
+    certificates.py     fetch Alexa's signing chain from Amazon's S3 (httpx)
+    durations.py        read AMAZON.DURATION values such as PT2H
+    spoken_time.py      a time as Alexa should say it ("tomorrow at 7 AM")
+    poop_status.py      is there Poop in the Litter Box, from the event log
+    skill.py            intents -> switches and spoken answers
+    body_limit.py       refuse request bodies over a limit (413)
+    endpoint.py         POST /alexa only: verify, then answer (FastAPI router)
+    run.py              build the app; uvicorn runs it on a thread beside the watcher
+    tunnel.py           Cloudflare Tunnel or Tailscale Funnel setup for /alexa only
+    command.py          `catpoop alexa-tunnel` (`make alexa-tunnel`)
+  alexa_smart_home/ the Smart Home skill: virtual sensors that fire Alexa routines (docs/alexa-smart-home.md)
+    sensors.py          one motion sensor per message kind; which kind a text is
+    directives.py       answer Discovery, AcceptGrant and ReportState
+    grants.py           Login with Amazon tokens for sending events (state folder)
+    endpoint.py         POST /alexa/smart-home from our Lambda, with a shared secret
   service/          run the watcher as a systemd user service, `make install` (docs/service.md)
     settings.py         what the service runs: checkout, uv, op, extras, secrets file
     unit_file.py        the unit file text, escaped for systemd
@@ -99,10 +117,12 @@ src/catpoop/
     standard_communications.py  communications "standard" (the one gate for every Announcement)
     nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
+    alexa_requests/ one example Alexa request per skill command (test_alexa_requests.py)
 scripts/pr_size.py  CI check: at most 500 changed code lines per pull request
 notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
   export_toy_model_to_onnx.ipynb  a toy Keras model -> ONNX, step by step
 docs/               setup, configuration, ADRs
+alexa/              the Alexa skill's interaction model (paste into the developer console)
 ```
 
 ## Swappable parts

@@ -8,6 +8,7 @@ Watches the Litter Box through a Nest camera, works out the Outcome of each Visi
 - [Cutting clips into Visits and labeling them](docs/visits.md)
 - [Training the Outcome model](docs/outcome-model.md)
 - [Running as a service](docs/service.md): `make install`, logs, restart, updates
+- [Alexa skill](docs/alexa-skill.md): ask about Poop, Do Not Disturb and Pee announcements by voice
 - [Code layout and dev rules](CONTRIBUTE.md)
 - [Glossary](GLOSSARY.md): the words used in code and docs
 - [Decisions](docs/adr/)

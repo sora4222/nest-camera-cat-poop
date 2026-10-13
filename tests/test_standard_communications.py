@@ -1,4 +1,5 @@
 import logging
+import threading
 from datetime import UTC, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -9,6 +10,7 @@ from fake_clock import FakeClock
 from catpoop.communications.switches import Switches
 from catpoop.config import Config, ConfigError, Household, QuietHours, load_config
 from catpoop.domain import Event, Presence, Urgency
+from catpoop.interfaces import ResumesPoop
 from catpoop.parts.standard_communications import (
     CommunicationOptions,
     RoutedSpeaker,
@@ -44,6 +46,17 @@ class FakeSpeaker:
         self.said.append(text)
 
 
+class HangingSpeaker:
+    """A speaker that does not answer (a Google speaker that is off) until `answer` is set."""
+
+    def __init__(self) -> None:
+        self.name = "Hanging"
+        self.answer = threading.Event()
+
+    def say(self, text: str) -> None:
+        self.answer.wait(5)
+
+
 class FakePresence:
     def __init__(self, presence: Presence = Presence.UNKNOWN) -> None:
         self.presence = presence
@@ -74,6 +87,7 @@ class Setup:
 
     def event(self, kind, urgency=Urgency.NORMAL, announce=True, **details) -> None:
         self.handler.handle(Event(kind, urgency, self.clock.now(), details, announce))
+        assert self.handler.wait_until_said(5)
 
     def wait(self, seconds: float, every: float = 60) -> None:
         """Move the clock on, ticking the handler like the watcher does."""
@@ -81,6 +95,7 @@ class Setup:
         while self.clock.now() < end:
             self.clock.advance(every)
             self.handler.tick(self.clock.now())
+        assert self.handler.wait_until_said(5)
 
 
 def test_an_event_is_said_on_every_speaker_from_its_message_template(tmp_path):
@@ -330,11 +345,49 @@ def test_end_of_quiet_hours_is_not_retried_when_announcing_it_fails(tmp_path):
     assert setup.speaker.said == []
 
 
+def test_a_hanging_speaker_holds_up_neither_the_caller_nor_the_others(tmp_path):
+    hanging, working = HangingSpeaker(), FakeSpeaker("Working")
+    setup = Setup(
+        tmp_path,
+        speakers=[
+            RoutedSpeaker(hanging, frozenset(Urgency)),
+            RoutedSpeaker(working, frozenset(Urgency)),
+        ],
+    )
+    setup.handler.handle(Event("poop", Urgency.NORMAL, setup.clock.now()))
+    assert not setup.handler.wait_until_said(0.1)
+    assert working.said == ["Cat left poop."]
+    hanging.answer.set()
+    assert setup.handler.wait_until_said(5)
+
+
+def test_poop_known_from_before_a_restart_is_said_at_the_end_of_quiet_hours(tmp_path):
+    setup = Setup(tmp_path, quiet=[NIGHTS])
+    setup.clock.advance(3 * 3600)
+    setup.handler.resume_poop(START, setup.clock.now())
+    setup.wait(9 * 3600)
+    assert setup.speaker.said == ["There is poop from the night."]
+
+
+def test_standard_communications_resume_poop_at_a_restart(tmp_path):
+    assert isinstance(Setup(tmp_path).handler, ResumesPoop)
+
+
+def test_poop_from_quiet_hours_is_said_when_the_restart_is_after_them(tmp_path):
+    setup = Setup(tmp_path, quiet=[NIGHTS])
+    night_poop = START + timedelta(hours=3)
+    setup.clock.advance(12 * 3600)  # restart at 08:00, Quiet Hours over
+    setup.handler.resume_poop(night_poop, setup.clock.now())
+    setup.wait(60)
+    assert setup.speaker.said == ["There is poop from the night."]
+
+
 def test_text_no_speaker_could_say_is_not_held_back_as_said(tmp_path, caplog):
     setup = Setup(tmp_path, repeat_seconds=30)
     setup.speaker.fails = True
-    setup.event("poop")
-    assert "said 'Cat left poop.'" not in caplog.text
+    with caplog.at_level(logging.INFO):
+        setup.event("poop")
+    assert "no Speaker said it" in caplog.text
     setup.speaker.fails = False
     setup.clock.advance(5)
     setup.event("poop")

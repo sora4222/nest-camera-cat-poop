@@ -9,12 +9,14 @@ from fake_clock import FakeClock
 from catpoop import observations as obs
 from catpoop.config import Config, ConfigError, Timers, VisitSettings, load_config
 from catpoop.domain import Detection, Event, Frame, Outcome, OutcomeScores, Presence, Urgency
+from catpoop.interfaces import ResumesPoop
 from catpoop.parts.standard_event_rules import RuleOptions, StandardEventRules
 from catpoop.registry import EVENT_RULES, default_registry
 
 START = datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
 VISITS = VisitSettings(litter_box=(0.5, 0.5, 1.0, 1.0))
 IN_BOX, OUTSIDE = (0.6, 0.6, 0.8, 0.8), (0.0, 0.0, 0.2, 0.2)
+STANDING_OVER_BOX = (0.3, 0.0, 0.7, 0.6)  # its middle is above the Litter Box
 
 
 def scores(best: Outcome) -> OutcomeScores:
@@ -157,13 +159,24 @@ def test_poop_is_gone_when_a_person_was_at_the_box_and_poop_is_no_longer_seen():
     assert feed.wait(120) == []
 
 
-def test_poop_still_seen_after_the_person_left_keeps_the_reminders():
-    feed = Feed()
+def test_poop_still_seen_a_while_after_the_person_left_keeps_the_reminders():
+    feed = Feed(scoop_settle_seconds=120)
     feed.visit(None, Outcome.POOP)
     feed.seen("person")
-    assert feed.seen(surface=Outcome.POOP) == []
+    feed.clock.advance(120)
+    assert "poop_gone" not in feed.kinds(feed.seen(surface=Outcome.POOP))
     assert feed.seen(surface=Outcome.NOTHING) == []  # needs a person at the box again
     assert len(feed.wait(10)) > 0
+
+
+def test_poop_scored_just_after_the_person_left_does_not_undo_their_visit():
+    feed = Feed(scoop_settle_seconds=120)
+    feed.visit(None, Outcome.POOP)
+    feed.seen("person")
+    feed.clock.advance(10)
+    assert feed.seen(surface=Outcome.POOP) == []  # litter still settling
+    feed.clock.advance(100)
+    assert feed.kinds(feed.seen(surface=Outcome.NOTHING)) == ["poop_gone"]
 
 
 def test_a_person_away_from_the_box_does_not_count():
@@ -171,6 +184,13 @@ def test_a_person_away_from_the_box_does_not_count():
     feed.visit(None, Outcome.POOP)
     feed.seen("person", where=OUTSIDE)
     assert feed.seen(surface=Outcome.NOTHING) == []
+
+
+def test_a_standing_person_reaching_into_the_box_counts():
+    feed = Feed()
+    feed.visit(None, Outcome.POOP)
+    feed.seen("person", where=STANDING_OVER_BOX)
+    assert feed.kinds(feed.seen(surface=Outcome.NOTHING)) == ["poop_gone"]
 
 
 def test_dog_at_poop_is_urgent_and_said_once_per_approach():
@@ -266,5 +286,33 @@ def test_example_config_builds_the_standard_rules_and_uses_the_postgres_log(tmp_
     registry = default_registry()
     rules = registry.create(EVENT_RULES, config.parts.event_rules, config, config.event_rules)
     assert isinstance(rules, StandardEventRules)
+
     assert config.parts.event_log == "postgres"
     assert config.event_log == {}
+
+
+def test_poop_known_from_before_a_restart_can_be_found_gone():
+    feed = Feed(timers=Timers(poop_reminder_max_count=0))
+    feed.rules.resume_poop(START, START)
+    feed.seen("person")
+    feed.clock.advance(10)
+    assert feed.kinds(feed.seen(surface=Outcome.NOTHING)) == ["poop_gone"]
+
+
+def test_poop_known_from_before_a_restart_keeps_dog_at_poop():
+    feed = Feed(timers=Timers(poop_reminder_max_count=0))
+    feed.rules.resume_poop(START, START)
+    assert feed.kinds(feed.seen("dog")) == ["dog_at_poop"]
+
+
+def test_reminders_after_a_restart_carry_on_without_repeating_past_ones():
+    feed = Feed()
+    feed.clock.advance(5 * 60)
+    feed.rules.resume_poop(START, feed.clock.now())
+    reminders = feed.wait(60)
+    assert [r.details["number"] for r in reminders] == ["4", "5", "6"]
+    assert [round((r.at - START).total_seconds() / 60) for r in reminders] == [8, 16, 32]
+
+
+def test_standard_event_rules_resume_poop_at_a_restart():
+    assert isinstance(Feed().rules, ResumesPoop)
