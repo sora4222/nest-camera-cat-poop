@@ -25,7 +25,7 @@ class Skill:
         self.fail = fail
         self.requests: list[dict] = []
 
-    def answer(self, request: dict) -> dict:
+    def respond(self, request: dict) -> dict:
         if self.fail:
             raise RuntimeError("boom")
         self.requests.append(request)
