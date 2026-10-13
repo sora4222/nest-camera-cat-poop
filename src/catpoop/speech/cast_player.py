@@ -43,7 +43,7 @@ def find_cast(
     Discovery keeps running until the result is closed: the cast resolves its address
     through discovery's Zeroconf when it connects and when it reconnects.
     """
-    import pychromecast
+    import pychromecast  # noqa: PLC0415  (only the google extra installs it)
 
     casts, browser = pychromecast.get_listed_chromecasts(
         friendly_names=[device],
