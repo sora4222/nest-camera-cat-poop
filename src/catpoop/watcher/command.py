@@ -6,12 +6,12 @@ import sys
 from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
-from typing import Any
 
 from catpoop.clock import Clock, SystemClock
 from catpoop.config import Config, ConfigError, PartKind, load_config
 from catpoop.interfaces import OutcomeModel
 from catpoop.outcome.model_files import ModelFiles, ModelInfoError
+from catpoop.outcome.onnx_outcome import load_outcome_model
 from catpoop.registry import (
     CAMERA,
     DETECTOR,
@@ -33,7 +33,7 @@ from catpoop.watcher_lock import (
 log = logging.getLogger(__name__)
 
 
-def add_command(commands: Any) -> None:
+def add_command(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add `watch` to the CLI's subparsers."""
     watch = commands.add_parser("watch", help="watch the Litter Box live until stopped")
     watch.add_argument("--config", type=Path, help="config file (default: $CATPOOP_CONFIG)")
@@ -90,8 +90,6 @@ def _outcome_model(config: Config) -> OutcomeModel | None:
     """The trained Outcome model, or None (with a warning) if there is none yet."""
     files = ModelFiles.in_store(config.paths.private_data_store, config.outcome.models)
     try:
-        from catpoop.outcome.onnx_outcome import load_outcome_model
-
         return load_outcome_model(files, config.outcome.runtime)
     except ModelInfoError as error:
         log.warning("no Outcome model, so no Outcome Guess or Outcome: %s", error)
