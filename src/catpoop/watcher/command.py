@@ -13,7 +13,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from catpoop.alexa_skill.poop_status import litter_box_status
-from catpoop.alexa_skill.run import alexa_skill_running
+from catpoop.alexa_skill.run import alexa_app, serve_in_background
 from catpoop.clock import Clock, SystemClock
 from catpoop.config import Config, ConfigError, PartKind, load_config
 from catpoop.interfaces import EventLog, OutcomeModel, ResumesPoop
@@ -77,8 +77,10 @@ def start_watcher(
                 EVENT_LOG, config.parts.event_log, config, config.part_options("event_log")
             )
             env = os.environ if environ is None else environ
-            with alexa_skill_running(config, event_log, clock, env):
-                _watcher(config, registry, clock, event_log).run(stop)
+            app = alexa_app(config, event_log, clock, env)
+            if app is not None:
+                serve_in_background(app, config.alexa_skill)
+            _watcher(config, registry, clock, event_log).run(stop)
     except (WatcherAlreadyRunning, UnsafeLockPath) as error:
         print(error, file=sys.stderr)
         return 1

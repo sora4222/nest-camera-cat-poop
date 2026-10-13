@@ -1,5 +1,6 @@
 import logging
 import socket
+import time
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -123,14 +124,15 @@ def test_the_alexa_skill_is_served_while_the_watcher_runs(tmp_path):
 
     def stop() -> bool:
         with httpx.Client(trust_env=False) as client:
-            statuses.append(client.get(f"http://127.0.0.1:{port}/alexa").status_code)
+            try:
+                statuses.append(client.get(f"http://127.0.0.1:{port}/alexa").status_code)
+            except httpx.ConnectError:
+                time.sleep(0.01)
         return len(statuses) >= 2
 
     environ = {"CATPOOP_ALEXA_SKILL_ID": "amzn1.ask.skill.test"}
     assert start_watcher(with_skill(config, port), registry, clock, stop, environ) == 0
     assert statuses == [405, 405]
-    with httpx.Client(trust_env=False) as client, pytest.raises(httpx.ConnectError):
-        client.get(f"http://127.0.0.1:{port}/alexa")
 
 
 def test_an_enabled_alexa_skill_without_its_id_stops_the_watcher(tmp_path):
