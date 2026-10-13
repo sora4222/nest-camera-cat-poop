@@ -10,9 +10,8 @@ from catpoop import observations as obs
 from catpoop.config import Config, ConfigError, Timers, VisitSettings, load_config
 from catpoop.domain import Detection, Event, Frame, Outcome, OutcomeScores, Presence, Urgency
 from catpoop.interfaces import ResumesPoop
-from catpoop.parts.sqlite_event_log import SqliteEventLog
 from catpoop.parts.standard_event_rules import RuleOptions, StandardEventRules
-from catpoop.registry import EVENT_LOG, EVENT_RULES, default_registry
+from catpoop.registry import EVENT_RULES, default_registry
 
 START = datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
 VISITS = VisitSettings(litter_box=(0.5, 0.5, 1.0, 1.0))
@@ -262,14 +261,15 @@ def test_standard_event_rules_are_built_from_config(tmp_path):
         registry.create(EVENT_RULES, "standard", config, {"announce_pea": False})
 
 
-def test_example_config_builds_the_standard_rules_and_sqlite_log(tmp_path, monkeypatch):
+def test_example_config_builds_the_standard_rules_and_uses_the_postgres_log(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
     config = load_config(Path(__file__).parents[1] / "config.example.toml")
     registry = default_registry()
     rules = registry.create(EVENT_RULES, config.parts.event_rules, config, config.event_rules)
     assert isinstance(rules, StandardEventRules)
-    event_log = registry.create(EVENT_LOG, config.parts.event_log, config, config.event_log)
-    assert isinstance(event_log, SqliteEventLog)
+
+    assert config.parts.event_log == "postgres"
+    assert config.event_log == {}
 
 
 def test_poop_known_from_before_a_restart_can_be_found_gone():
