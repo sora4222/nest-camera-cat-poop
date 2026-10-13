@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 
 from catpoop.domain import Frame, OutcomeScores
+from catpoop.onnx_session import open_session
 from catpoop.outcome.features import prepare_image, time_features
 from catpoop.outcome.model_files import ModelFiles, ModelInfo, ModelInfoError, load_model_info
 
@@ -43,8 +44,6 @@ class OnnxOutcomeModel:
 
 def load_outcome_model(files: ModelFiles, runtime: str) -> OnnxOutcomeModel:
     """Open the Outcome models in `files` on the providers `runtime` asks for (see onnx_session)."""
-    from catpoop.onnx_session import open_session
-
     info = load_model_info(files)
     for path in (files.outcome, files.guess):
         if not path.is_file():
