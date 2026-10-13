@@ -5,7 +5,7 @@ CI (`.github/workflows/ci.yml`) runs `make check`, `make test` and `scripts/pr_s
 
 ## Running the live watcher
 
-`make dev` runs the live watcher on this machine until Ctrl+C. Only one runs per user (see [setup](docs/setup.md#one-watcher-per-machine)).
+`make dev` starts PostgreSQL in Docker (`make db`, for the event log) when .env points at it, and runs the live watcher on this machine until Ctrl+C. `make test` uses that database too when Docker is there; without it the database tests are skipped. Only one runs per user (see [setup](docs/setup.md#one-watcher-per-machine)).
 
 It keeps taking the newest picture from the camera and runs the pet detector on it. When the Cat has stayed in the Litter Box for a moment a Visit starts, and it ends once the Cat has been gone for a while. Each Visit is recorded as a clip and saved for labeling, and the Outcome model guesses what it left behind. The event rules turn all of this, and camera problems, into Events in the event log.
 
@@ -93,7 +93,7 @@ src/catpoop/
     voice_monkey_speaker.py  speaker kind "voice_monkey" (Alexa through the Voice Monkey announce API)
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
     standard_event_rules.py  event_rules "standard" (Visits, Poop Reminders, Dog at Poop, camera problems)
-    sqlite_event_log.py   event_log "sqlite" (SQLite file in the user's state folder)
+    postgres_event_log.py event_log "postgres" (PostgreSQL, URL in .env; `make db` in Docker)
     standard_communications.py  communications "standard" (the one gate for every Announcement)
     nest_camera.py        camera "nest" (googlenestcam live stream)
 tests/              one test file per module; fakes only
