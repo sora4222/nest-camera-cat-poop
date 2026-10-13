@@ -10,7 +10,6 @@ from datetime import datetime
 from catpoop.interfaces import EventLog
 
 LOOK_BACK = 2000
-"""Events read back; older Poop than this (days of Visits and reminders) is not known."""
 
 
 @dataclass(frozen=True)
