@@ -46,12 +46,14 @@ def test_a_slot_only_sample_is_alone_in_its_intent():
 
 
 NEWS_WORDS = ("news", "announcements", "updates", "alerts", "notifications", "messages")
+LIKE_PEE_SWITCH = "pee announcements back on"  # sounds like PeeAnnouncementsOnIntent
 
 
 def test_every_news_phrase_also_works_with_announcements_and_similar_words():
     for intent in language_model()["intents"]:
         samples = set(intent["samples"])
         for sample in samples:
-            if re.search(r"\bnews\b", sample) and "pee news back on" not in sample:
+            if re.search(r"\bnews\b", sample):
                 for word in NEWS_WORDS:
-                    assert re.sub(r"\bnews\b", word, sample) in samples, (intent["name"], word)
+                    other = re.sub(r"\bnews\b", word, sample)
+                    assert other in samples or other == LIKE_PEE_SWITCH, (intent["name"], other)
