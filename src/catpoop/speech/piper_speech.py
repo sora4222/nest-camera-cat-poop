@@ -38,6 +38,6 @@ def load_piper(model: Path, lead_in_seconds: float = 0.5) -> PiperSpeech:
     """Load the Piper voice `model` (.onnx, with its .onnx.json next to it) on the CPU."""
     if not model.is_file():
         raise FileNotFoundError(f"Piper voice {model} not found")
-    from piper import PiperVoice
+    from piper import PiperVoice  # noqa: PLC0415  (only the google extra installs it)
 
     return PiperSpeech(PiperVoice.load(model), lead_in_seconds)
