@@ -71,6 +71,6 @@ def test_poop_and_visits_go_quiet_separately_until_their_end(tmp_path):
 
 def test_a_broken_quiet_time_counts_as_not_quiet(tmp_path, caplog):
     path = tmp_path / "switches.json"
-    path.write_text('{"quiet": {"poop": "soon"}}')
+    path.write_text('{"quiet_poop": "soon"}')
     assert Switches(path).quiet_until("poop", NOW) is None
     assert "quiet" in caplog.text
