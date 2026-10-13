@@ -5,8 +5,8 @@ import httpx
 import pytest
 
 from catpoop.config import ConfigError
-from catpoop.history.portability_api import ArchiveState, PortabilityError
 from catpoop.history.portability_http import PortabilityHttpApi
+from catpoop.interfaces import ArchiveState, PortabilityError
 
 API = "https://dataportability.googleapis.com/v1"
 
