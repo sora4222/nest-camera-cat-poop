@@ -87,3 +87,11 @@ def _create(config: Config, options: Mapping[str, Any]) -> PostgresEventLog:
         return PostgresEventLog(url)
     except psycopg.OperationalError as error:
         raise ConfigError(f"event log 'postgres': cannot connect: {error}") from None
+
+
+@DEFAULT.part(EVENT_LOG, "sqlite")
+def _replaced(config: Config, options: Mapping[str, Any]) -> PostgresEventLog:
+    raise ConfigError(
+        'event log "sqlite" was replaced: in config.toml set event_log = "postgres" and remove '
+        f"[event_log] path, then set {URL_ENV} in .env (`make db` starts one in Docker)"
+    )

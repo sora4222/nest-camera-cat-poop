@@ -5,7 +5,7 @@ CI (`.github/workflows/ci.yml`) runs `make check`, `make test` and `scripts/pr_s
 
 ## Running the live watcher
 
-`make dev` starts PostgreSQL in Docker (`make db`, for the event log) and runs the live watcher on this machine until Ctrl+C. `make test` uses that database too when Docker is there; without it the database tests are skipped. Only one runs per user (see [setup](docs/setup.md#one-watcher-per-machine)).
+`make dev` starts PostgreSQL in Docker (`make db`, for the event log) when .env points at it, and runs the live watcher on this machine until Ctrl+C. `make test` uses that database too when Docker is there; without it the database tests are skipped. Only one runs per user (see [setup](docs/setup.md#one-watcher-per-machine)).
 
 It keeps taking the newest picture from the camera and runs the pet detector on it. When the Cat has stayed in the Litter Box for a moment a Visit starts, and it ends once the Cat has been gone for a while. Each Visit is recorded as a clip and saved for labeling, and the Outcome model guesses what it left behind. The event rules turn all of this, and camera problems, into Events in the event log.
 

@@ -92,3 +92,8 @@ def test_a_database_it_cannot_reach_is_a_config_error(monkeypatch):
     monkeypatch.setenv(URL_ENV, "postgresql://catpoop@127.0.0.1:1/catpoop?connect_timeout=2")
     with pytest.raises(ConfigError, match="event log"):
         default_registry().create(EVENT_LOG, "postgres", config(), {})
+
+
+def test_an_old_sqlite_config_says_how_to_move_to_postgres():
+    with pytest.raises(ConfigError, match=r'event_log = "postgres".*' + URL_ENV):
+        default_registry().create(EVENT_LOG, "sqlite", config(), {"path": "events.sqlite"})
