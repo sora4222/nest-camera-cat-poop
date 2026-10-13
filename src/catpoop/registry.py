@@ -87,10 +87,11 @@ DEFAULT = Registry()
 
 def default_registry() -> Registry:
     """`DEFAULT`, with every built-in part registered."""
-    import catpoop.history.folder
-    import catpoop.history.portability
-    import catpoop.history.takeout
-    import catpoop.parts  # noqa: F401  (registers the built-ins)
+    # Local: the parts import this module to register themselves.
+    import catpoop.history.folder  # noqa: PLC0415
+    import catpoop.history.portability  # noqa: PLC0415
+    import catpoop.history.takeout  # noqa: PLC0415
+    import catpoop.parts  # noqa: F401, PLC0415  (registers the built-ins)
 
     return DEFAULT
 
