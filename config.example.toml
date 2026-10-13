@@ -7,7 +7,7 @@
 camera = "nest"
 detector = "onnx"
 event_rules = "standard"
-event_log = "sqlite"
+event_log = "postgres"
 presence = "off"
 communications = "standard"
 
@@ -136,10 +136,8 @@ dog_label = "dog"       # detector labels of the Dog and of people
 person_label = "person"
 dog_gone_seconds = 60   # the Dog must be away this long before Dog at Poop is said again
 
-# Event log "sqlite": a small database on the server.
+# Event log "postgres": a PostgreSQL table. Its URL is CATPOOP_DATABASE_URL in .env.
 [event_log]
-# A relative path is inside $XDG_STATE_HOME/catpoop (else ~/.local/state/catpoop).
-path = "events.sqlite"
 
 # Communications handler "standard".
 [communications]
