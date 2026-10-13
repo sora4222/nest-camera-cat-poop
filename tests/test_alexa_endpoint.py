@@ -3,14 +3,12 @@ import logging
 import threading
 import time
 
-import httpx
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from catpoop.alexa_skill.endpoint import MAX_BODY, alexa_router
+from catpoop.alexa_skill.endpoint import MAX_BODY, router
 from catpoop.alexa_skill.request_verifier import RequestRejected
-from catpoop.alexa_skill.server import serving
 
 GOOD = {"SignatureCertChainUrl": "url", "Signature-256": "ok"}
 
@@ -40,7 +38,8 @@ class Skill:
 
 def client(verifier: Verifier, skill: Skill) -> TestClient:
     app = FastAPI()
-    app.include_router(alexa_router(verifier, skill))
+    app.state.verifier, app.state.skill = verifier, skill
+    app.include_router(router)
     return TestClient(app)
 
 
@@ -111,12 +110,11 @@ class SlowSkill(Skill):
 
 def test_the_skill_answers_one_request_at_a_time():
     skill = SlowSkill()
-    app = FastAPI()
-    app.include_router(alexa_router(Verifier(), skill))
-    with serving(app, "127.0.0.1", 0) as (host, port):
-        url = f"http://{host}:{port}/alexa"
-        kwargs = {"content": b"{}", "headers": GOOD, "trust_env": False}
-        posts = [threading.Thread(target=httpx.post, args=(url,), kwargs=kwargs) for _ in range(3)]
+    with client(Verifier(), skill) as alexa:
+        kwargs = {"content": b"{}", "headers": GOOD}
+        posts = [
+            threading.Thread(target=alexa.post, args=("/alexa",), kwargs=kwargs) for _ in range(3)
+        ]
         for post in posts:
             post.start()
         for post in posts:
