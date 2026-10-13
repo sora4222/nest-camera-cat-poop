@@ -1,29 +1,29 @@
-"""Run the Alexa skill endpoint in a background thread while the watcher runs.
+"""Build the Alexa skill app and run it with uvicorn on a background thread.
 
 It shares the watcher's event log (for the status) and the switches file (for Do Not
 Disturb and Pee announcements). Off unless `[alexa_skill] enabled = true`.
 """
 
 import logging
-from collections.abc import Generator, Mapping
-from contextlib import ExitStack, contextmanager
+import threading
+from collections.abc import Mapping
 from zoneinfo import ZoneInfo
 
+import uvicorn
 from cryptography.x509.verification import Store
 from fastapi import FastAPI
 
 from catpoop.alexa_skill.certificates import HttpCertificates
-from catpoop.alexa_skill.endpoint import PATH, alexa_router
+from catpoop.alexa_skill.endpoint import PATH, router
 from catpoop.alexa_skill.request_verifier import RequestVerifier
-from catpoop.alexa_skill.server import serving
 from catpoop.alexa_skill.skill import AlexaSkill
 from catpoop.alexa_smart_home.directives import SmartHome
-from catpoop.alexa_smart_home.endpoint import smart_home_router
+from catpoop.alexa_smart_home.endpoint import router as smart_home_router
 from catpoop.alexa_smart_home.grants import Grants
 from catpoop.alexa_smart_home.sensors import sensors
 from catpoop.clock import Clock
 from catpoop.communications.switches import Switches
-from catpoop.config import Config, ConfigError
+from catpoop.config import AlexaSkillSettings, Config, ConfigError
 from catpoop.interfaces import CertificateSource, EventLog
 
 SKILL_ID_ENV = "CATPOOP_ALEXA_SKILL_ID"
@@ -31,8 +31,7 @@ SMART_HOME_SECRET_ENV = "CATPOOP_ALEXA_SMART_HOME_SECRET"
 log = logging.getLogger(__name__)
 
 
-@contextmanager
-def alexa_skill_running(
+def alexa_app(
     config: Config,
     event_log: EventLog,
     clock: Clock,
@@ -42,12 +41,10 @@ def alexa_skill_running(
     certificates: CertificateSource | None = None,
     trusted: Store | None = None,
     switches: Switches | None = None,
-) -> Generator[str | None]:
-    """Serve the skill inside the `with`; yields its local URL, or None when it is off."""
-    settings = config.alexa_skill
-    if not settings.enabled:
-        yield None
-        return
+) -> FastAPI | None:
+    """The skill's FastAPI app, or None when `[alexa_skill]` is off."""
+    if not config.alexa_skill.enabled:
+        return None
     skill_id = environ.get(SKILL_ID_ENV, "").strip()
     if not skill_id:
         raise ConfigError(f"[alexa_skill] is enabled but {SKILL_ID_ENV} is not set (in .env)")
@@ -60,22 +57,26 @@ def alexa_skill_running(
         cat=config.household.cat,
     )
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
-    app.include_router(alexa_router(verifier, skill))
-    if settings.smart_home:
+    app.state.verifier, app.state.skill = verifier, skill
+    app.include_router(router)
+    if config.alexa_skill.smart_home:
         secret = environ.get(SMART_HOME_SECRET_ENV, "").strip()
         if not secret:
             raise ConfigError(
                 f"[alexa_skill] smart_home is on but {SMART_HOME_SECRET_ENV} is not set"
             )
         grants = grants or Grants.from_env(environ, clock)
-        home = SmartHome(sensors(config.messages), grants, clock)
-        app.include_router(smart_home_router(secret, home))
-    with ExitStack() as stack:
-        try:
-            host, port = stack.enter_context(serving(app, settings.host, settings.port))
-        except OSError as error:
-            where = f"{settings.host}:{settings.port}"
-            raise ConfigError(f"[alexa_skill] cannot listen on {where}: {error}") from None
-        url = f"http://{host}:{port}{PATH}"
-        log.info("Alexa skill endpoint at %s (tunnel: %s)", url, settings.tunnel)
-        yield url
+        app.state.smart_home_secret = secret
+        app.state.smart_home = SmartHome(sensors(config.messages), grants, clock)
+        app.include_router(smart_home_router)
+    return app
+
+
+def serve_in_background(app: FastAPI, settings: AlexaSkillSettings) -> None:
+    """Run `app` with uvicorn on a daemon thread; it ends with the watcher's process."""
+    where = {"host": settings.host, "port": settings.port}
+    threading.Thread(
+        target=uvicorn.run, args=(app,), kwargs=where | {"log_config": None}, daemon=True
+    ).start()
+    url = f"http://{settings.host}:{settings.port}{PATH}"
+    log.info("Alexa skill endpoint at %s (tunnel: %s)", url, settings.tunnel)
