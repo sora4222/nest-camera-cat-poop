@@ -1,6 +1,8 @@
 import ipaddress
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from threading import Barrier
 
 import httpx
 import pytest
@@ -59,20 +61,15 @@ def test_close_without_an_offer_is_fine(clock):
 
 
 def test_speakers_offering_at_once_start_one_server(clock, monkeypatch):
-    from concurrent.futures import ThreadPoolExecutor
-    from threading import Barrier
-
-    from catpoop.speech import audio_server as module
-
     built = []
 
-    class SlowToBind(module.ThreadingHTTPServer):
+    class SlowToBind(audio_server.ThreadingHTTPServer):
         def __init__(self, *args, **kwargs):
             built.append(self)
             time.sleep(0.05)  # widen the gap between the check and the bind
             super().__init__(*args, **kwargs)
 
-    monkeypatch.setattr(module, "ThreadingHTTPServer", SlowToBind)
+    monkeypatch.setattr(audio_server, "ThreadingHTTPServer", SlowToBind)
     server = AudioServer("127.0.0.1", port=0, clock=clock)
     together = Barrier(4)
 
