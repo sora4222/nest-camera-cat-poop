@@ -37,27 +37,27 @@ class Skill(Protocol):
         ...
 
 
-def alexa_router(verifier: Verifier, skill: Skill) -> APIRouter:
-    """`POST /alexa` for `skill`, each request checked by `verifier` first.
+router = APIRouter()
+
+
+@router.post(PATH)
+async def alexa(request: Request) -> Response:
+    """Answer one Alexa request with `app.state.skill`, checked by `app.state.verifier` first.
 
     The handler is async, so it runs on the server's one event loop: the skill answers one
     request at a time and two intents never change the switches together.
     """
-    router = APIRouter()
-
-    @router.post(PATH)
-    async def alexa(request: Request) -> Response:
-        body = await read_body(request, MAX_BODY)
-        try:
-            payload = verifier.verify(request.headers, body)
-        except RequestRejected as error:
-            log.warning("Alexa request rejected: %s", error)
-            return PlainTextResponse("bad request", 400)
-        try:
-            answer = skill.respond(payload)
-        except Exception:
-            log.exception("the Alexa skill failed")
-            return PlainTextResponse("error", 500)
-        return Response(json.dumps(answer), media_type="application/json;charset=UTF-8")
-
-    return router
+    verifier: Verifier = request.app.state.verifier
+    skill: Skill = request.app.state.skill
+    body = await read_body(request, MAX_BODY)
+    try:
+        payload = verifier.verify(request.headers, body)
+    except RequestRejected as error:
+        log.warning("Alexa request rejected: %s", error)
+        return PlainTextResponse("bad request", 400)
+    try:
+        answer = skill.respond(payload)
+    except Exception:
+        log.exception("the Alexa skill failed")
+        return PlainTextResponse("error", 500)
+    return Response(json.dumps(answer), media_type="application/json;charset=UTF-8")
