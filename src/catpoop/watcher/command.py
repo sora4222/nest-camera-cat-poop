@@ -6,7 +6,6 @@ import sys
 from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
-from typing import Any
 
 from catpoop.clock import Clock, SystemClock
 from catpoop.config import Config, ConfigError, PartKind, load_config
@@ -35,7 +34,7 @@ from catpoop.watcher_lock import (
 log = logging.getLogger(__name__)
 
 
-def add_command(commands: Any) -> None:
+def add_command(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add `watch` to the CLI's subparsers."""
     watch = commands.add_parser("watch", help="watch the Litter Box live until stopped")
     watch.add_argument("--config", type=Path, help="config file (default: $CATPOOP_CONFIG)")
