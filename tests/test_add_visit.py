@@ -1,6 +1,7 @@
 import csv
 from datetime import UTC, datetime
 
+import av
 import pytest
 from fake_video import write_clip
 
@@ -51,8 +52,6 @@ def test_clip_saved_as_an_unlabeled_visit_waits_for_labeling(tmp_path):
 
 
 def test_clip_without_video_is_refused_and_not_stored(tmp_path):
-    import av
-
     sound = tmp_path / "sound.mp4"
     with av.open(str(sound), "w") as container:
         stream = container.add_stream("aac", rate=8000)
