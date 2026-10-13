@@ -1,4 +1,5 @@
 import json
+import socket
 
 import httpx
 import pytest
@@ -91,8 +92,6 @@ def test_a_signed_status_request_is_answered_end_to_end(tmp_path):
 
 
 def test_a_port_in_use_is_a_config_error():
-    import socket
-
     with socket.socket() as taken:
         taken.bind(("127.0.0.1", 0))
         taken.listen()
