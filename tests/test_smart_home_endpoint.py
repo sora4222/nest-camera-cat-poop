@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from catpoop.alexa_smart_home.endpoint import PATH, smart_home_router
+from catpoop.alexa_smart_home.endpoint import PATH, router
 
 SECRET = {"authorization": "Bearer s3cret"}
 
@@ -11,9 +11,10 @@ class Skill:
         return {"echo": request}
 
 
-def client() -> TestClient:
+def client(skill: object | None = None) -> TestClient:
     app = FastAPI()
-    app.include_router(smart_home_router("s3cret", Skill()))
+    app.state.smart_home_secret, app.state.smart_home = "s3cret", skill or Skill()
+    app.include_router(router)
     return TestClient(app)
 
 
@@ -41,6 +42,4 @@ def test_a_failing_skill_is_500():
         def answer(self, request: dict) -> dict:
             raise RuntimeError("boom")
 
-    app = FastAPI()
-    app.include_router(smart_home_router("s3cret", Broken()))
-    assert TestClient(app).post(PATH, content=b"{}", headers=SECRET).status_code == 500
+    assert client(Broken()).post(PATH, content=b"{}", headers=SECRET).status_code == 500
