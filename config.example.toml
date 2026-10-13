@@ -96,12 +96,12 @@ device = "Litter box"   # the camera's name in the Google Home app
 size = 720              # picture height in pixels
 retry_seconds = 30      # wait before reconnecting after the stream fails
 
-# The live watcher (`make dev`, see docs/watcher.md).
+# The live watcher (`make dev`, see CONTRIBUTE.md).
 [watcher]
 check_seconds = 0.25    # time between detector runs on the newest picture
 surface_check_seconds = 10  # time between Outcome model checks of the empty box (is Poop still there?)
 
-# Event rules "standard" (see docs/watcher.md#event-rules).
+# Event rules "standard".
 [event_rules]
 announce_pee = true     # announce Visits whose Outcome Guess is Pee
 dog_label = "dog"       # detector labels of the Dog and of people
@@ -113,7 +113,7 @@ dog_gone_seconds = 60   # the Dog must be away this long before Dog at Poop is s
 # A relative path is inside $XDG_STATE_HOME/catpoop (else ~/.local/state/catpoop).
 path = "events.sqlite"
 
-# Communications handler "standard" (see docs/watcher.md#announcements).
+# Communications handler "standard".
 [communications]
 dnd_allow = ["urgent"]  # Urgencies Do Not Disturb lets through (`make dnd` can say otherwise)
 repeat_seconds = 30     # the same text is not said again within this
