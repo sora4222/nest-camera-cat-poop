@@ -84,8 +84,9 @@ src/catpoop/
     spoken_time.py      a time as Alexa should say it ("tomorrow at 7 AM")
     poop_status.py      is there Poop in the Litter Box, from the event log
     skill.py            intents -> switches and spoken answers
-    endpoint.py         POST /alexa only: verify, then answer
-    server.py           serve the endpoint (stdlib http.server)
+    body_limit.py       refuse request bodies over a limit (413)
+    endpoint.py         POST /alexa only: verify, then answer (FastAPI router)
+    server.py           serve a FastAPI app with uvicorn on a thread
     run.py              run it in a thread beside the watcher
     tunnel.py           Cloudflare Tunnel or Tailscale Funnel setup for /alexa only
     command.py          `catpoop alexa-tunnel` (`make alexa-tunnel`)
