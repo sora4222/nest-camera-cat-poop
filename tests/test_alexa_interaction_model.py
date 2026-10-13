@@ -33,16 +33,13 @@ def test_samples_are_unique_and_use_only_declared_slots():
             assert set(re.findall(r"{(\w+)}", sample)) <= slots, sample
 
 
-def test_do_not_disturb_takes_an_amazon_duration():
-    dnd = next(i for i in language_model()["intents"] if i["name"] == "DoNotDisturbIntent")
-    assert dnd["slots"] == [{"name": "duration", "type": "AMAZON.DURATION"}]
+def test_quiet_intents_take_an_amazon_duration():
+    for name in ("QuietPoopIntent", "QuietVisitsIntent", "DurationIntent"):
+        quiet = next(i for i in language_model()["intents"] if i["name"] == name)
+        assert quiet["slots"] == [{"name": "duration", "type": "AMAZON.DURATION"}]
 
 
 def test_a_slot_only_sample_is_alone_in_its_intent():
     for intent in language_model()["intents"]:
         if any(re.fullmatch(r"{\w+}", sample) for sample in intent["samples"]):
             assert len(intent["samples"]) == 1, intent["name"]
-
-
-def test_a_bare_duration_answer_sets_do_not_disturb():
-    assert INTENTS["DurationIntent"] is INTENTS["DoNotDisturbIntent"]
