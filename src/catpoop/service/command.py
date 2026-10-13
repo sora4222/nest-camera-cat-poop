@@ -7,7 +7,6 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from catpoop.interfaces import ServiceManager
 from catpoop.service import installer
@@ -33,7 +32,7 @@ class Places:
         return cls(installer.unit_folder(), installer.secrets_file())
 
 
-def add_command(commands: Any) -> None:
+def add_command(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     """Add `service` to the CLI's subparsers."""
     service = commands.add_parser("service", help="run the watcher as a systemd user service")
     service.add_argument("action", choices=ACTIONS)
