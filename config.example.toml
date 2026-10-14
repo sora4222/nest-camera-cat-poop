@@ -44,6 +44,20 @@ kind = "log"
 # volume = 0.6                       # 0.0-1.0; default: leave the speaker's volume as it is
 # known_hosts = ["..."]              # speaker addresses, if finding them by name (mDNS) fails
 
+# An Alexa device through our Smart Home skill and routines (docs/alexa-smart-home.md).
+# [[speakers]]
+# name = "Echo"
+# kind = "alexa"
+# region = "FE"  # NA, EU or FE (Australia, Japan)
+
+# An Alexa device through Amazon's unofficial Alexa web API; login is CATPOOP_ALEXA_REFRESH_TOKEN.
+# [[speakers]]
+# name = "Kitchen"
+# kind = "alexa_web"
+# device = "Kitchen Echo"   # its name in the Alexa app (default: name)
+# domain = "amazon.com.au"  # your Amazon site (default: amazon.com)
+# locale = "en-AU"          # default: en-US
+
 # An Alexa device through Voice Monkey; the token is CATPOOP_VOICE_MONKEY_TOKEN in .env.
 # [[speakers]]
 # name = "Kitchen"
