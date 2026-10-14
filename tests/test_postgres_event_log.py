@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from postgres_schema import empty_schema, needs_postgres
 
 from catpoop.config import Config, ConfigError
 from catpoop.database import upgrade
@@ -13,11 +12,10 @@ AT = datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
 
 
 @pytest.fixture
-def url():
+def url(database_url: str) -> str:
     """An empty schema with the migrations applied."""
-    for conninfo in empty_schema():
-        upgrade(conninfo)
-        yield conninfo
+    upgrade(database_url)
+    return database_url
 
 
 def events() -> list[Event]:
@@ -40,7 +38,6 @@ def config() -> Config:
     )
 
 
-@needs_postgres
 def test_events_come_back_newest_first(url):
     log = PostgresEventLog(url)
     for event in events():
@@ -48,7 +45,6 @@ def test_events_come_back_newest_first(url):
     assert log.recent(2) == events()[::-1][:2]
 
 
-@needs_postgres
 def test_events_are_kept_after_a_restart(url):
     first = PostgresEventLog(url)
     for event in events():
@@ -57,7 +53,6 @@ def test_events_are_kept_after_a_restart(url):
     assert PostgresEventLog(url).recent(10) == events()[::-1]
 
 
-@needs_postgres
 def test_postgres_event_log_is_built_from_config_with_the_url_from_env(url, monkeypatch):
     monkeypatch.setenv(URL_ENV, url)
     log = default_registry().create(EVENT_LOG, "postgres", config(), {})

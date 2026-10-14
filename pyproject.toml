@@ -59,6 +59,7 @@ dev = [
     "onnx>=1.17",
     "pytest>=9.1",
     "ruff==0.17.0",
+    "testcontainers[postgres]>=4.10",
     "ty==0.0.86",
 ]
 # Jupyter for notebooks/ (`make notebook`); use with the train extra.

@@ -50,7 +50,6 @@ setup:
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 
 # PostgreSQL in Docker, on this machine only. Tests use it when Docker is there.
-TEST_DATABASE_URL := postgresql://catpoop:catpoop@127.0.0.1:5432/catpoop
 
 db:
 	docker compose up --detach --wait db
@@ -81,11 +80,9 @@ format:
 	uv run ruff format .
 	uv run ruff check --fix .
 
-# Database tests run when CATPOOP_TEST_DATABASE_URL is set (CI) or Docker can start `make db`.
+# Database tests use CATPOOP_TEST_DATABASE_URL if set, else start PostgreSQL with Testcontainers.
 test:
-	@if [ -z "$$CATPOOP_TEST_DATABASE_URL" ] && docker info >/dev/null 2>&1 && $(MAKE) -s db; then \
-		export CATPOOP_TEST_DATABASE_URL=$(TEST_DATABASE_URL); \
-	fi; $(UV_RUN) pytest
+	$(UV_RUN) pytest
 
 config:
 	$(RUN) catpoop check-config

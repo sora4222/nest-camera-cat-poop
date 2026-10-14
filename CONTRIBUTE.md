@@ -5,7 +5,7 @@ CI (`.github/workflows/ci.yml`) runs `make check`, `make test` and `scripts/pr_s
 
 ## Running the live watcher
 
-`make dev` starts PostgreSQL in Docker (`make db`, for the event log) when .env points at it, and runs the live watcher on this machine until Ctrl+C. `make test` uses that database too when Docker is there; without it the database tests are skipped. A change to the database is a new Alembic migration (`make migration MSG="..."`); the watcher applies migrations when it starts. Only one runs per user (see [setup](docs/setup.md#one-watcher-per-machine)).
+`make dev` starts PostgreSQL in Docker (`make db`, for the event log) when .env points at it, and runs the live watcher on this machine until Ctrl+C. `make test` starts its own throwaway PostgreSQL with [Testcontainers](https://testcontainers.com/) (random port, user and password), or uses `CATPOOP_TEST_DATABASE_URL` if set; with neither, the database tests are skipped (in CI they fail). A change to the database is a new Alembic migration (`make migration MSG="..."`); the watcher applies migrations when it starts. Only one runs per user (see [setup](docs/setup.md#one-watcher-per-machine)).
 
 It keeps taking the newest picture from the camera and runs the pet detector on it. When the Cat has stayed in the Litter Box for a moment a Visit starts, and it ends once the Cat has been gone for a while. Each Visit is recorded as a clip and saved for labeling, and the Outcome model guesses what it left behind. The event rules turn all of this, and camera problems, into Events in the event log.
 
@@ -116,7 +116,9 @@ src/catpoop/
     postgres_event_log.py event_log "postgres" (PostgreSQL, URL in .env; `make db` in Docker)
     standard_communications.py  communications "standard" (the one gate for every Announcement)
     nest_camera.py        camera "nest" (googlenestcam live stream)
-tests/              one test file per module; fakes only
+tests/              one test file per module; fakes, except PostgreSQL
+    conftest.py         a PostgreSQL server per run, an empty schema per test
+    postgres_server.py  that server: CATPOOP_TEST_DATABASE_URL, or a Testcontainer
     alexa_requests/ one example Alexa request per skill command (test_alexa_requests.py)
 scripts/pr_size.py  CI check: at most 500 changed code lines per pull request
 notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
