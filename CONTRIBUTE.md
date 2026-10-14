@@ -97,6 +97,7 @@ src/catpoop/
     sensors.py          one motion sensor per message kind; which kind a text is
     directives.py       answer Discovery, AcceptGrant and ReportState
     grants.py           Login with Amazon tokens for sending events (state folder)
+    event_gateway.py    tell Alexa a sensor saw motion (ChangeReport)
     endpoint.py         POST /alexa/smart-home from our Lambda, with a shared secret
   service/          run the watcher as a systemd user service, `make install` (docs/service.md)
     settings.py         what the service runs: checkout, uv, op, extras, secrets file
@@ -109,6 +110,7 @@ src/catpoop/
     presence_off.py       presence "off" (always Unknown)
     onnx_detector.py      detector "onnx" (TF detector exported to ONNX)
     log_speaker.py        speaker kind "log" (writes to the log)
+    alexa_speaker.py      speaker kind "alexa" (fires the Smart Home sensor whose routine says it)
     google_speaker.py     speaker kind "google" (Piper speech on a Google Home / Nest speaker)
     voice_monkey_speaker.py  speaker kind "voice_monkey" (Alexa through the Voice Monkey announce API)
     log_event_rules.py    event_rules "log" (Visits and camera problems straight to Events)
@@ -124,7 +126,7 @@ scripts/pr_size.py  CI check: at most 500 changed code lines per pull request
 notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
   export_toy_model_to_onnx.ipynb  a toy Keras model -> ONNX, step by step
 docs/               setup, configuration, ADRs
-alexa/              the Alexa skill's interaction model (paste into the developer console)
+alexa/              the Alexa skill's interaction model, and the Smart Home skill's Lambda
 ```
 
 ## Swappable parts
