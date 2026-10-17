@@ -41,6 +41,14 @@ class DoNotDisturb:
     allow: tuple[Urgency, ...] | None
 
 
+def _until(value: str) -> datetime:
+    """The time in `value`; ValueError if it has no time zone (it can't be compared)."""
+    until = datetime.fromisoformat(value)
+    if until.tzinfo is None:
+        raise ValueError(f"{value!r} has no time zone")
+    return until
+
+
 class Switches:
     """Reads and writes the switches file at `path`."""
 
@@ -59,14 +67,13 @@ class Switches:
         if not dnd:
             return None
         try:
-            until = datetime.fromisoformat(dnd["until"])
+            until = _until(dnd["until"])
             allow = dnd.get("allow")
             allowed = None if allow is None else tuple(map(Urgency, allow))
-            over = at >= until  # TypeError if `until` has no time zone
         except (KeyError, TypeError, ValueError) as error:
             log.warning("Do Not Disturb in the switches file %s is broken: %s", self.path, error)
             return None
-        return None if over else DoNotDisturb(until, allowed)
+        return None if at >= until else DoNotDisturb(until, allowed)
 
     def set_do_not_disturb(self, until: datetime, allow: Iterable[Urgency] | None = None) -> None:
         """Turn Do Not Disturb on until `until`, letting `allow` Urgencies through."""
@@ -83,7 +90,7 @@ class Switches:
         if not value:
             return None
         try:
-            until = datetime.fromisoformat(value)
+            until = _until(value)
         except (TypeError, ValueError) as error:
             log.warning("quiet %s in the switches file %s is broken: %s", topic, self.path, error)
             return None
