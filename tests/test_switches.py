@@ -89,15 +89,13 @@ def test_changes_from_many_threads_at_once_are_all_kept(tmp_path):
     reader = Switches(path)
     assert reader.pee_announcements() is False
     assert reader.do_not_disturb(NOW) == DoNotDisturb(NOW + timedelta(minutes=40), None)
-    assert [p.name for p in tmp_path.iterdir() if p.name != ".switches.json.lock"] == [
-        "switches.json"
-    ]
+    assert sorted(tmp_path.iterdir()) == sorted([path, reader.lock_path])
 
 
 def test_a_change_waits_for_another_process_holding_the_lock_file(tmp_path):
     path = tmp_path / "switches.json"
     done = threading.Event()
-    with (tmp_path / ".switches.json.lock").open("a") as other:
+    with Switches(path).lock_path.open("a") as other:
         fcntl.flock(other, fcntl.LOCK_EX)  # as `catpoop dnd` in another process would
         worker = threading.Thread(
             target=lambda: (Switches(path).set_pee_announcements(False), done.set())
