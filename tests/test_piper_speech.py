@@ -1,4 +1,6 @@
 import io
+import threading
+import time
 import wave
 from dataclasses import dataclass
 from types import SimpleNamespace
@@ -45,3 +47,29 @@ def test_wav_starts_with_silence_so_the_speaker_does_not_cut_the_start():
 def test_load_piper_needs_the_model_file(tmp_path):
     with pytest.raises(FileNotFoundError):
         load_piper(tmp_path / "missing.onnx")
+
+
+class SlowVoice(FakeVoice):
+    """Counts how many threads are inside `synthesize` at once."""
+
+    def __init__(self):
+        super().__init__()
+        self.inside = self.most = 0
+
+    def synthesize(self, text):
+        self.inside += 1
+        self.most = max(self.most, self.inside)
+        time.sleep(0.05)
+        yield Chunk(b"\x01\x00")
+        self.inside -= 1
+
+
+def test_the_voice_is_never_used_by_two_threads_at_once():
+    voice = SlowVoice()
+    speech = PiperSpeech(voice, lead_in_seconds=0)
+    threads = [threading.Thread(target=speech.wav, args=("Hello",)) for _ in range(3)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(5)
+    assert voice.most == 1
