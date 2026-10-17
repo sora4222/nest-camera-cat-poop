@@ -14,7 +14,7 @@ from catpoop.parts.memory_event_log import MemoryEventLog
 from catpoop.parts.standard_communications import RoutedSpeaker, StandardCommunications
 from catpoop.visits.store import VisitStore
 from catpoop.watcher.recorder import LiveVisitRecorder
-from catpoop.watcher.watcher import Watcher
+from catpoop.watcher.watcher import SAY_WAIT_SECONDS, Watcher
 
 START = datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
 SETTINGS = VisitSettings(end_gap_seconds=3, min_seconds=2, padding_seconds=1, frame_seconds=1)
@@ -86,12 +86,17 @@ class RecordingCommunications:
     def __init__(self) -> None:
         self.handled: list[Event] = []
         self.ticks: list[datetime] = []
+        self.closed: list[float] = []
 
     def handle(self, event: Event) -> None:
         self.handled.append(event)
 
     def tick(self, at: datetime) -> None:
         self.ticks.append(at)
+
+    def close(self, seconds: float) -> bool:
+        self.closed.append(seconds)
+        return True
 
 
 class BrokenRecorder(LiveVisitRecorder):
@@ -305,6 +310,17 @@ def test_ctrl_c_during_a_visit_discards_the_recording(tmp_path):
     with pytest.raises(KeyboardInterrupt):
         run.watcher.run(stop=stop)
     assert list((tmp_path / "temp").iterdir()) == []
+
+
+def test_stopping_gives_the_speakers_time_to_say_what_they_were_given(tmp_path):
+    run = Run(tmp_path, "..")
+
+    def stop() -> bool:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        run.watcher.run(stop=stop)
+    assert run.communications.closed == [SAY_WAIT_SECONDS]
 
 
 def test_the_litter_surface_is_checked_now_and_then_while_the_box_is_empty(tmp_path):

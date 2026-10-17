@@ -38,6 +38,8 @@ log = logging.getLogger(__name__)
 
 PRUNE_WAIT_SECONDS = 30.0
 """How long stopping waits for a prune of the Private Data Store going on."""
+SAY_WAIT_SECONDS = 10.0
+"""How long stopping waits for the Speakers to say what they were given."""
 
 
 class Watcher:
@@ -103,6 +105,7 @@ class Watcher:
             self._recorder.discard()
             if not self._recorder.wait_for_prune(PRUNE_WAIT_SECONDS):
                 log.warning("stopped while still pruning the Private Data Store")
+            self._communications.close(SAY_WAIT_SECONDS)
 
     def step(self) -> None:
         """Read the camera once and pass on what was seen."""
