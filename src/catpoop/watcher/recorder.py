@@ -25,6 +25,9 @@ from catpoop.watcher.background_task import BackgroundTask
 
 log = logging.getLogger(__name__)
 
+PRUNE_WAIT_SECONDS = 30.0
+"""How long closing waits for a prune of the Private Data Store going on."""
+
 
 class LiveVisitRecorder:
     """Writes one Visit at a time; frames are timed from the first one."""
@@ -84,10 +87,6 @@ class LiveVisitRecorder:
         self._pruning.request()
         return visit
 
-    def wait_for_prune(self, timeout: float | None = None) -> bool:
-        """Wait for a prune going on to finish; False if `timeout` seconds passed first."""
-        return self._pruning.wait(timeout)
-
     def _prune(self) -> None:
         prune_clips(self._store, int(self._settings.max_store_gb * 1e9), self._store_lock)
 
@@ -100,3 +99,11 @@ class LiveVisitRecorder:
             writer.close()
         finally:
             shutil.rmtree(writer.path.parent, ignore_errors=True)
+
+    def close(self) -> None:
+        """Drop the clip being recorded and wait up to `PRUNE_WAIT_SECONDS` for a prune."""
+        try:
+            self.discard()
+        finally:
+            if not self._pruning.wait(PRUNE_WAIT_SECONDS):
+                log.warning("stopped while still pruning the Private Data Store")
