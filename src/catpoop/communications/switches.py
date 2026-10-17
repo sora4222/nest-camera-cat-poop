@@ -56,6 +56,11 @@ class Switches:
         """Use the file at `path`; it is made on the first change."""
         self.path = path
 
+    @property
+    def lock_path(self) -> Path:
+        """The lock file next to the switches file; changes hold it."""
+        return self.path.with_name(f".{self.path.name}.lock")
+
     @classmethod
     def default(cls) -> "Switches":
         """The switches in the user's state folder."""
@@ -140,8 +145,7 @@ class Switches:
     @contextmanager
     def _locked(self) -> Generator[None]:
         """Hold the thread lock and the lock file next to the switches file."""
-        lock_path = self.path.with_name(f".{self.path.name}.lock")
-        with _THREADS, lock_path.open("a") as lock_file:
+        with _THREADS, self.lock_path.open("a") as lock_file:
             fcntl.flock(lock_file, fcntl.LOCK_EX)
             try:
                 yield
