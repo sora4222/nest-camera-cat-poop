@@ -26,6 +26,7 @@ from catpoop.domain import Event, Outcome, Presence, Urgency
 from catpoop.interfaces import PresenceCheck
 from catpoop.poop_reminders import PoopReminders
 from catpoop.registry import DEFAULT, EVENT_RULES, PRESENCE
+from catpoop.scooping import Scooping
 from catpoop.visits.finder import labels_in_litter_box, labels_over_litter_box
 
 log = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ class StandardEventRules:
         )
         self._guess: Outcome | None = None
         self._poop_in_box = False
-        self._person_seen_at: datetime | None = None
+        self._scoop = Scooping(self._options.scoop_settle_seconds)
         self._dog_said_at: datetime | None = None
         self._login_reminder_at: datetime | None = None
 
@@ -138,7 +139,7 @@ class StandardEventRules:
 
     def _poop_found(self, at: datetime) -> None:
         self._poop_in_box = True
-        self._person_seen_at = None
+        self._scoop.reset()
         self._dog_said_at = None
         self._reminders.start(at)
 
@@ -149,19 +150,14 @@ class StandardEventRules:
         inside = labels_in_litter_box(seen.detections, self._visits)
         events = self._dog(seen.at, self._options.dog_label in inside)
         if self._options.person_label in labels_over_litter_box(seen.detections, self._visits):
-            self._person_seen_at = seen.at
-        elif seen.surface and self._person_seen_at:
-            if seen.surface.best is Outcome.POOP:
-                settle = timedelta(seconds=self._options.scoop_settle_seconds)
-                if seen.at - self._person_seen_at >= settle:
-                    self._person_seen_at = None
-            else:
-                events.append(self._poop_gone(seen.at))
+            self._scoop.person_at_box(seen.at)
+        elif seen.surface and self._scoop.surface_seen(seen.at, seen.surface.best):
+            events.append(self._poop_gone(seen.at))
         return events
 
     def _poop_gone(self, at: datetime) -> Event:
         self._poop_in_box = False
-        self._person_seen_at = None
+        self._scoop.reset()
         self._dog_said_at = None
         self._reminders.stop()
         return Event("poop_gone", Urgency.INFO, at, announce=False)
