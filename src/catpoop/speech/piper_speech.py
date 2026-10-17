@@ -1,9 +1,12 @@
 """Make speech on this machine with a Piper voice, so no text leaves the house.
 
-`piper` comes from the `google` extra and is imported only when a voice is loaded.
+`piper` comes from the `google` extra and is imported only when a voice is loaded. Speakers
+say texts from their own threads and share one voice, whose thread safety is not known, so
+one text is spoken at a time.
 """
 
 import io
+import threading
 import wave
 from pathlib import Path
 from typing import Any
@@ -19,6 +22,7 @@ class PiperSpeech:
         """
         self._voice = voice
         self._lead_in = lead_in_seconds
+        self._lock = threading.Lock()
 
     def wav(self, text: str) -> bytes:
         """`text` spoken, as the bytes of a wav file."""
@@ -29,8 +33,9 @@ class PiperSpeech:
             wav.setsampwidth(2)
             wav.setframerate(rate)
             wav.writeframes(b"\x00\x00" * round(rate * self._lead_in))
-            for chunk in self._voice.synthesize(text):
-                wav.writeframes(chunk.audio_int16_bytes)
+            with self._lock:
+                for chunk in self._voice.synthesize(text):
+                    wav.writeframes(chunk.audio_int16_bytes)
         return out.getvalue()
 
 
