@@ -299,6 +299,14 @@ def test_poop_known_from_before_a_restart_can_be_found_gone():
     assert feed.kinds(feed.seen(surface=Outcome.NOTHING)) == ["poop_gone"]
 
 
+def test_a_person_seen_before_a_restart_does_not_count_for_the_resumed_poop():
+    feed = Feed(timers=Timers(poop_reminder_max_count=0))
+    feed.visit(None, Outcome.POOP)
+    feed.seen("person")
+    feed.rules.resume_poop(START, feed.clock.now())
+    assert feed.seen(surface=Outcome.NOTHING) == []
+
+
 def test_poop_known_from_before_a_restart_keeps_dog_at_poop():
     feed = Feed(timers=Timers(poop_reminder_max_count=0))
     feed.rules.resume_poop(START, START)
