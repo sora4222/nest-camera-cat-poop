@@ -108,9 +108,10 @@ class VisitStore:
         """Visits with no Outcome yet, oldest first."""
         return [v for v in self.all() if v.outcome is None]
 
-    def labeled_clips(self) -> set[str]:
-        """Hashes of the clips that have at least one labeled Visit."""
-        return {v.clip for v in self.all() if v.outcome is not None}
+    def visits_of(self, clip: str) -> list[Visit]:
+        """The Visits of `clip`, read fresh from disk by their id prefix; earliest first."""
+        found = (self.get(path.stem) for path in self.visits.glob(f"{clip[:16]}-*.json"))
+        return sorted((v for v in found if v is not None and v.clip == clip), key=lambda v: v.start)
 
     def frame_path(self, id: str, number: int) -> Path | None:
         """Frame `number` (from 1) of Visit `id`, or None if there is no such frame."""
@@ -132,15 +133,14 @@ class VisitStore:
         self._write_manifest()
         return labeled
 
-    def remove_unlabeled(self, clip: str, unlabeled: Iterable[Visit] | None = None) -> int:
+    def remove_unlabeled(self, clip: str) -> int:
         """Forget the unlabeled Visits of `clip` and that it was cut; return bytes freed.
 
-        Labeled Visits stay. `unlabeled`: the unlabeled Visits if already listed (each
-        listing reads every Visit).
+        Labeled Visits stay.
         """
         freed = 0
-        for visit in self.unlabeled() if unlabeled is None else unlabeled:
-            if visit.clip == clip and visit.outcome is None:
+        for visit in self.visits_of(clip):
+            if visit.outcome is None:
                 record = self.visits / f"{visit.id}.json"
                 folder = self._frames_folder(visit)
                 freed += record.stat().st_size + sum(f.stat().st_size for f in folder.glob("*"))
