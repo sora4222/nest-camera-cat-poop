@@ -5,15 +5,18 @@ Others are held back by, in order: the Pee announcements switch (Visit start gue
 Quiet Hours and Do Not Disturb (each lets only its `allow` Urgencies through), every
 Listener being Away (Unknown does not hold back), no Message template, or the same text
 said less than `repeat_seconds` ago. Then each Speaker for that Urgency says it, from its
-own queue and thread (Urgent first), so the watcher never waits for a speaker.
+own queue and thread (Urgent first), so the watcher never waits for a speaker. A text no
+Speaker could say does not count as said; that is found on the watcher's thread, at the
+next tick or Announcement, so only that thread touches what was said when.
 
 When Quiet Hours end with Poop still in the Litter Box (a `poop` Event and no `poop_gone`
 since), `poop_after_quiet_hours` is said once, through the same gate.
 """
 
 import logging
-import threading
-from collections.abc import Callable, Mapping, Sequence
+import time
+from collections.abc import Mapping, Sequence
+from concurrent.futures import Future
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -59,6 +62,23 @@ class RoutedSpeaker:
     urgencies: frozenset[Urgency]
 
 
+@dataclass(frozen=True)
+class _Route:
+    """A Speaker's queue and the Urgencies it says."""
+
+    queue: SpeakerQueue
+    urgencies: frozenset[Urgency]
+
+
+@dataclass(frozen=True)
+class _Saying:
+    """A text handed to Speakers at `at`, and whether each one said it, when known."""
+
+    text: str
+    at: datetime
+    said: tuple[Future[bool], ...]
+
+
 class StandardCommunications:
     """Decides whether and where each Event is said (see the module docstring)."""
 
@@ -76,7 +96,7 @@ class StandardCommunications:
         options: CommunicationOptions | None = None,
     ) -> None:
         """`zone` is the Litter Box's time zone, which Quiet Hours are read in."""
-        self._speakers = [(SpeakerQueue(r.speaker), r.urgencies) for r in speakers]
+        self._routes = [_Route(SpeakerQueue(r.speaker), r.urgencies) for r in speakers]
         self._presence = presence
         self._listeners = list(listeners)
         self._quiet_hours = list(quiet_hours)
@@ -86,6 +106,7 @@ class StandardCommunications:
         self._switches = switches
         self._options = options or CommunicationOptions()
         self._last_said: dict[str, datetime] = {}
+        self._saying: list[_Saying] = []
         self._poop_in_box = False
         self._was_quiet: bool | None = None
 
@@ -110,6 +131,7 @@ class StandardCommunications:
 
     def tick(self, at: datetime) -> None:
         """Say Poop once if Quiet Hours have just ended with Poop still in the Litter Box."""
+        self._forget_unsaid()
         quiet = bool(active_quiet_hours(self._quiet_hours, at, self._zone))
         just_ended = self._was_quiet and not quiet
         self._was_quiet = quiet
@@ -117,6 +139,7 @@ class StandardCommunications:
             self._announce(Event("poop_after_quiet_hours", Urgency.NORMAL, at))
 
     def _announce(self, event: Event) -> None:
+        self._forget_unsaid()
         reason = self._held_back(event)
         text = None
         if reason is None:
@@ -128,28 +151,35 @@ class StandardCommunications:
         if reason or text is None:
             log.info("%s (%s) %s: not said, %s", event.kind, event.urgency, event.details, reason)
             return
-        routed = [speaker for speaker, urgencies in self._speakers if event.urgency in urgencies]
+        routed = [route.queue for route in self._routes if event.urgency in route.urgencies]
         if not routed:
-            log.info("%s (%s) %s: no Speaker said it", event.kind, event.urgency, event.details)
+            log.info("%s (%s) %s: no Speaker for it", event.kind, event.urgency, event.details)
             return
         self._last_said[text] = event.at
-        done = _AllFailed(len(routed), lambda: self._forget(text, event))
-        for speaker in routed:
-            speaker.put(text, event.urgency, done)
+        said = tuple(queue.put(text, event.urgency) for queue in routed)
+        self._saying.append(_Saying(text, event.at, said))
         log.info("%s (%s) %s: saying %r", event.kind, event.urgency, event.details, text)
 
-    def _forget(self, text: str, event: Event) -> None:
-        """No Speaker said `text`, so it does not count as said."""
-        if self._last_said.get(text) == event.at:
-            del self._last_said[text]
-        log.info("%s (%s) %s: no Speaker said it", event.kind, event.urgency, event.details)
+    def close(self, seconds: float) -> bool:
+        """Wait at most `seconds` in all for the Speakers to say what they were given.
 
-    def wait_until_said(self, timeout: float | None = None) -> bool:
-        """Wait until every Speaker has said what it was given; False if `timeout` ran out.
-
-        `timeout` is for each Speaker in turn.
+        False if time ran out. Speaker threads end with the process, so a text still waiting
+        then is lost.
         """
-        return all([speaker.wait(timeout) for speaker, _ in self._speakers])
+        end = time.monotonic() + seconds
+        return all([route.queue.wait(max(0.0, end - time.monotonic())) for route in self._routes])
+
+    def _forget_unsaid(self) -> None:
+        """Texts that every Speaker failed to say no longer count as said."""
+        still = []
+        for saying in self._saying:
+            if not all(future.done() for future in saying.said):
+                still.append(saying)
+            elif not any(future.result() for future in saying.said):
+                if self._last_said.get(saying.text) == saying.at:
+                    del self._last_said[saying.text]
+                log.info("no Speaker could say %r", saying.text)
+        self._saying = still
 
     def _held_back(self, event: Event) -> str | None:
         """Why `event` must not be said now, or None."""
@@ -179,22 +209,6 @@ class StandardCommunications:
     def _said_recently(self, text: str, at: datetime) -> bool:
         last = self._last_said.get(text)
         return last is not None and at - last < timedelta(seconds=self._options.repeat_seconds)
-
-
-class _AllFailed:
-    """Calls `then` once every one of `count` Speakers has failed to say a text."""
-
-    def __init__(self, count: int, then: Callable[[], None]) -> None:
-        self._left, self._said, self._then = count, False, then
-        self._lock = threading.Lock()
-
-    def __call__(self, said: bool) -> None:
-        with self._lock:
-            self._left -= 1
-            self._said = self._said or said
-            if self._left or self._said:
-                return
-        self._then()
 
 
 def _routed(config: Config) -> list[RoutedSpeaker]:
