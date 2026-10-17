@@ -1,4 +1,4 @@
-"""Run a slow task (pruning the store) on its own thread, so the watcher loop never waits.
+"""Run a slow task (pruning the store) on its own thread, apart from the watcher loop.
 
 Requests made while it runs are folded into one more run after it.
 """

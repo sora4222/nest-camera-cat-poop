@@ -2,8 +2,9 @@
 
 Saved Visits wait for labeling (`make label`), so every Visit adds training data. After each
 save the store is kept under `visits.max_store_gb`, on a background thread so the watcher
-loop does not wait for it. Saving and pruning take turns, so a prune never sees a clip whose
-Visit is still being written.
+loop does not wait for it. A save and the prune's check and delete of one clip take turns,
+so a prune never sees a clip whose Visit is still being written, and a save waits for at most
+one clip's delete.
 """
 
 import logging
@@ -88,11 +89,7 @@ class LiveVisitRecorder:
         return self._pruning.wait(timeout)
 
     def _prune(self) -> None:
-        try:
-            with self._store_lock:
-                prune_clips(self._store, int(self._settings.max_store_gb * 1e9))
-        except OSError as error:
-            log.error("could not keep the store under its size limit: %s", error)
+        prune_clips(self._store, int(self._settings.max_store_gb * 1e9), self._store_lock)
 
     def discard(self) -> None:
         """Drop the clip being recorded, if any; it is dropped even if closing it raises."""
