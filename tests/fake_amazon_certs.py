@@ -1,20 +1,56 @@
 """Made-up certificates shaped like Amazon's Alexa signing chain, for tests (no network).
 
 A root CA, an intermediate CA and a signing certificate for `echo-api.amazon.com`, all
-generated here, plus helpers to sign request bodies the way Alexa does.
+generated here, plus helpers to sign request bodies the way Alexa does and to build the
+Alexa skill app that trusts them.
 """
 
 import base64
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
+from cryptography.x509.verification import Store
+from fake_clock import FakeClock
+from fastapi import FastAPI
+
+from catpoop.alexa_skill.run import SKILL_ID_ENV, alexa_app
+from catpoop.communications.switches import Switches
+from catpoop.config import Config
+from catpoop.interfaces import EventLog
 
 NOW = datetime(2026, 10, 11, 10, 0, tzinfo=UTC)
 ECHO_HOST = "echo-api.amazon.com"
+CERT_URL = "https://s3.amazonaws.com/echo.api/echo-api-cert.pem"
+
+
+def skill_config(enabled: bool = True) -> Config:
+    """A config with the Alexa skill on (or off) on port 0, and placeholder parts."""
+    return Config.model_validate(
+        {
+            "parts": dict.fromkeys(
+                ["camera", "detector", "event_rules", "event_log", "presence", "communications"],
+                "fake",
+            ),
+            "paths": {"private_data_store": "/data/store"},
+            "household": {"cat": "Whiskers"},
+            "alexa_skill": {"enabled": enabled, "port": 0},
+        }
+    )
+
+
+class FakeCertificates:
+    """Gives the same chain for any cert URL."""
+
+    def __init__(self, chain: bytes) -> None:
+        self.chain = chain
+
+    def fetch(self, url: str) -> bytes:
+        return self.chain
 
 
 def _key() -> rsa.RSAPrivateKey:
@@ -140,6 +176,24 @@ class FakeAmazon:
         """The `Signature-256` header for `body`."""
         signature = (key or self.leaf_key).sign(body, padding.PKCS1v15(), hashes.SHA256())
         return base64.b64encode(signature).decode()
+
+    def headers(self, body: bytes) -> dict[str, str]:
+        """The headers Alexa sends with `body`: the cert URL and the signature."""
+        return {"SignatureCertChainUrl": CERT_URL, "Signature-256": self.sign(body)}
+
+    def skill_app(self, event_log: EventLog, switches: Path, skill_id: str) -> FastAPI:
+        """The Alexa skill app at NOW, trusting this chain, with switches in `switches`."""
+        app = alexa_app(
+            skill_config(),
+            event_log,
+            FakeClock(NOW),
+            {SKILL_ID_ENV: skill_id},
+            certificates=FakeCertificates(self.chain),
+            trusted=Store([self.root]),
+            switches=Switches(switches),
+        )
+        assert app is not None
+        return app
 
     def leaf_for(
         self,

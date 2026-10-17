@@ -123,6 +123,7 @@ src/catpoop/
 tests/              one test file per module; fakes, except PostgreSQL
     conftest.py         a PostgreSQL server per run, an empty schema per test
     postgres_server.py  that server: CATPOOP_TEST_DATABASE_URL, or a Testcontainer
+    fake_amazon_certs.py  a made-up Alexa signing chain, and the skill app that trusts it
     alexa_requests/ one example Alexa request per skill command (test_alexa_requests.py)
 scripts/pr_size.py  CI check: at most 500 changed code lines per pull request
 notebooks/          worked examples, run by tests/test_notebooks.py (`make notebook`)
