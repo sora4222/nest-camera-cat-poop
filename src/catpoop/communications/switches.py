@@ -10,7 +10,6 @@ import fcntl
 import json
 import logging
 import os
-import tempfile
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -128,15 +127,9 @@ class Switches:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._locked():
             data = self._read() | values
-            with tempfile.NamedTemporaryFile(
-                "w", dir=self.path.parent, prefix=f".{self.path.name}.", delete=False
-            ) as temp:
-                temp.write(json.dumps(data))
-            try:
-                os.replace(temp.name, self.path)
-            except OSError:
-                Path(temp.name).unlink(missing_ok=True)
-                raise
+            temp = self.path.with_name(f".{self.path.name}.tmp")  # one name: the lock is held
+            temp.write_text(json.dumps(data))
+            os.replace(temp, self.path)
 
     @contextmanager
     def _locked(self) -> Generator[None]:
