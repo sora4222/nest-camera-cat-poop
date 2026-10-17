@@ -498,3 +498,16 @@ def test_stopping_closes_the_recorder(tmp_path):
     checks = iter(range(2))
     run.watcher.run(stop=lambda: next(checks, None) is None)
     assert recorder.closed == 1
+
+
+class FailingCloseRecorder(LiveVisitRecorder):
+    def close(self) -> None:
+        raise OSError("clip could not be finished")
+
+
+def test_the_speakers_still_finish_when_closing_the_recorder_fails(tmp_path):
+    recorder = FailingCloseRecorder(tmp_path / "store", SETTINGS, tmp_path / "temp")
+    run = Run(tmp_path, "..", recorder=recorder)
+    with pytest.raises(OSError):
+        run.watcher.run(stop=lambda: True)
+    assert run.communications.closed == [SAY_WAIT_SECONDS]

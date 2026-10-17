@@ -97,8 +97,10 @@ class Watcher:
                 used = (self._clock.now() - began).total_seconds()
                 self._clock.sleep(max(0.0, self._check_seconds - used))
         finally:
-            self._recorder.close()
-            self._communications.close(SAY_WAIT_SECONDS)
+            try:
+                self._recorder.close()
+            finally:
+                self._communications.close(SAY_WAIT_SECONDS)
 
     def step(self) -> None:
         """Read the camera once and pass on what was seen."""
