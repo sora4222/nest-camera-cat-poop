@@ -117,7 +117,17 @@ def test_removing_a_clip_keeps_its_labeled_visits(tmp_path):
     assert not (tmp_path / "visits" / "frames" / gone.id).exists()
     assert store.get(kept.id) is not None
     assert not store.is_scanned(SHA)
-    assert store.labeled_clips() == {SHA}
+
+
+def test_visits_of_a_clip_are_read_by_its_id_prefix(tmp_path):
+    store = VisitStore(tmp_path)
+    late = store.add(visit(start=20), images(1))
+    early = store.add(visit(start=1), images(1))
+    same_prefix = SHA[:16] + "cd" * 24
+    store.add(visit(start=5, clip=same_prefix), images(1))
+    store.add(visit(start=1, clip="ef" * 32), images(1))
+    assert store.visits_of(SHA) == [early, late]
+    assert store.visits_of("12" * 32) == []
 
 
 def test_scanned_clips_are_remembered(tmp_path):

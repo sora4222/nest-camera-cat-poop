@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import numpy as np
 
 from catpoop.domain import Outcome
+from catpoop.visits import retention
 from catpoop.visits.retention import prune_clips, store_size
 from catpoop.visits.store import Visit, VisitStore, visit_id
 
@@ -69,33 +70,36 @@ def test_clips_with_labeled_visits_are_kept_and_unlabeled_visits_go(tmp_path):
     assert store.get(kept.id) is not None
 
 
-def test_visits_are_read_once_per_prune_not_once_per_clip(tmp_path, monkeypatch):
+def test_a_prune_never_lists_every_visit(tmp_path, monkeypatch):
     frame = [np.zeros((4, 4, 3), np.uint8)]
     store = VisitStore(tmp_path)
     for name, month in (("a", 1), ("b", 2), ("c", 3)):
         sha = add_clip(tmp_path, name, 1000, f"2026-0{month}-01T00:00:00+00:00")
         store.add(Visit(visit_id(sha, 0), sha, 0, 2, None), frame)
-    reads = []
     real_all = VisitStore.all
-    monkeypatch.setattr(VisitStore, "all", lambda self: reads.append(1) or real_all(self))
+
+    def no_listing(self):
+        raise AssertionError("listed every Visit")
+
+    monkeypatch.setattr(VisitStore, "all", no_listing)
     assert len(prune_clips(tmp_path, 0)) == 3
-    assert len(reads) == 1
+    monkeypatch.setattr(VisitStore, "all", real_all)
     assert store.unlabeled() == []
 
 
-def test_a_visit_labeled_after_the_listing_keeps_its_clip(tmp_path, monkeypatch):
+def test_a_visit_labeled_after_the_clips_are_listed_keeps_its_clip(tmp_path, monkeypatch):
     sha = add_clip(tmp_path, "a", 1000, "2026-01-01T00:00:00+00:00")
     store = VisitStore(tmp_path)
     visit = store.add(Visit(visit_id(sha, 0), sha, 0, 2, None), [np.zeros((4, 4, 3), np.uint8)])
-    real_all = VisitStore.all
+    real_age_key = retention._age_key
+    labeled_once = []
 
-    def label_after_listing(self):
-        listed = real_all(self)
-        monkeypatch.setattr(VisitStore, "all", real_all)
-        store.label(visit.id, Outcome.POOP, NOW)  # `make label` runs just after the listing
-        return listed
+    def label_after_listing(clip):
+        if not labeled_once:  # `make label` runs just after the clips are listed
+            labeled_once.append(store.label(visit.id, Outcome.POOP, NOW))
+        return real_age_key(clip)
 
-    monkeypatch.setattr(VisitStore, "all", label_after_listing)
+    monkeypatch.setattr(retention, "_age_key", label_after_listing)
     assert prune_clips(tmp_path, 0) == []
     assert clips_left(tmp_path) == ["a"]
     labeled = store.get(visit.id)
