@@ -49,6 +49,9 @@ class CountingCommunications:
     def tick(self, at: datetime) -> None:
         self.ticks += 1
 
+    def close(self, seconds: float) -> bool:
+        return True
+
 
 def setup(tmp_path, event_log=None, rules=None, communications=None):
     clock = FakeClock(START)
@@ -154,6 +157,9 @@ class PoopKeeper:
 
     def tick(self, at: datetime) -> None:
         pass
+
+    def close(self, seconds: float) -> bool:
+        return True
 
     def resume_poop(self, since: datetime, now: datetime) -> None:
         self.resumed.append((since, now))

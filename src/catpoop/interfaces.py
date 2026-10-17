@@ -158,6 +158,10 @@ class CommunicationsHandler(Protocol):
         """Called every watcher check, for Announcements due at a time (end of Quiet Hours)."""
         ...
 
+    def close(self, seconds: float) -> bool:
+        """Wait at most `seconds` in all for Announcements still being said; False if too long."""
+        ...
+
 
 class PortabilityError(Exception):
     """Google's Data Portability API refused or failed (not offered in every country)."""
