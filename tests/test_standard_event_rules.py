@@ -164,7 +164,8 @@ def test_poop_still_seen_a_while_after_the_person_left_keeps_the_reminders():
     feed.visit(None, Outcome.POOP)
     feed.seen("person")
     feed.clock.advance(120)
-    assert "poop_gone" not in feed.kinds(feed.seen(surface=Outcome.POOP))
+    reminder = Event("poop_reminder", Urgency.NORMAL, feed.clock.now(), {"number": "2"}, False)
+    assert feed.seen(surface=Outcome.POOP) == [reminder]  # the Poop is still there
     assert feed.seen(surface=Outcome.NOTHING) == []  # needs a person at the box again
     assert len(feed.wait(10)) > 0
 
