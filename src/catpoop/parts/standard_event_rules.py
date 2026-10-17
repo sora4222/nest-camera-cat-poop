@@ -156,11 +156,15 @@ class StandardEventRules:
                 if seen.at - self._person_seen_at >= settle:
                     self._person_seen_at = None
             else:
-                self._poop_in_box = False
-                self._dog_said_at = None
-                self._reminders.stop()
-                events.append(Event("poop_gone", Urgency.INFO, seen.at, announce=False))
+                events.append(self._poop_gone(seen.at))
         return events
+
+    def _poop_gone(self, at: datetime) -> Event:
+        self._poop_in_box = False
+        self._person_seen_at = None
+        self._dog_said_at = None
+        self._reminders.stop()
+        return Event("poop_gone", Urgency.INFO, at, announce=False)
 
     def _dog(self, at: datetime, dog_in_box: bool) -> list[Event]:
         """Dog at Poop the first time the Dog is at the box, again only after it left a while."""
