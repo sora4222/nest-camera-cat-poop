@@ -5,12 +5,16 @@ A clip with a labeled Visit is never deleted. Unlabeled Visits of a deleted clip
 
 import json
 import logging
+from contextlib import AbstractContextManager, nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
 from catpoop.visits.store import VisitStore
 
 log = logging.getLogger(__name__)
+
+_NO_LOCK = nullcontext()
+"""For a prune with nothing else writing to the store (`catpoop cut-visits`)."""
 
 
 def store_size(root: Path) -> int:
@@ -28,10 +32,13 @@ def _age_key(clip: Path) -> str:
     return datetime.fromtimestamp(clip.stat().st_mtime, UTC).isoformat()
 
 
-def prune_clips(private_data_store: Path, max_bytes: int) -> list[str]:
+def prune_clips(
+    private_data_store: Path, max_bytes: int, lock: AbstractContextManager[object] = _NO_LOCK
+) -> list[str]:
     """Delete the oldest clips with no labeled Visit while the store is over `max_bytes`.
 
-    Returns the hashes of the deleted clips, oldest first.
+    Each clip's check and delete hold `lock`, so a save that holds it too waits for at most
+    one clip. Returns the hashes of the deleted clips, oldest first.
     """
     size = store_size(private_data_store)
     if size <= max_bytes:
@@ -43,13 +50,14 @@ def prune_clips(private_data_store: Path, max_bytes: int) -> list[str]:
         if size <= max_bytes:
             break
         sha = clip.stem
-        if any(visit.outcome is not None for visit in store.visits_of(sha)):
-            continue  # read just now: `make label` runs apart and may have labeled one
-        size -= store.remove_unlabeled(sha)
-        for path in (clip, clip.with_suffix(".json")):
-            if path.exists():
-                size -= path.stat().st_size
-                path.unlink()
+        with lock:
+            if any(visit.outcome is not None for visit in store.visits_of(sha)):
+                continue  # read just now: `make label` runs apart and may have labeled one
+            size -= store.remove_unlabeled(sha)
+            for path in (clip, clip.with_suffix(".json")):
+                if path.exists():
+                    size -= path.stat().st_size
+                    path.unlink()
         log.info("deleted unlabeled clip %s", clip.name)
         removed.append(sha)
     return removed
