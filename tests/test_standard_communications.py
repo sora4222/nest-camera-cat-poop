@@ -2,6 +2,7 @@ import logging
 import threading
 from datetime import UTC, datetime, time, timedelta
 from pathlib import Path
+from time import monotonic
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -39,11 +40,13 @@ class FakeSpeaker:
         self.name = name
         self.said: list[str] = []
         self.fails = fails
+        self.spoke = threading.Event()
 
     def say(self, text: str) -> None:
         if self.fails:
             raise ConnectionError("speaker unplugged")
         self.said.append(text)
+        self.spoke.set()
 
 
 class HangingSpeaker:
@@ -87,7 +90,7 @@ class Setup:
 
     def event(self, kind, urgency=Urgency.NORMAL, announce=True, **details) -> None:
         self.handler.handle(Event(kind, urgency, self.clock.now(), details, announce))
-        assert self.handler.wait_until_said(5)
+        assert self.handler.close(5)
 
     def wait(self, seconds: float, every: float = 60) -> None:
         """Move the clock on, ticking the handler like the watcher does."""
@@ -95,7 +98,7 @@ class Setup:
         while self.clock.now() < end:
             self.clock.advance(every)
             self.handler.tick(self.clock.now())
-        assert self.handler.wait_until_said(5)
+        assert self.handler.close(5)
 
 
 def test_an_event_is_said_on_every_speaker_from_its_message_template(tmp_path):
@@ -355,10 +358,27 @@ def test_a_hanging_speaker_holds_up_neither_the_caller_nor_the_others(tmp_path):
         ],
     )
     setup.handler.handle(Event("poop", Urgency.NORMAL, setup.clock.now()))
-    assert not setup.handler.wait_until_said(0.1)
-    assert working.said == ["Cat left poop."]
+    assert working.spoke.wait(5)
+    assert not setup.handler.close(0.1)
     hanging.answer.set()
-    assert setup.handler.wait_until_said(5)
+    assert setup.handler.close(5)
+
+
+def test_close_waits_at_most_its_seconds_in_all(tmp_path):
+    first, second = HangingSpeaker(), HangingSpeaker()
+    setup = Setup(
+        tmp_path,
+        speakers=[
+            RoutedSpeaker(first, frozenset(Urgency)),
+            RoutedSpeaker(second, frozenset(Urgency)),
+        ],
+    )
+    setup.handler.handle(Event("poop", Urgency.NORMAL, setup.clock.now()))
+    began = monotonic()
+    assert not setup.handler.close(0.3)
+    assert monotonic() - began < 0.5  # not 0.3 for each Speaker
+    first.answer.set()
+    second.answer.set()
 
 
 def test_poop_known_from_before_a_restart_is_said_at_the_end_of_quiet_hours(tmp_path):
@@ -387,8 +407,8 @@ def test_text_no_speaker_could_say_is_not_held_back_as_said(tmp_path, caplog):
     setup.speaker.fails = True
     with caplog.at_level(logging.INFO):
         setup.event("poop")
-    assert "no Speaker said it" in caplog.text
-    setup.speaker.fails = False
-    setup.clock.advance(5)
-    setup.event("poop")
+        setup.speaker.fails = False
+        setup.clock.advance(5)
+        setup.event("poop")
+    assert "no Speaker could say 'Cat left poop.'" in caplog.text
     assert setup.speaker.said == ["Cat left poop."]

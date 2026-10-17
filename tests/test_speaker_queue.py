@@ -73,3 +73,26 @@ def test_wait_gives_up_after_its_timeout():
     assert not queue.wait(0.05)
     speaker.gate.set()
     assert queue.wait(5)
+
+
+def test_put_tells_whether_the_speaker_said_the_text():
+    speaker = GatedSpeaker(fails_on="one")
+    speaker.gate.set()
+    queue = SpeakerQueue(speaker)
+    failed, said = queue.put("one", Urgency.NORMAL), queue.put("two", Urgency.NORMAL)
+    assert failed.result(5) is False
+    assert said.result(5) is True
+
+
+def test_a_failing_done_callback_does_not_stop_later_texts():
+    speaker = GatedSpeaker()
+    queue = SpeakerQueue(speaker)
+
+    def blow_up(_):
+        raise RuntimeError("callback blew up")
+
+    queue.put("one", Urgency.NORMAL).add_done_callback(blow_up)
+    speaker.gate.set()
+    queue.put("two", Urgency.NORMAL)
+    assert queue.wait(5)
+    assert speaker.said == ["one", "two"]
