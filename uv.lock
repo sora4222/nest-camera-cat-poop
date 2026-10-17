@@ -1608,6 +1608,7 @@ train = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "docker" },
     { name = "onnx" },
     { name = "pytest" },
     { name = "ruff" },
@@ -1647,6 +1648,7 @@ provides-extras = ["cpu", "amd", "nvidia", "train", "google"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "docker", specifier = ">=7.1" },
     { name = "onnx", specifier = ">=1.17" },
     { name = "pytest", specifier = ">=9.1" },
     { name = "ruff", specifier = "==0.17.0" },

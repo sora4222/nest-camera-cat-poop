@@ -9,8 +9,8 @@ import os
 import secrets
 import uuid
 from collections.abc import Generator
+from contextlib import contextmanager
 
-import docker
 import psycopg
 import pytest
 from docker.errors import DockerException
@@ -18,38 +18,36 @@ from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from testcontainers.community.postgres import PostgresContainer
 
-URL_ENV = "CATPOOP_TEST_DATABASE_URL"
+TEST_URL_ENV = "CATPOOP_TEST_DATABASE_URL"
 IMAGE = "postgres:16"
 
 
-def _docker_running() -> bool:
-    try:
-        docker.from_env().ping()
-    except DockerException:
-        return False
-    return True
-
-
+@contextmanager
 def postgres_server() -> Generator[str]:
     """The URL of a server to make test schemas in; skips the test when there is none."""
-    if url := os.environ.get(URL_ENV):
+    if url := os.environ.get(TEST_URL_ENV):
         yield url
         return
-    if not _docker_running():
-        missing = f"no Docker, and {URL_ENV} is not set"
+    try:
+        container = PostgresContainer(
+            IMAGE,
+            username=f"user_{secrets.token_hex(4)}",
+            password=secrets.token_urlsafe(16) + "@:/%?#",
+            dbname=f"db_{secrets.token_hex(4)}",
+            driver=None,
+        ).start()
+    except DockerException as error:
+        missing = f"no Docker ({error}), and {TEST_URL_ENV} is not set"
         if os.environ.get("CI"):
             pytest.fail(missing)
         pytest.skip(missing)
-    with PostgresContainer(
-        IMAGE,
-        username=f"user_{secrets.token_hex(4)}",
-        password=secrets.token_urlsafe(16) + "@:/%?#",
-        dbname=f"db_{secrets.token_hex(4)}",
-        driver=None,
-    ) as server:
-        yield server.get_connection_url()
+    try:
+        yield container.get_connection_url()
+    finally:
+        container.stop()
 
 
+@contextmanager
 def empty_schema(server: str) -> Generator[str]:
     """A connection string whose tables go in a new, empty schema, dropped afterwards."""
     schema = f"test_{uuid.uuid4().hex}"
