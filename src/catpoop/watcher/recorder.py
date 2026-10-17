@@ -2,8 +2,9 @@
 
 Saved Visits wait for labeling (`make label`), so every Visit adds training data. After each
 save the store is kept under `visits.max_store_gb`, on a background thread so the watcher
-loop does not wait for it. Saving and pruning take turns, so a prune never sees a clip whose
-Visit is still being written.
+loop does not wait for it. A save and the prune's check and delete of one clip take turns,
+so a prune never sees a clip whose Visit is still being written, and a save waits for at most
+one clip's delete.
 """
 
 import logging
@@ -23,6 +24,9 @@ from catpoop.visits.store import Visit
 from catpoop.watcher.background_task import BackgroundTask
 
 log = logging.getLogger(__name__)
+
+PRUNE_WAIT_SECONDS = 30.0
+"""How long closing waits for a prune of the Private Data Store going on."""
 
 
 class LiveVisitRecorder:
@@ -83,16 +87,8 @@ class LiveVisitRecorder:
         self._pruning.request()
         return visit
 
-    def wait_for_prune(self, timeout: float | None = None) -> bool:
-        """Wait for a prune going on to finish; False if `timeout` seconds passed first."""
-        return self._pruning.wait(timeout)
-
     def _prune(self) -> None:
-        try:
-            with self._store_lock:
-                prune_clips(self._store, int(self._settings.max_store_gb * 1e9))
-        except OSError as error:
-            log.error("could not keep the store under its size limit: %s", error)
+        prune_clips(self._store, int(self._settings.max_store_gb * 1e9), self._store_lock)
 
     def discard(self) -> None:
         """Drop the clip being recorded, if any; it is dropped even if closing it raises."""
@@ -103,3 +99,11 @@ class LiveVisitRecorder:
             writer.close()
         finally:
             shutil.rmtree(writer.path.parent, ignore_errors=True)
+
+    def close(self) -> None:
+        """Drop the clip being recorded and wait up to `PRUNE_WAIT_SECONDS` for a prune."""
+        try:
+            self.discard()
+        finally:
+            if not self._pruning.wait(PRUNE_WAIT_SECONDS):
+                log.warning("stopped while still pruning the Private Data Store")

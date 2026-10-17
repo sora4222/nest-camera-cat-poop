@@ -2,16 +2,14 @@
 
 Kept in a small JSON file in the state folder (`switches.json`), so `catpoop dnd`, the
 watcher and the Alexa skill all read and write the same state. Every read goes to the
-file, so a change is seen at once. Changes hold a lock (between threads, and a lock file
-between processes), so two changes at once both stay.
+file, so a change is seen at once. Changes hold a lock file, opened afresh each time, so it
+keeps out other threads and other processes alike, and two changes at once both stay.
 """
 
 import fcntl
 import json
 import logging
 import os
-import tempfile
-import threading
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -23,9 +21,6 @@ from catpoop.domain import Urgency
 from catpoop.state_folder import state_folder
 
 log = logging.getLogger(__name__)
-
-_THREADS = threading.Lock()
-"""One change at a time in this process (the Alexa skill answers on several threads)."""
 
 type Topic = Literal["poop", "visits"]
 
@@ -55,6 +50,11 @@ class Switches:
     def __init__(self, path: Path) -> None:
         """Use the file at `path`; it is made on the first change."""
         self.path = path
+
+    @property
+    def lock_path(self) -> Path:
+        """The lock file next to the switches file; changes hold it."""
+        return self.path.with_name(f".{self.path.name}.lock")
 
     @classmethod
     def default(cls) -> "Switches":
@@ -127,23 +127,13 @@ class Switches:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._locked():
             data = self._read() | values
-            with tempfile.NamedTemporaryFile(
-                "w", dir=self.path.parent, prefix=f".{self.path.name}.", delete=False
-            ) as temp:
-                temp.write(json.dumps(data))
-            try:
-                os.replace(temp.name, self.path)
-            except OSError:
-                Path(temp.name).unlink(missing_ok=True)
-                raise
+            temp = self.path.with_name(f".{self.path.name}.tmp")  # one name: the lock is held
+            temp.write_text(json.dumps(data))
+            os.replace(temp, self.path)
 
     @contextmanager
     def _locked(self) -> Generator[None]:
-        """Hold the thread lock and the lock file next to the switches file."""
-        lock_path = self.path.with_name(f".{self.path.name}.lock")
-        with _THREADS, lock_path.open("a") as lock_file:
+        """Hold the lock file (blocks other threads and processes; closing it lets go)."""
+        with self.lock_path.open("a") as lock_file:
             fcntl.flock(lock_file, fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.flock(lock_file, fcntl.LOCK_UN)
+            yield

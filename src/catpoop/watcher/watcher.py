@@ -36,8 +36,6 @@ from catpoop.watcher.recorder import LiveVisitRecorder
 
 log = logging.getLogger(__name__)
 
-PRUNE_WAIT_SECONDS = 30.0
-"""How long stopping waits for a prune of the Private Data Store going on."""
 SAY_WAIT_SECONDS = 10.0
 """How long stopping waits for the Speakers to say what they were given."""
 
@@ -91,10 +89,7 @@ class Watcher:
         self._login_said = False
 
     def run(self, stop: Callable[[], bool] = lambda: False) -> None:
-        """Check every `check_seconds` until `stop()` is true; drops an unfinished Visit's clip.
-
-        Stopping waits up to `PRUNE_WAIT_SECONDS` for a prune going on.
-        """
+        """Check every `check_seconds` until `stop()` is true; closing drops an unfinished clip."""
         try:
             while not stop():
                 began = self._clock.now()
@@ -102,9 +97,7 @@ class Watcher:
                 used = (self._clock.now() - began).total_seconds()
                 self._clock.sleep(max(0.0, self._check_seconds - used))
         finally:
-            self._recorder.discard()
-            if not self._recorder.wait_for_prune(PRUNE_WAIT_SECONDS):
-                log.warning("stopped while still pruning the Private Data Store")
+            self._recorder.close()
             self._communications.close(SAY_WAIT_SECONDS)
 
     def step(self) -> None:

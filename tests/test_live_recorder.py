@@ -6,6 +6,7 @@ import pytest
 
 from catpoop.config import VisitSettings
 from catpoop.domain import Frame
+from catpoop.visits import retention
 from catpoop.visits.clip_writer import ClipWriter
 from catpoop.visits.store import VisitStore
 from catpoop.visits.video import VideoError
@@ -57,7 +58,7 @@ def test_saving_a_live_visit_keeps_the_store_under_its_size_limit(tmp_path):
     for i in range(1, 9):
         recorder.add(frame(i * 0.5))
     recorder.save(START + timedelta(minutes=1))
-    assert recorder.wait_for_prune(5)
+    recorder.close()
     assert not old.exists()
 
 
@@ -79,7 +80,7 @@ def test_a_writer_that_fails_to_close_is_still_dropped(tmp_path, monkeypatch):
 def test_saving_returns_without_waiting_for_the_prune(tmp_path, monkeypatch):
     release, pruned = threading.Event(), threading.Event()
 
-    def slow_prune(store, max_bytes):
+    def slow_prune(store, max_bytes, lock):
         release.wait(5)
         pruned.set()
         return []
@@ -92,7 +93,7 @@ def test_saving_returns_without_waiting_for_the_prune(tmp_path, monkeypatch):
     recorder.save(START + timedelta(minutes=1))
     assert not pruned.is_set()
     release.set()
-    assert recorder.wait_for_prune(5)
+    recorder.close()
     assert pruned.is_set()
 
 
@@ -112,12 +113,12 @@ def test_a_prune_never_deletes_a_clip_while_its_visit_is_being_saved(tmp_path, m
     def add_after_a_prune(self, visit, images):
         if second["saving"]:
             clip_written.set()  # the MP4 is in history/clips, the Visit record is not yet
-            pruned.wait(1)
+            pruned.wait(0.5)
         return real_add(self, visit, images)
 
-    def prune_when_the_clip_is_written(root, max_bytes):
+    def prune_when_the_clip_is_written(root, max_bytes, lock):
         clip_written.wait(1)
-        removed = real_prune(root, max_bytes)
+        removed = real_prune(root, max_bytes, lock)
         pruned.set()
         return removed
 
@@ -127,6 +128,54 @@ def test_a_prune_never_deletes_a_clip_while_its_visit_is_being_saved(tmp_path, m
     record_one(recorder, 1)
     second["saving"] = True
     record_one(recorder, 2)
-    assert recorder.wait_for_prune(5)
+    recorder.close()
     for visit in VisitStore(store).all():
         assert (store / "history" / "clips" / f"{visit.clip}.mp4").exists()
+
+
+def test_saving_waits_for_at_most_one_clip_of_a_prune_going_on(tmp_path, monkeypatch):
+    sizing, release, released = threading.Event(), threading.Event(), []
+    real_size = retention.store_size
+
+    def slow_size(root):
+        sizing.set()
+        released.append(release.wait(5))
+        return real_size(root)
+
+    monkeypatch.setattr(retention, "store_size", slow_size)
+    recorder = LiveVisitRecorder(tmp_path / "store", VisitSettings(), tmp_path / "temp")
+    record_one(recorder, 1)
+    assert sizing.wait(5)  # the prune is sizing the whole store
+    record_one(recorder, 2)  # would wait here for the whole prune
+    release.set()
+    recorder.close()
+    assert released[0]
+
+
+def test_closing_drops_the_clip_and_waits_for_the_prune(tmp_path, monkeypatch):
+    release, pruned = threading.Event(), threading.Event()
+
+    def slow_prune(store, max_bytes, lock):
+        release.wait(5)
+        pruned.set()
+
+    monkeypatch.setattr(recorder_module, "prune_clips", slow_prune)
+    recorder = LiveVisitRecorder(tmp_path / "store", VisitSettings(), tmp_path / "temp")
+    record_one(recorder, 1)
+    recorder.start([frame(0)])
+    threading.Timer(0.1, release.set).start()
+    recorder.close()
+    assert pruned.is_set()
+    assert not recorder.recording
+    assert list((tmp_path / "temp").iterdir()) == []
+
+
+def test_closing_gives_up_on_a_prune_that_takes_too_long(tmp_path, monkeypatch, caplog):
+    release = threading.Event()
+    monkeypatch.setattr(recorder_module, "prune_clips", lambda *args: release.wait(5))
+    monkeypatch.setattr(recorder_module, "PRUNE_WAIT_SECONDS", 0.05)
+    recorder = LiveVisitRecorder(tmp_path / "store", VisitSettings(), tmp_path / "temp")
+    record_one(recorder, 1)
+    recorder.close()
+    release.set()
+    assert "still pruning" in caplog.text
