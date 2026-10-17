@@ -4,7 +4,7 @@
 `find_visits` runs it over a whole clip.
 """
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 
 from catpoop.config import VisitSettings
@@ -36,27 +36,37 @@ class VisitEnded:
 type VisitChange = VisitStarted | VisitEnded
 
 
+type Box = tuple[float, float, float, float]
+"""Left, top, right, bottom as fractions of the Frame size."""
+
+
+def _middle_inside(box: Box, area: Box) -> bool:
+    """Whether the middle of `box` is inside `area` (its edges count as inside)."""
+    left, top, right, bottom = box
+    x, y = (left + right) / 2, (top + bottom) / 2
+    return area[0] <= x <= area[2] and area[1] <= y <= area[3]
+
+
+def _overlaps(box: Box, area: Box) -> bool:
+    """Whether `box` and `area` share some space (only touching edges does not count)."""
+    left, top, right, bottom = box
+    return min(right, area[2]) > max(left, area[0]) and min(bottom, area[3]) > max(top, area[1])
+
+
+def _labels_where(
+    detections: Sequence[Detection], settings: VisitSettings, test: Callable[[Box, Box], bool]
+) -> set[str]:
+    return {found.label for found in detections if test(found.box, settings.litter_box)}
+
+
 def labels_in_litter_box(detections: Sequence[Detection], settings: VisitSettings) -> set[str]:
     """Labels of everything found with the middle of its box inside the Litter Box."""
-    left, top, right, bottom = settings.litter_box
-    inside = set()
-    for found in detections:
-        x = (found.box[0] + found.box[2]) / 2
-        y = (found.box[1] + found.box[3]) / 2
-        if left <= x <= right and top <= y <= bottom:
-            inside.add(found.label)
-    return inside
+    return _labels_where(detections, settings, _middle_inside)
 
 
 def labels_over_litter_box(detections: Sequence[Detection], settings: VisitSettings) -> set[str]:
     """Labels of everything found whose box overlaps the Litter Box (reaching into it)."""
-    left, top, right, bottom = settings.litter_box
-    return {
-        found.label
-        for found in detections
-        if min(found.box[2], right) > max(found.box[0], left)
-        and min(found.box[3], bottom) > max(found.box[1], top)
-    }
+    return _labels_where(detections, settings, _overlaps)
 
 
 def cat_in_litter_box(detections: Sequence[Detection], settings: VisitSettings) -> bool:

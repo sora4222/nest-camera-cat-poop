@@ -8,6 +8,8 @@
   the surface no longer scores Poop. Poop scored within `scoop_settle_seconds` of the
   person is ignored; later, it means the Poop was left and a person must come again.
 - Dog at Poop: Urgent, once per approach; a new Poop or Poop gone starts afresh.
+  The Dog counts only with the middle of its box in the Litter Box, so walking past it
+  is not an approach; a standing person's middle is above the box, so any overlap counts.
 - Camera Offline and Login Expired are said; Login Expired again once at
   `timers.login_expired_reminder_at` (Litter Box time) if still broken.
 """
