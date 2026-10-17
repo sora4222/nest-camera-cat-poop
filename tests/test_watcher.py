@@ -468,20 +468,17 @@ def test_a_recording_that_fails_midway_is_dropped_and_the_visit_goes_on(tmp_path
     assert list((tmp_path / "temp").iterdir()) == []
 
 
-class PruneWatchingRecorder(LiveVisitRecorder):
-    def __init__(self, *args) -> None:
-        super().__init__(*args)
-        self.waited: list[float | None] = []
+class CloseWatchingRecorder(LiveVisitRecorder):
+    closed = 0
 
-    def wait_for_prune(self, timeout=None):
-        self.waited.append(timeout)
-        return True
+    def close(self) -> None:
+        self.closed += 1
+        super().close()
 
 
-def test_stopping_waits_a_while_for_a_prune_going_on(tmp_path):
-    recorder = PruneWatchingRecorder(tmp_path / "store", SETTINGS, tmp_path / "temp")
+def test_stopping_closes_the_recorder(tmp_path):
+    recorder = CloseWatchingRecorder(tmp_path / "store", SETTINGS, tmp_path / "temp")
     run = Run(tmp_path, "....", recorder=recorder)
     checks = iter(range(2))
     run.watcher.run(stop=lambda: next(checks, None) is None)
-    assert len(recorder.waited) == 1
-    assert recorder.waited[0] is not None
+    assert recorder.closed == 1
