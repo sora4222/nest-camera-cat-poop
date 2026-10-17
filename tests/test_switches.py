@@ -128,3 +128,10 @@ def test_a_broken_quiet_time_counts_as_not_quiet(tmp_path, caplog):
     path.write_text('{"quiet_poop": "soon"}')
     assert Switches(path).quiet_until("poop", NOW) is None
     assert "quiet" in caplog.text
+
+
+def test_a_quiet_time_with_no_time_zone_counts_as_not_quiet(tmp_path, caplog):
+    path = tmp_path / "switches.json"
+    path.write_text('{"quiet_visits": "2026-05-01T10:00:00"}')
+    assert Switches(path).quiet_until("visits", NOW) is None
+    assert "quiet" in caplog.text
