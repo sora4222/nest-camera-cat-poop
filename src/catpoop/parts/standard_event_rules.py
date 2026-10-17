@@ -83,10 +83,7 @@ class StandardEventRules:
 
         Poop Reminders carry on from `since`; ones already due by `now` are skipped.
         """
-        self._poop_in_box = True
-        self._person_was_there = False
-        self._dog_said_at = None
-        self._reminders.start(since)
+        self._poop_found(since)
         self._reminders.due(now)
 
     def update(self, observation: obs.Observation) -> list[Event]:
@@ -135,12 +132,15 @@ class StandardEventRules:
             details["visit"] = ended.saved_visit
         events = [Event("visit_ended", Urgency.INFO, ended.at, details, announce=False)]
         if outcome is Outcome.POOP:
-            self._poop_in_box = True
-            self._person_seen_at = None
-            self._dog_said_at = None
-            self._reminders.start(ended.at)
+            self._poop_found(ended.at)
             events.append(Event("poop", Urgency.NORMAL, ended.at))
         return events
+
+    def _poop_found(self, at: datetime) -> None:
+        self._poop_in_box = True
+        self._person_seen_at = None
+        self._dog_said_at = None
+        self._reminders.start(at)
 
     def _seen(self, seen: obs.Seen) -> list[Event]:
         self._login_reminder_at = None
