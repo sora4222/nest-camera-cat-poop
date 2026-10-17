@@ -13,6 +13,14 @@ class Urgency(StrEnum):
     NORMAL = "normal"
     URGENT = "urgent"
 
+    @property
+    def say_first(self) -> int:
+        """Order for Announcements waiting for a Speaker: lower goes first.
+
+        Urgent goes ahead; Normal and Info keep the order they came in.
+        """
+        return 0 if self is Urgency.URGENT else 1
+
 
 class Presence(StrEnum):
     """Whether a Listener is at home. Unknown counts as Away."""
