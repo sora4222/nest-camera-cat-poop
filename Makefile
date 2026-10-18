@@ -21,7 +21,7 @@ endif
 
 help:
 	@echo "make setup   install dependencies (RUNTIME=cpu|amd|nvidia, EXTRAS=google), create config.toml and .env if missing"
-	@echo "make db      start PostgreSQL in Docker (compose.yaml) for the event log and tests"
+	@echo "make db      start PostgreSQL in Docker (compose.yaml) for the event log"
 	@echo "make migration MSG=\"...\"  new empty Alembic migration in src/catpoop/migrations/versions"
 	@echo "make dev     run the live watcher (Ctrl+C stops it)"
 	@echo "make install    run the watcher from this checkout as a systemd user service (same RUNTIME, EXTRAS as setup)"
@@ -49,8 +49,7 @@ setup:
 	@test -f config.toml || { cp config.example.toml config.toml && echo "Created config.toml; edit it."; }
 	@test -f .env || { cp .env.example .env && echo "Created .env; edit it."; }
 
-# PostgreSQL in Docker, on this machine only. Tests use it when Docker is there.
-
+# PostgreSQL in Docker, on this machine only, for the event log (tests start their own).
 db:
 	docker compose up --detach --wait db
 
